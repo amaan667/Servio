@@ -23,7 +23,6 @@ export async function POST(req: NextRequest) {
   const expectedSecret = env("CRON_SECRET") || "default-cron-secret";
   const authHeader = req.headers.get("authorization");
   if (authHeader !== `Bearer ${expectedSecret}`) {
-
     return apiErrors.unauthorized("Unauthorized");
   }
 

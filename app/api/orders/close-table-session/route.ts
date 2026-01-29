@@ -40,7 +40,9 @@ export async function POST(req: NextRequest) {
         .eq("table_id", order.table_id)
         .is("closed_at", null);
 
-      if (sessionCloseError) { /* Condition handled */ } else {
+      if (sessionCloseError) {
+        /* Condition handled */
+      } else {
         // Session closed successfully
       }
     }
@@ -56,7 +58,9 @@ export async function POST(req: NextRequest) {
         .eq("venue_id", order.venue_id)
         .eq("table_number", order.table_number);
 
-      if (runtimeError) { /* Condition handled */ } else {
+      if (runtimeError) {
+        /* Condition handled */
+      } else {
         // Runtime state updated successfully
       }
     }
@@ -66,7 +70,6 @@ export async function POST(req: NextRequest) {
       message: "Table session closed successfully",
     });
   } catch (_error) {
-
     return apiErrors.internal("Internal server error");
   }
 }

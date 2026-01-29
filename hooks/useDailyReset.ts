@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 
 interface DailyResetResult {
@@ -48,8 +47,12 @@ export function useDailyReset(venueId: string) {
             // toast.success(`Daily reset completed: ${completedOrders} orders completed, ${deletedTables} tables deleted`);
           }
         }
-      } else { /* Else case handled */ }
-    } catch (_error) { /* Error handled silently */ } finally {
+      } else {
+        /* Else case handled */
+      }
+    } catch (_error) {
+      /* Error handled silently */
+    } finally {
       setIsChecking(false);
     }
   };

@@ -77,7 +77,7 @@ export default function AuthProvider({
     if (sessionWithVenue?.primaryVenue) {
       return {
         primaryVenueId: sessionWithVenue.primaryVenue.venueId,
-        userRole: sessionWithVenue.primaryVenue.role
+        userRole: sessionWithVenue.primaryVenue.role,
       };
     }
 
@@ -94,7 +94,9 @@ export default function AuthProvider({
   };
 
   const initialVenueData = getInitialVenueData();
-  const [primaryVenueId, setPrimaryVenueId] = useState<string | null>(initialVenueData.primaryVenueId);
+  const [primaryVenueId, setPrimaryVenueId] = useState<string | null>(
+    initialVenueData.primaryVenueId
+  );
   const [userRole, setUserRole] = useState<string | null>(initialVenueData.userRole);
 
   const cacheVenueData = (userId: string, venueId: string, role: string) => {
@@ -386,14 +388,17 @@ export default function AuthProvider({
     }
   };
 
-  const value = useMemo(() => ({
-    session,
-    user,
-    loading,
-    signOut,
-    primaryVenueId,
-    userRole
-  }), [session, user, loading, primaryVenueId, userRole]);
+  const value = useMemo(
+    () => ({
+      session,
+      user,
+      loading,
+      signOut,
+      primaryVenueId,
+      userRole,
+    }),
+    [session, user, loading, primaryVenueId, userRole]
+  );
 
   return <AuthCtx.Provider value={value}>{children}</AuthCtx.Provider>;
 }

@@ -35,14 +35,12 @@ import type { QrType } from "@/types/order-flow";
 export default function PaymentPage() {
   const paymentState = usePaymentState();
   const { processPayment } = usePaymentProcessing();
-  const [allowPayAtTillForTableCollection, setAllowPayAtTillForTableCollection] =
-    useState(false);
+  const [allowPayAtTillForTableCollection, setAllowPayAtTillForTableCollection] = useState(false);
 
   // Log page load and initial state
   useEffect(() => {
     const userAgent = typeof navigator !== "undefined" ? navigator.userAgent : "unknown";
     const isMobile = /iPhone|iPad|iPod|Android/i.test(userAgent);
-
   }, []); // Only run on mount
 
   useEffect(() => {
@@ -55,9 +53,7 @@ export default function PaymentPage() {
         );
         if (!response.ok) return;
         const data = await response.json();
-        setAllowPayAtTillForTableCollection(
-          data?.allow_pay_at_till_for_table_collection === true
-        );
+        setAllowPayAtTillForTableCollection(data?.allow_pay_at_till_for_table_collection === true);
       } catch {
         setAllowPayAtTillForTableCollection(false);
       }
@@ -102,7 +98,6 @@ export default function PaymentPage() {
     // Comprehensive logging for mobile payment method selection
 
     if (!paymentState.checkoutData) {
-
       return;
     }
 
@@ -135,7 +130,6 @@ export default function PaymentPage() {
         }
       );
     } catch (unhandledError) {
-
       const errorMessage =
         unhandledError instanceof Error
           ? unhandledError.message

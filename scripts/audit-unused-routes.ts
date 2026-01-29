@@ -65,7 +65,6 @@ async function findRouteUsage(routePath: string): Promise<string[]> {
 
 // Main execution
 async function main() {
-
   const routeFiles = await getAllRoutes();
 
   for (const routeFile of routeFiles) {
@@ -90,13 +89,15 @@ async function main() {
   );
 
   if (unused.length > 0) {
-
-    unused.forEach((r) => { /* Intentionally empty */ });
+    unused.forEach((r) => {
+      /* Intentionally empty */
+    });
   }
 
   if (testOnly.length > 0) {
-
-    testOnly.forEach((r) => { /* Intentionally empty */ });
+    testOnly.forEach((r) => {
+      /* Intentionally empty */
+    });
   }
 
   // Check for duplicates
@@ -111,11 +112,8 @@ async function main() {
 
   const duplicates = Array.from(routePaths.entries()).filter(([, files]) => files.length > 1);
   if (duplicates.length > 0) {
-
     duplicates.forEach(([route, files]) => {
-
       files.forEach((file) => logger.warn(`   - ${file}`));
-
     });
   }
 }

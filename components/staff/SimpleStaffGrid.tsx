@@ -26,26 +26,30 @@ type StaffMember = {
 interface SimpleStaffGridProps {
   staff: StaffMember[];
   venueId: string;
+  /** When provided, used as single source of truth; otherwise component fetches internally */
+  shifts?: LegacyShift[];
   onStaffAdded?: () => void;
   onStaffToggle?: (staffId: string, currentActive: boolean) => Promise<void>;
 }
 
 type CalendarView = "today" | "week" | "month";
 
-const SimpleStaffGrid: React.FC<SimpleStaffGridProps> = ({ venueId }) => {
-  const [shifts, setShifts] = useState<LegacyShift[]>([]);
+const SimpleStaffGrid: React.FC<SimpleStaffGridProps> = ({ venueId, shifts: shiftsFromParent }) => {
+  const [localShifts, setLocalShifts] = useState<LegacyShift[]>([]);
   const [currentDate, setCurrentDate] = useState(new Date());
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [calendarView, setCalendarView] = useState<CalendarView>("today");
 
-  // Fetch shifts on mount
+  // Only fetch when parent does not provide shifts
   useEffect(() => {
+    if (shiftsFromParent !== undefined) return;
+
     const fetchShifts = async () => {
       try {
         const res = await fetch(`/api/staff/shifts/list?venue_id=${encodeURIComponent(venueId)}`);
         const data = await res.json();
-        if (data.ok && data.shifts) {
-          setShifts(data.shifts);
+        if (data.success && Array.isArray(data.data?.shifts)) {
+          setLocalShifts(data.data.shifts);
         }
       } catch (_error) {
         // Error handled silently
@@ -53,11 +57,11 @@ const SimpleStaffGrid: React.FC<SimpleStaffGridProps> = ({ venueId }) => {
     };
 
     fetchShifts();
-
-    // Refresh shifts every 30 seconds
     const interval = setInterval(fetchShifts, 30000);
     return () => clearInterval(interval);
-  }, [venueId]);
+  }, [venueId, shiftsFromParent]);
+
+  const shifts = shiftsFromParent ?? localShifts;
 
   // Filter shifts based on current view
   const visibleShifts = useMemo(() => {

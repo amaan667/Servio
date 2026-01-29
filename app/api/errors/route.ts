@@ -38,7 +38,11 @@ export const POST = createUnifiedHandler(
     const data = body;
 
     // Business logic - Log error/message
-    if (data.error) { /* Condition handled */ } else if (data.message) { /* Condition handled */ }
+    if (data.error) {
+      /* Condition handled */
+    } else if (data.message) {
+      /* Condition handled */
+    }
 
     // Store in database or send to external service
     // For now, we'll just log it

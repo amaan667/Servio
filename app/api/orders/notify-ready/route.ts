@@ -11,7 +11,10 @@ export const runtime = "nodejs";
 const notifyReadySchema = z.object({
   orderId: z.string().uuid(),
   venueId: z.string().uuid(),
-  notificationChannels: z.array(z.enum(["sms", "email"])).optional().default([]),
+  notificationChannels: z
+    .array(z.enum(["sms", "email"]))
+    .optional()
+    .default([]),
 });
 
 /**
@@ -24,105 +27,110 @@ export const POST = createUnifiedHandler(
     const { body } = context;
     const { orderId, venueId, notificationChannels = [] } = body;
 
-      // STEP 3: Get order and venue details
-      const supabase = await createServerSupabase();
+    // STEP 3: Get order and venue details
+    const supabase = await createServerSupabase();
 
-      const { data: order, error: orderError } = await supabase
-        .from("orders")
-        .select("*")
-        .eq("id", orderId)
-        .eq("venue_id", venueId)
-        .single();
+    const { data: order, error: orderError } = await supabase
+      .from("orders")
+      .select("*")
+      .eq("id", orderId)
+      .eq("venue_id", venueId)
+      .single();
 
-      if (orderError || !order) {
-        return apiErrors.notFound("Order not found");
-      }
+    if (orderError || !order) {
+      return apiErrors.notFound("Order not found");
+    }
 
-      // Only send notifications for orders that are actually READY
-      if (order.order_status !== "READY") {
-        return apiErrors.badRequest("Order is not in READY status");
-      }
+    // Only send notifications for orders that are actually READY
+    if (order.order_status !== "READY") {
+      return apiErrors.badRequest("Order is not in READY status");
+    }
 
-      const { data: venue } = await supabase
-        .from("venues")
-        .select("venue_name, phone, email, service_type")
-        .eq("venue_id", venueId)
-        .single();
+    const { data: venue } = await supabase
+      .from("venues")
+      .select("venue_name, phone, email, service_type")
+      .eq("venue_id", venueId)
+      .single();
 
-      const venueName = venue?.venue_name || "Restaurant";
-      const orderNumber = orderId.slice(-6).toUpperCase();
-      const customerName = order.customer_name || "Customer";
+    const venueName = venue?.venue_name || "Restaurant";
+    const orderNumber = orderId.slice(-6).toUpperCase();
+    const customerName = order.customer_name || "Customer";
 
-      const notificationResults: {
-        sms?: { sent: boolean; error?: string };
-        email?: { sent: boolean; error?: string };
-      } = {};
+    const notificationResults: {
+      sms?: { sent: boolean; error?: string };
+      email?: { sent: boolean; error?: string };
+    } = {};
 
-      // STEP 4: Send SMS notification if requested and phone number available
-      if (notificationChannels.includes("sms") && order.customer_phone) {
-        try {
-          const smsMessage = `🎉 ${customerName}, your order #${orderNumber} at ${venueName} is ready! Please collect at the counter. Thank you!`;
+    // STEP 4: Send SMS notification if requested and phone number available
+    if (notificationChannels.includes("sms") && order.customer_phone) {
+      try {
+        const smsMessage = `🎉 ${customerName}, your order #${orderNumber} at ${venueName} is ready! Please collect at the counter. Thank you!`;
 
-          // Check if Twilio is configured (using process.env for optional vars)
-          const twilioSid = process.env.TWILIO_ACCOUNT_SID;
-          const twilioToken = process.env.TWILIO_AUTH_TOKEN;
-          const twilioPhone = process.env.TWILIO_PHONE_NUMBER;
+        // Check if Twilio is configured (using process.env for optional vars)
+        const twilioSid = process.env.TWILIO_ACCOUNT_SID;
+        const twilioToken = process.env.TWILIO_AUTH_TOKEN;
+        const twilioPhone = process.env.TWILIO_PHONE_NUMBER;
 
-          if (twilioSid && twilioToken && twilioPhone) {
-            // Dynamic import to avoid errors if twilio package isn't installed
-            try {
-              // eslint-disable-next-line @typescript-eslint/no-require-imports
-              const twilio = require("twilio") as (sid: string, token: string) => {
-                messages: { create: (opts: { body: string; to: string; from: string }) => Promise<unknown> };
+        if (twilioSid && twilioToken && twilioPhone) {
+          // Dynamic import to avoid errors if twilio package isn't installed
+          try {
+            // eslint-disable-next-line @typescript-eslint/no-require-imports
+            const twilio = require("twilio") as (
+              sid: string,
+              token: string
+            ) => {
+              messages: {
+                create: (opts: { body: string; to: string; from: string }) => Promise<unknown>;
               };
-              const twilioClient = twilio(twilioSid, twilioToken);
+            };
+            const twilioClient = twilio(twilioSid, twilioToken);
 
-              await twilioClient.messages.create({
-                body: smsMessage,
-                to: order.customer_phone,
-                from: twilioPhone,
-              });
+            await twilioClient.messages.create({
+              body: smsMessage,
+              to: order.customer_phone,
+              from: twilioPhone,
+            });
 
-              notificationResults.sms = { sent: true };
-            } catch {
-              // Twilio package not installed or error - skip SMS silently
-              notificationResults.sms = {
-                sent: false,
-                error: "SMS service (Twilio) not available.",
-              };
-            }
-          } else {
-            // SMS not configured - skip silently
+            notificationResults.sms = { sent: true };
+          } catch {
+            // Twilio package not installed or error - skip SMS silently
             notificationResults.sms = {
               sent: false,
-              error: "SMS service not configured.",
+              error: "SMS service (Twilio) not available.",
             };
           }
-
-          // Update order with notification sent info
-          await supabase
-            .from("orders")
-            .update({
-              ready_notification_sent_at: new Date().toISOString(),
-              ready_notification_channel: "sms",
-            })
-            .eq("id", orderId);
-        } catch {
-          // SMS error - continue without failing
+        } else {
+          // SMS not configured - skip silently
           notificationResults.sms = {
             sent: false,
-            error: "Failed to send SMS",
+            error: "SMS service not configured.",
           };
         }
+
+        // Update order with notification sent info
+        await supabase
+          .from("orders")
+          .update({
+            ready_notification_sent_at: new Date().toISOString(),
+            ready_notification_channel: "sms",
+          })
+          .eq("id", orderId);
+      } catch {
+        // SMS error - continue without failing
+        notificationResults.sms = {
+          sent: false,
+          error: "Failed to send SMS",
+        };
       }
+    }
 
-      // STEP 5: Send email notification if requested and email available
-      if (notificationChannels.includes("email") && order.customer_email) {
-        try {
-          const baseUrl = env("NEXT_PUBLIC_SITE_URL") || "https://servio.app";
-          const orderTrackingUrl = `${baseUrl}/order-summary/${orderId}`;
+    // STEP 5: Send email notification if requested and email available
+    if (notificationChannels.includes("email") && order.customer_email) {
+      try {
+        const baseUrl = env("NEXT_PUBLIC_SITE_URL") || "https://servio.app";
+        const orderTrackingUrl = `${baseUrl}/order-summary/${orderId}`;
 
-          const emailHtml = `
+        const emailHtml = `
             <!DOCTYPE html>
             <html>
             <head>
@@ -167,47 +175,47 @@ export const POST = createUnifiedHandler(
             </html>
           `;
 
-          // Try to send email using Resend
-          if (env("RESEND_API_KEY")) {
-            const { Resend } = await import("resend");
-            const resend = new Resend(env("RESEND_API_KEY"));
+        // Try to send email using Resend
+        if (env("RESEND_API_KEY")) {
+          const { Resend } = await import("resend");
+          const resend = new Resend(env("RESEND_API_KEY"));
 
-            const result = await resend.emails.send({
-              from: `${venueName} <orders@servio.uk>`,
-              to: order.customer_email,
-              subject: `🎉 Your Order #${orderNumber} is Ready for Collection!`,
-              html: emailHtml,
-            });
+          const result = await resend.emails.send({
+            from: `${venueName} <orders@servio.uk>`,
+            to: order.customer_email,
+            subject: `🎉 Your Order #${orderNumber} is Ready for Collection!`,
+            html: emailHtml,
+          });
 
-            if (result.data) {
-              notificationResults.email = { sent: true };
-            } else {
-              throw new Error(result.error?.message || "Failed to send email");
-            }
+          if (result.data) {
+            notificationResults.email = { sent: true };
           } else {
-            // Email service not configured - skip silently
-            notificationResults.email = {
-              sent: false,
-              error: "Email service not configured.",
-            };
+            throw new Error(result.error?.message || "Failed to send email");
           }
-
-          // Update order with notification sent info
-          await supabase
-            .from("orders")
-            .update({
-              ready_notification_sent_at: new Date().toISOString(),
-              ready_notification_channel: notificationResults.sms?.sent ? "both" : "email",
-            })
-            .eq("id", orderId);
-        } catch (emailError) {
-          // Email error - continue without failing
+        } else {
+          // Email service not configured - skip silently
           notificationResults.email = {
             sent: false,
-            error: emailError instanceof Error ? emailError.message : "Failed to send email",
+            error: "Email service not configured.",
           };
         }
+
+        // Update order with notification sent info
+        await supabase
+          .from("orders")
+          .update({
+            ready_notification_sent_at: new Date().toISOString(),
+            ready_notification_channel: notificationResults.sms?.sent ? "both" : "email",
+          })
+          .eq("id", orderId);
+      } catch (emailError) {
+        // Email error - continue without failing
+        notificationResults.email = {
+          sent: false,
+          error: emailError instanceof Error ? emailError.message : "Failed to send email",
+        };
       }
+    }
 
     return success({
       message: "Order ready notification processed",
@@ -226,7 +234,10 @@ export const POST = createUnifiedHandler(
     rateLimit: RATE_LIMITS.GENERAL,
     extractVenueId: async (req) => {
       try {
-        const body = await req.clone().json().catch(() => ({}));
+        const body = await req
+          .clone()
+          .json()
+          .catch(() => ({}));
         return (body as { venueId?: string })?.venueId || null;
       } catch {
         return null;

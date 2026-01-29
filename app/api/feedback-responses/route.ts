@@ -5,6 +5,7 @@ import { withUnifiedAuth } from "@/lib/auth/unified-auth";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import { validateBody, submitFeedbackSchema } from "@/lib/api/validation-schemas";
 import { success, apiErrors } from "@/lib/api/standard-response";
+import { normalizeVenueId } from "@/lib/utils/venueId";
 
 export const runtime = "nodejs";
 
@@ -31,10 +32,8 @@ export const POST = withUnifiedAuth(
       // STEP 3: Validate input
       const body = await validateBody(submitFeedbackSchema, await req.json());
 
-      // Normalize venue IDs for comparison (database may store with venue- prefix)
-      const normalizeVenueId = (id: string) => (id.startsWith("venue-") ? id : `venue-${id}`);
-      const normalizedContextVenueId = normalizeVenueId(venueId);
-      const normalizedBodyVenueId = normalizeVenueId(body.venue_id);
+      const normalizedContextVenueId = normalizeVenueId(venueId) ?? venueId;
+      const normalizedBodyVenueId = normalizeVenueId(body.venue_id) ?? body.venue_id;
 
       // Verify venue_id matches context
       if (normalizedBodyVenueId !== normalizedContextVenueId) {
@@ -55,7 +54,6 @@ export const POST = withUnifiedAuth(
           .single();
 
         if (orderError || !order) {
-
           return apiErrors.notFound("Order not found or access denied");
         }
       }
@@ -79,7 +77,6 @@ export const POST = withUnifiedAuth(
         .select();
 
       if (insertError || !insertedResponses) {
-
         return apiErrors.database("Failed to save feedback responses", insertError);
       }
 
@@ -89,7 +86,6 @@ export const POST = withUnifiedAuth(
         responses: insertedResponses,
       });
     } catch (error) {
-
       // Handle validation errors
       const { isZodError, handleZodError } = await import("@/lib/api/standard-response");
       if (isZodError(error)) {

@@ -7,6 +7,7 @@ import { success, apiErrors, isZodError, handleZodError } from "@/lib/api/standa
 import { isDevelopment } from "@/lib/env";
 import { z } from "zod";
 import { validateBody, validateQuery } from "@/lib/api/validation-schemas";
+import { normalizeVenueId } from "@/lib/utils/venueId";
 
 // Venue ID validation - accepts UUID or "venue-" prefixed format
 const venueIdSchema = z.string().refine(
@@ -69,9 +70,10 @@ export const GET = withUnifiedAuth(
         offset = pagination.offset;
       } catch (error) {
         if (isZodError(error)) {
-
           // Use defaults if validation fails
-        } else { /* Else case handled */ }
+        } else {
+          /* Else case handled */
+        }
       }
 
       if (!venueId) {
@@ -80,7 +82,7 @@ export const GET = withUnifiedAuth(
 
       // Normalize venueId - database stores with venue- prefix
       // Check if it already has the prefix to avoid double-prefixing
-      const normalizedVenueId = venueId.startsWith("venue-") ? venueId : `venue-${venueId}`;
+      const normalizedVenueId = normalizeVenueId(venueId) ?? venueId;
 
       // STEP 3: Business logic
       const supabase = createAdminClient();
@@ -108,7 +110,6 @@ export const GET = withUnifiedAuth(
         (error.message?.toLowerCase().includes("column") ||
           error.message?.toLowerCase().includes("could not find"))
       ) {
-
         const resultWithoutDisplayOrder = await supabase
           .from("feedback_questions")
           .select("*")
@@ -121,7 +122,6 @@ export const GET = withUnifiedAuth(
       }
 
       if (error) {
-
         return apiErrors.database(
           "Failed to fetch questions",
           isDevelopment() ? error.message : undefined
@@ -155,7 +155,6 @@ export const GET = withUnifiedAuth(
 
             // Only include questions with valid prompts
             if (!prompt || prompt.trim().length === 0) {
-
               return null;
             }
 
@@ -187,7 +186,6 @@ export const GET = withUnifiedAuth(
         },
       });
     } catch (error) {
-
       if (isZodError(error)) {
         return handleZodError(error);
       }
@@ -200,10 +198,11 @@ export const GET = withUnifiedAuth(
       try {
         const { searchParams } = new URL(req.url);
         const venueId = searchParams.get("venueId");
-        if (!venueId) { /* Condition handled */ }
+        if (!venueId) {
+          /* Condition handled */
+        }
         return venueId;
       } catch (error) {
-
         return null;
       }
     },
@@ -272,13 +271,12 @@ export const POST = withUnifiedAuth(
       }
 
       if (!venueId) {
-
         return apiErrors.badRequest("venueId is required");
       }
 
       // Normalize venueId - database stores with venue- prefix
       // Check if it already has the prefix to avoid double-prefixing
-      const normalizedVenueId = venueId.startsWith("venue-") ? venueId : `venue-${venueId}`;
+      const normalizedVenueId = normalizeVenueId(venueId) ?? venueId;
 
       // STEP 3: Validate input
       // withUnifiedAuth reconstructs the body, so we can read it normally
@@ -341,7 +339,6 @@ export const POST = withUnifiedAuth(
         : `venue-${body.venue_id}`;
 
       if (bodyVenueId !== normalizedVenueId) {
-
         return apiErrors.forbidden("Venue ID mismatch");
       }
 
@@ -371,9 +368,10 @@ export const POST = withUnifiedAuth(
             sortIndexError.message?.toLowerCase().includes("could not find"));
 
         if (isDisplayOrderColumnError) {
-
           displayOrderColumnExists = false;
-        } else { /* Else case handled */ }
+        } else {
+          /* Else case handled */
+        }
       } else {
         // Column exists, calculate next display order
         displayOrderColumnExists = true;
@@ -479,7 +477,6 @@ export const POST = withUnifiedAuth(
 
       // Log error details for debugging
       if (error) {
-
         if (typeof process !== "undefined" && process.stdout) {
           process.stdout.write(
             `${new Date().toISOString()} ${logPrefix} Initial insert error: ${error.message}\n`
@@ -533,14 +530,12 @@ export const POST = withUnifiedAuth(
           error = retryResult.error;
 
           if (error) {
-
             if (typeof process !== "undefined" && process.stdout) {
               process.stdout.write(
                 `${new Date().toISOString()} ${logPrefix} Retry insert also failed: ${error.message || "Unknown error"}\n`
               );
             }
           } else {
-
             if (typeof process !== "undefined" && process.stdout) {
               process.stdout.write(
                 `${new Date().toISOString()} ${logPrefix} Retry insert succeeded without missing columns\n`
@@ -665,7 +660,6 @@ export const POST = withUnifiedAuth(
       }
 
       if (isZodError(error)) {
-
         return handleZodError(error);
       }
 
@@ -680,10 +674,11 @@ export const POST = withUnifiedAuth(
       try {
         const { searchParams } = new URL(req.url);
         const venueId = searchParams.get("venueId");
-        if (!venueId) { /* Condition handled */ }
+        if (!venueId) {
+          /* Condition handled */
+        }
         return venueId;
       } catch (error) {
-
         return null;
       }
     },
@@ -709,7 +704,7 @@ export const PATCH = withUnifiedAuth(
 
       // Normalize venueId - database stores with venue- prefix
       // Check if it already has the prefix to avoid double-prefixing
-      const normalizedVenueId = venueId.startsWith("venue-") ? venueId : `venue-${venueId}`;
+      const normalizedVenueId = normalizeVenueId(venueId) ?? venueId;
 
       // STEP 3: Validate input
       const body = await validateBody(updateQuestionSchema, await req.json());
@@ -724,7 +719,6 @@ export const PATCH = withUnifiedAuth(
         .single();
 
       if (checkError || !existingQuestion) {
-
         return apiErrors.notFound("Question not found or access denied");
       }
 
@@ -770,7 +764,6 @@ export const PATCH = withUnifiedAuth(
         const isDisplayOrderColumnError = errorMsg.includes("display_order");
 
         if (isOptionsColumnError || isDisplayOrderColumnError) {
-
           const updateDataRetry = { ...updateData };
           if (isOptionsColumnError && "options" in updateDataRetry) {
             delete updateDataRetry.options;
@@ -793,7 +786,6 @@ export const PATCH = withUnifiedAuth(
       }
 
       if (error || !question) {
-
         return apiErrors.database(
           "Failed to update question",
           isDevelopment() ? error?.message : undefined
@@ -811,7 +803,6 @@ export const PATCH = withUnifiedAuth(
         "";
 
       if (!prompt || prompt.trim().length === 0) {
-
         return apiErrors.internal("Question updated but prompt is missing");
       }
 
@@ -830,7 +821,6 @@ export const PATCH = withUnifiedAuth(
       // STEP 7: Return success response
       return success({ question: transformedQuestion });
     } catch (error) {
-
       if (isZodError(error)) {
         return handleZodError(error);
       }
@@ -843,10 +833,11 @@ export const PATCH = withUnifiedAuth(
       try {
         const { searchParams } = new URL(req.url);
         const venueId = searchParams.get("venueId");
-        if (!venueId) { /* Condition handled */ }
+        if (!venueId) {
+          /* Condition handled */
+        }
         return venueId;
       } catch (error) {
-
         return null;
       }
     },
@@ -872,7 +863,7 @@ export const DELETE = withUnifiedAuth(
 
       // Normalize venueId - database stores with venue- prefix
       // Check if it already has the prefix to avoid double-prefixing
-      const normalizedVenueId = venueId.startsWith("venue-") ? venueId : `venue-${venueId}`;
+      const normalizedVenueId = normalizeVenueId(venueId) ?? venueId;
 
       // STEP 3: Validate input
       // Support both query params and body for DELETE (frontend sends in body)
@@ -903,7 +894,6 @@ export const DELETE = withUnifiedAuth(
         .single();
 
       if (checkError || !existingQuestion) {
-
         return apiErrors.notFound("Question not found or access denied");
       }
 
@@ -915,7 +905,6 @@ export const DELETE = withUnifiedAuth(
         .eq("venue_id", normalizedVenueId);
 
       if (error) {
-
         return apiErrors.database(
           "Failed to delete question",
           isDevelopment() ? error.message : undefined
@@ -925,7 +914,6 @@ export const DELETE = withUnifiedAuth(
       // STEP 6: Return success response
       return success({ deleted: true });
     } catch (error) {
-
       if (isZodError(error)) {
         return handleZodError(error);
       }
@@ -946,17 +934,16 @@ export const DELETE = withUnifiedAuth(
             const clonedReq = req.clone();
             const body = await clonedReq.json().catch(() => ({}));
             venueId = body.venue_id || body.venueId || null;
-
           } catch {
             // Body parsing failed, continue with query param only
-
           }
         }
 
-        if (!venueId) { /* Condition handled */ }
+        if (!venueId) {
+          /* Condition handled */
+        }
         return venueId;
       } catch (error) {
-
         return null;
       }
     },

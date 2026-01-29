@@ -1,4 +1,3 @@
-
 // Email sending utilities for Servio
 // This is a basic implementation that can be enhanced with proper email service integration
 
@@ -136,7 +135,6 @@ If you didn't expect this invitation, you can safely ignore this email.
 // Send email using multiple fallback methods
 export async function sendEmail(template: EmailTemplate): Promise<boolean> {
   try {
-
     // Method 1: Try Resend (if API key is available)
 
     if (process.env.RESEND_API_KEY) {
@@ -155,14 +153,18 @@ export async function sendEmail(template: EmailTemplate): Promise<boolean> {
         const result = await resend.emails.send(emailPayload);
 
         if (result.data) {
-
           return true;
         } else if (result.error) {
           const err = result.error as { statusCode?: number; message?: string; name?: string };
-
-        } else { /* Else case handled */ }
-      } catch (resendError) { /* Error handled silently */ }
-    } else { /* Else case handled */ }
+        } else {
+          /* Else case handled */
+        }
+      } catch (resendError) {
+        /* Error handled silently */
+      }
+    } else {
+      /* Else case handled */
+    }
 
     // Method 2: Try SendGrid (if API key is available)
     if (process.env.SENDGRID_API_KEY) {
@@ -179,7 +181,9 @@ export async function sendEmail(template: EmailTemplate): Promise<boolean> {
         });
 
         return true;
-      } catch (sendgridError) { /* Error handled silently */ }
+      } catch (sendgridError) {
+        /* Error handled silently */
+      }
     }
 
     // Method 3: Try SMTP (if credentials are available)
@@ -206,7 +210,9 @@ export async function sendEmail(template: EmailTemplate): Promise<boolean> {
         });
 
         return true;
-      } catch (smtpError) { /* Error handled silently */ }
+      } catch (smtpError) {
+        /* Error handled silently */
+      }
     }
 
     // Method 4: Try EmailJS (for development without domain)
@@ -220,7 +226,9 @@ export async function sendEmail(template: EmailTemplate): Promise<boolean> {
         // In a real implementation, you'd use EmailJS API
 
         return true; // Simulate success for development
-      } catch (emailjsError) { /* Error handled silently */ }
+      } catch (emailjsError) {
+        /* Error handled silently */
+      }
     }
 
     // Fallback: Log to console (for development/testing)
@@ -229,7 +237,6 @@ export async function sendEmail(template: EmailTemplate): Promise<boolean> {
     // In production, you should configure an email service
     return process.env.NODE_ENV === "development";
   } catch (_error) {
-
     return false;
   }
 }

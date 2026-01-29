@@ -31,7 +31,9 @@ export function PerformanceDashboardClient({ venueId: _venueId }: { venueId: str
         const response = await fetch("/api/performance");
         const data = await response.json();
         setMetrics(data);
-      } catch (_error) { /* Error handled silently */ } finally {
+      } catch (_error) {
+        /* Error handled silently */
+      } finally {
         setLoading(false);
       }
     };

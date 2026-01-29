@@ -65,7 +65,6 @@ export async function POST(_request: NextRequest) {
       .eq("id", org.id);
 
     if (updateError) {
-
       return apiErrors.internal("Failed to update subscription tier");
     }
 
@@ -108,7 +107,6 @@ export async function POST(_request: NextRequest) {
                 changed_at: new Date().toISOString(),
               },
             });
-
           }
         }
       } catch (stripeError: unknown) {

@@ -2,7 +2,7 @@
  * Page auth: middleware only (Supabase). No per-page RPC for dashboard.
  *
  * SINGLE SOURCE OF TRUTH: All dashboard pages use requirePageAuth(venueId)
- * 
+ *
  * Architecture:
  * 1. Middleware calls get_access_context RPC ONCE and sets headers:
  *    - x-user-id, x-user-email, x-user-tier, x-user-role, x-venue-id
@@ -10,7 +10,7 @@
  *    - Reads headers (no duplicate RPC calls)
  *    - Validates venueId matches headers (security)
  *    - Optionally checks role/feature requirements
- * 
+ *
  * CRITICAL: No redirects. Returns null on auth failure.
  * All pages should use requirePageAuth(venueId) for consistency.
  */
@@ -75,10 +75,13 @@ export const getAuthFromMiddlewareHeaders = cache(async (): Promise<PageAuthCont
   // Get ALL x- headers for comprehensive logging
   const allXHeaders = Array.from(h.entries())
     .filter(([k]) => k.startsWith("x-"))
-    .reduce((acc, [k, v]) => {
-      acc[k] = v;
-      return acc;
-    }, {} as Record<string, string>);
+    .reduce(
+      (acc, [k, v]) => {
+        acc[k] = v;
+        return acc;
+      },
+      {} as Record<string, string>
+    );
 
   // Comprehensive logging - this will show in server logs
   // eslint-disable-next-line no-console
@@ -160,7 +163,11 @@ export async function requirePageAuth(
   }
 
   // Role check
-  if (options.requireRole && options.requireRole.length > 0 && !options.requireRole.includes(auth.role)) {
+  if (
+    options.requireRole &&
+    options.requireRole.length > 0 &&
+    !options.requireRole.includes(auth.role)
+  ) {
     // eslint-disable-next-line no-console
     console.log("[PAGE-AUTH] requirePageAuth: Role check failed", {
       userRole: auth.role,

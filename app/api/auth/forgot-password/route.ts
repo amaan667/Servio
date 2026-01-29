@@ -9,19 +9,16 @@ export async function POST(request: NextRequest) {
   const startTime = Date.now();
 
   try {
-
     const body = await request.json();
     const { email } = body;
 
     if (!email || typeof email !== "string") {
-
       return apiErrors.badRequest("Email address is required");
     }
 
     // Basic email validation
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email.trim())) {
-
       return apiErrors.badRequest("Invalid email address format");
     }
 
@@ -60,7 +57,6 @@ export async function POST(request: NextRequest) {
     const resetDuration = Date.now() - resetStartTime;
 
     if (error) {
-
       // Don't reveal if email exists or not for security
       // Always return success to prevent email enumeration
       return NextResponse.json({
@@ -75,7 +71,6 @@ export async function POST(request: NextRequest) {
       message: "If an account with that email exists, a password reset link has been sent.",
     });
   } catch (_error) {
-
     // Still return success to prevent email enumeration
     return NextResponse.json({
       success: true,

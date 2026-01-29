@@ -197,7 +197,6 @@ export const POST = withUnifiedAuth(
         errors,
       });
     } catch (error) {
-
       if (isZodError(error)) {
         return handleZodError(error);
       }

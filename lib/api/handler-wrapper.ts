@@ -1,7 +1,7 @@
 /**
  * API Handler Wrapper
  * Provides consistent error handling and logging for API routes
- * 
+ *
  * @deprecated Use createUnifiedHandler from './unified-handler' instead.
  * This handler is kept for backward compatibility but will be removed in a future version.
  */
@@ -43,7 +43,9 @@ export function withErrorHandling<TRequest = unknown, TResponse = unknown>(
 
     try {
       // Log request if enabled
-      if (options.logRequest) { /* Condition handled */ }
+      if (options.logRequest) {
+        /* Condition handled */
+      }
 
       // Parse request body
       let body: TRequest;
@@ -61,7 +63,6 @@ export function withErrorHandling<TRequest = unknown, TResponse = unknown>(
       // Log response if enabled
       if (options.logResponse) {
         const duration = Date.now() - startTime;
-
       }
 
       // Return success response

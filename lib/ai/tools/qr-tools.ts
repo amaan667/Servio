@@ -37,7 +37,6 @@ export async function generateTableQRCode(
   venueId: string,
   tableLabel: string
 ): Promise<QRCodeGenerationResult> {
-
   // Generate QR URL (no database table required - QR works regardless)
   const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "https://servio.uk";
   const qrUrl = `${baseUrl}/order?venue=${venueId}&table=${encodeURIComponent(tableLabel)}`;
@@ -102,7 +101,6 @@ export async function generateCounterQRCode(
   venueId: string,
   counterLabel: string
 ): Promise<QRCodeGenerationResult> {
-
   // Generate QR URL (no database counter required - QR works regardless)
   const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "https://servio.uk";
   const qrUrl = `${baseUrl}/order?venue=${venueId}&counter=${encodeURIComponent(counterLabel)}`;

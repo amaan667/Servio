@@ -14,6 +14,7 @@ import {
   Calculator,
 } from "lucide-react";
 import { supabaseBrowser } from "@/lib/supabase";
+import { normalizeVenueId } from "@/lib/utils/venueId";
 
 interface MenuItemProfitability {
   menu_item_id: string;
@@ -63,7 +64,7 @@ export function CostInsights({ venueId, timePeriod = "30d" }: CostInsightsProps)
       setError(null);
 
       const supabase = supabaseBrowser();
-      const normalizedVenueId = venueId.startsWith("venue-") ? venueId : `venue-${venueId}`;
+      const normalizedVenueId = normalizeVenueId(venueId) ?? venueId;
 
       // Calculate date range
       const now = new Date();

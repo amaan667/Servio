@@ -7,6 +7,7 @@ import { todayWindowForTZ } from "@/lib/time";
 import { requirePageAuth } from "@/lib/auth/page-auth-helper";
 import { fetchMenuItemCount } from "@/lib/counts/unified-counts";
 import type { DashboardCounts, DashboardStats } from "./hooks/useDashboardData";
+import { normalizeVenueId } from "@/lib/utils/venueId";
 
 // TEMPORARILY DISABLE SSR TO DEBUG TIER ISSUES
 // Force client-side rendering only
@@ -61,7 +62,7 @@ export default async function VenuePage({ params }: { params: { venueId: string 
       const window = todayWindowForTZ(venueTz);
 
       // Normalize venueId format - database stores with venue- prefix
-      const normalizedVenueId = venueId.startsWith("venue-") ? venueId : `venue-${venueId}`;
+      const normalizedVenueId = normalizeVenueId(venueId) ?? venueId;
 
       // Parallelize all fetches for instant loading
       const now = new Date();
@@ -80,10 +81,7 @@ export default async function VenuePage({ params }: { params: { venueId: string 
             p_live_window_mins: 30,
           })
           .single(),
-        supabase
-          .from("tables")
-          .select("id, is_active")
-          .eq("venue_id", normalizedVenueId),
+        supabase.from("tables").select("id, is_active").eq("venue_id", normalizedVenueId),
         supabase
           .from("table_sessions")
           .select("id, status, table_id")
@@ -109,7 +107,9 @@ export default async function VenuePage({ params }: { params: { venueId: string 
       ]);
 
       // Process results
-      if (countsResult.error) { /* Condition handled */ } else {
+      if (countsResult.error) {
+        /* Condition handled */
+      } else {
         initialCounts = countsResult.data as DashboardCounts;
       }
 
@@ -137,7 +137,9 @@ export default async function VenuePage({ params }: { params: { venueId: string 
         unpaid = ordersResult.data.filter(
           (o) => o.payment_status === "UNPAID" || o.payment_status === "PAY_LATER"
         ).length;
-      } else if (ordersResult.error) { /* Condition handled */ }
+      } else if (ordersResult.error) {
+        /* Condition handled */
+      }
 
       // CRITICAL: Create initialStats object
       initialStats = {
@@ -188,7 +190,13 @@ export default async function VenuePage({ params }: { params: { venueId: string 
           `,
         }}
       />
-      <ClientOnlyWrapper fallback={<div className="flex items-center justify-center min-h-screen"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-servio-purple"></div></div>}>
+      <ClientOnlyWrapper
+        fallback={
+          <div className="flex items-center justify-center min-h-screen">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-servio-purple"></div>
+          </div>
+        }
+      >
         <DashboardClient
           venueId={venueId}
           initialCounts={initialCounts}

@@ -34,7 +34,6 @@ export const GET = withUnifiedAuth(async (req: NextRequest, context) => {
       .order("start_at", { ascending: true });
 
     if (fetchError) {
-
       return apiErrors.database(
         "Failed to fetch unassigned reservations",
         isDevelopment() ? fetchError.message : undefined
@@ -44,7 +43,6 @@ export const GET = withUnifiedAuth(async (req: NextRequest, context) => {
     // STEP 4: Return success response
     return success({ reservations: reservations || [] });
   } catch (error) {
-
     if (isZodError(error)) {
       return handleZodError(error);
     }

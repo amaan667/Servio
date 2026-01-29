@@ -1,4 +1,3 @@
-
 import { useState, useCallback } from "react";
 import { getTableState, getMergeScenario } from "@/lib/table-states";
 
@@ -55,7 +54,6 @@ export function useEnhancedTableMerge() {
         const result = await response.json();
 
         if (!response.ok) {
-
           return {
             success: false,
             error: result.error || "Merge failed",
@@ -71,7 +69,6 @@ export function useEnhancedTableMerge() {
           description: result.description,
         };
       } catch (err) {
-
         const errorMessage = err instanceof Error ? err.message : "Unexpected error occurred";
         setError(errorMessage);
         return {

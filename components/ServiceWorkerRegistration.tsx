@@ -80,7 +80,9 @@ export default function ServiceWorkerRegistration({ children }: ServiceWorkerReg
           registration
             .unregister()
             .then((success) => {
-              if (success) { /* Condition handled */ }
+              if (success) {
+                /* Condition handled */
+              }
             })
             .catch((_error) => {
               // Service worker registration error handled silently

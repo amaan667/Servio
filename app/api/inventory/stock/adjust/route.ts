@@ -47,7 +47,6 @@ export const POST = withUnifiedAuth(
         .single();
 
       if (ingredientError || !ingredient) {
-
         return apiErrors.notFound("Ingredient not found");
       }
 
@@ -55,7 +54,6 @@ export const POST = withUnifiedAuth(
 
       // Verify venue matches context (double-check for security)
       if (venueId !== context.venueId) {
-
         return apiErrors.forbidden("Ingredient does not belong to your venue");
       }
 
@@ -76,7 +74,6 @@ export const POST = withUnifiedAuth(
         .single();
 
       if (ledgerError || !ledgerEntry) {
-
         return apiErrors.database(
           "Failed to create stock ledger entry",
           isDevelopment() ? ledgerError?.message : undefined
@@ -89,7 +86,6 @@ export const POST = withUnifiedAuth(
         message: `Stock adjusted by ${body.delta > 0 ? "+" : ""}${body.delta}`,
       });
     } catch (error) {
-
       if (isZodError(error)) {
         return handleZodError(error);
       }

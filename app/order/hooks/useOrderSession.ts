@@ -101,7 +101,9 @@ export function useOrderSession(orderParams: OrderParams) {
             { maxRetries: 5, delayMs: 500, logContext: "Check Existing Order" }
           );
 
-          if (orderError) { /* Condition handled */ }
+          if (orderError) {
+            /* Condition handled */
+          }
 
           if (orderInDb) {
             // If order has payment_method="PAY_LATER" and payment_status="UNPAID", redirect directly to Stripe checkout
@@ -194,7 +196,9 @@ export function useOrderSession(orderParams: OrderParams) {
             { maxRetries: 5, delayMs: 500, logContext: "Check Session Order" }
           );
 
-          if (sessionOrderError) { /* Condition handled */ }
+          if (sessionOrderError) {
+            /* Condition handled */
+          }
 
           if (sessionOrderInDb) {
             // If order has payment_method="PAY_LATER" and payment_status="UNPAID", redirect directly to Stripe checkout
@@ -256,7 +260,6 @@ export function useOrderSession(orderParams: OrderParams) {
               }
             } catch (tableCheckError) {
               // Fall back to single order payment if table check fails
-
             }
 
             // Single order or fallback - use existing payment flow
@@ -296,7 +299,9 @@ export function useOrderSession(orderParams: OrderParams) {
 
           const { data: unpaidPayLaterOrders } = await supabase
             .from("orders")
-            .select("id, venue_id, table_number, customer_name, customer_email, total_amount, items, qr_type, payment_method, payment_status")
+            .select(
+              "id, venue_id, table_number, customer_name, customer_email, total_amount, items, qr_type, payment_method, payment_status"
+            )
             .eq("venue_id", orderParams.venueSlug)
             .eq("table_number", parseInt(orderParams.tableNumber))
             .eq("payment_method", "PAY_LATER")
@@ -342,7 +347,6 @@ export function useOrderSession(orderParams: OrderParams) {
           }
         } catch (tableCheckError) {
           // Silently continue to normal order flow if check fails
-
         }
       }
     } catch (_error) {
@@ -367,12 +371,10 @@ export function useOrderSession(orderParams: OrderParams) {
         const timeSinceLastCheck = now - lastCheckTimeRef.current;
 
         if (isCheckingRef.current) {
-
           return;
         }
 
         if (timeSinceLastCheck < COOLDOWN_MS) {
-
           return;
         }
 
@@ -386,7 +388,6 @@ export function useOrderSession(orderParams: OrderParams) {
         );
 
         if (!response.ok) {
-
           isCheckingRef.current = false;
           return;
         }

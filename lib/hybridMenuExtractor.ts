@@ -56,7 +56,6 @@ export async function extractMenuHybrid(
 
   // Validation
   if (!pdfImages && !websiteUrl) {
-
     throw new Error("At least one source (PDF or URL) is required");
   }
 
@@ -100,16 +99,12 @@ export async function extractMenuHybrid(
         extractFromPDF(pdfImages),
         extractMenuFromWebsite(websiteUrl),
       ]);
-
     } catch (parallelError) {
-
       // Fallback: If parallel fails, try PDF only
       try {
         pdfData = await extractFromPDF(pdfImages);
         webItems = [];
-
       } catch (pdfError) {
-
         throw pdfError;
       }
     }
@@ -607,7 +602,6 @@ export function deduplicateMergedItems(items: MenuItem[]): {
   duplicatesRemoved: number;
   duplicatePairs: Array<{ kept: string; removed: string; reason: string }>;
 } {
-
   const kept: MenuItem[] = [];
   const duplicatePairs: Array<{ kept: string; removed: string; reason: string }> = [];
   let duplicatesRemoved = 0;
@@ -630,7 +624,9 @@ export function deduplicateMergedItems(items: MenuItem[]): {
         });
 
         // Log first few duplicates
-        if (duplicatesRemoved <= 5) { /* Condition handled */ }
+        if (duplicatesRemoved <= 5) {
+          /* Condition handled */
+        }
         break;
       }
     }
@@ -640,7 +636,9 @@ export function deduplicateMergedItems(items: MenuItem[]): {
     }
   }
 
-  if (duplicatesRemoved > 5) { /* Condition handled */ }
+  if (duplicatesRemoved > 5) {
+    /* Condition handled */
+  }
 
   return {
     deduplicated: kept,
@@ -695,7 +693,6 @@ function findBestMatchForDedupe(
  * - Add web-only items that PDF missed
  */
 async function mergeWebAndPdfData(pdfItems: MenuItem[], webItems: MenuItem[]): Promise<MenuItem[]> {
-
   let matchedCount = 0;
   let imagesAddedCount = 0;
   let descriptionsEnhancedCount = 0;
@@ -710,7 +707,6 @@ async function mergeWebAndPdfData(pdfItems: MenuItem[], webItems: MenuItem[]): P
     const aiMatcherModule = await import("./aiMatcher");
     batchMatchItemsWithAI = aiMatcherModule.batchMatchItemsWithAI;
   } catch (importError) {
-
     throw importError; // Re-throw to fail fast
   }
 
@@ -738,7 +734,9 @@ async function mergeWebAndPdfData(pdfItems: MenuItem[], webItems: MenuItem[]): P
       if (updatedPrice) pricesUpdatedCount++;
 
       // Reduced logging - only progress updates every 25 items for speed
-      if (matchedCount === 1 || matchedCount % 25 === 0) { /* Condition handled */ }
+      if (matchedCount === 1 || matchedCount % 25 === 0) {
+        /* Condition handled */
+      }
 
       return {
         ...pdfItem,
@@ -784,7 +782,9 @@ async function mergeWebAndPdfData(pdfItems: MenuItem[], webItems: MenuItem[]): P
   });
 
   // Log sample of unmatched PDF items for debugging
-  if (unmatchedPdfItems.length > 0) { /* Condition handled */ }
+  if (unmatchedPdfItems.length > 0) {
+    /* Condition handled */
+  }
 
   if (Object.keys(matchReasons).length > 0) {
     // Match reasons logged successfully
@@ -794,7 +794,6 @@ async function mergeWebAndPdfData(pdfItems: MenuItem[], webItems: MenuItem[]): P
   // NO MORE 40-ITEM LIMIT! Process ALL unmatched items in batches
 
   if (unmatchedPdfItems.length > 0) {
-
     let aiMatchedCount = 0;
 
     // Get unmatched URL items
@@ -856,22 +855,21 @@ async function mergeWebAndPdfData(pdfItems: MenuItem[], webItems: MenuItem[]): P
                 if (aiMatch.item.image_url) imagesAddedCount++;
 
                 // Reduced logging - only log every 5th AI match for speed
-                if (aiMatchedCount % 5 === 1) { /* Condition handled */ }
+                if (aiMatchedCount % 5 === 1) {
+                  /* Condition handled */
+                }
               }
             }
           });
         }
-
       }
 
       if (aiMatchedCount > 0) {
-
         matchedCount += aiMatchedCount;
       } else {
         // Block handled
       }
     } catch (aiFallbackError) {
-
       // Continue without AI matching - not critical
     }
   } else {
@@ -951,7 +949,6 @@ async function mergeWebAndPdfData(pdfItems: MenuItem[], webItems: MenuItem[]): P
 
   // PARALLEL AI CATEGORIZATION - Process 10 items at once for 10x speed improvement
   if (itemsNeedingCategorization.length > 0) {
-
     const BATCH_SIZE = 10;
     const batches = chunkArray(itemsNeedingCategorization, BATCH_SIZE);
 
@@ -996,14 +993,14 @@ async function mergeWebAndPdfData(pdfItems: MenuItem[], webItems: MenuItem[]): P
     }
   }
 
-  if (aiCategorizedCount > 0) { /* Condition handled */ }
+  if (aiCategorizedCount > 0) {
+    /* Condition handled */
+  }
 
   // Log sample of unmatched URL items for debugging
   if (unmatchedUrlItems.length > 0) {
-
     // Count how many unmatched URL items had images
     const unmatchedWithImages = unmatchedUrlItems.filter((i) => i.image_url).length;
-
   }
 
   // Image flow analysis
@@ -1019,10 +1016,11 @@ async function mergeWebAndPdfData(pdfItems: MenuItem[], webItems: MenuItem[]): P
   // FINAL DEDUPLICATION PASS
   const dedupeResult = deduplicateMergedItems(merged);
 
-  if (dedupeResult.duplicatesRemoved > 0) { /* Condition handled */ } else {
+  if (dedupeResult.duplicatesRemoved > 0) {
+    /* Condition handled */
+  } else {
     // Block handled
   }
 
   return dedupeResult.deduplicated;
 }
-

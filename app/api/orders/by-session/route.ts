@@ -80,7 +80,6 @@ export async function GET(req: Request) {
     }
 
     if (orderError) {
-
       return NextResponse.json(
         {
           error: "Order not found for this session ID",
@@ -111,7 +110,6 @@ export async function GET(req: Request) {
       order: transformedOrder,
     });
   } catch (_error) {
-
     return NextResponse.json(
       {
         error: "Internal server error",

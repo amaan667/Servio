@@ -151,7 +151,6 @@ RESPOND WITH ONLY:
     await AICache.categorization.set(itemName, pdfCategories, categoryResult);
     return categoryResult;
   } catch (error) {
-
     // Fallback to most common PDF category (don't cache failures)
     return {
       category: pdfCategories[0] || "Menu Items",

@@ -34,10 +34,14 @@ class PerformanceTracker {
         this.metrics.delete(id);
 
         // Log slow operations (> 1 second)
-        if (duration > 1000) { /* Condition handled */ }
+        if (duration > 1000) {
+          /* Condition handled */
+        }
 
         // Log in development for all operations
-        if (process.env.NODE_ENV === "development") { /* Condition handled */ }
+        if (process.env.NODE_ENV === "development") {
+          /* Condition handled */
+        }
       },
     };
   }

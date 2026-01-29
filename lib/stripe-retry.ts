@@ -78,7 +78,6 @@ class CircuitBreaker {
 
     if (this.state.failureCount >= this.failureThreshold) {
       this.state.state = "open";
-
     }
   }
 
@@ -169,7 +168,9 @@ export async function withStripeRetry<T>(
       // Record success in circuit breaker
       circuitBreaker.recordSuccess();
 
-      if (attempt > 0) { /* Condition handled */ }
+      if (attempt > 0) {
+        /* Condition handled */
+      }
 
       return result;
     } catch (error) {
@@ -216,5 +217,4 @@ export function getCircuitBreakerState(): {
  */
 export function resetCircuitBreaker(): void {
   circuitBreaker.recordSuccess();
-
 }

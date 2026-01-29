@@ -27,7 +27,6 @@ export async function GET(_req: Request, context: SessionParams = {}) {
       data: null,
     });
   } catch (_error) {
-
     return NextResponse.json(
       {
         success: false,

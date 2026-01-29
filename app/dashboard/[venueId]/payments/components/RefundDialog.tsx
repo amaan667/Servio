@@ -1,12 +1,24 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Undo2 } from "lucide-react";
 import { supabaseBrowser as createClient } from "@/lib/supabase";
 import { useToast } from "@/hooks/use-toast";
@@ -137,7 +149,8 @@ export function RefundDialog({ onRefundProcessed }: RefundDialogProps) {
     } catch (error) {
       toast({
         title: "Refund Failed",
-        description: error instanceof Error ? error.message : "Failed to process refund. Please try again.",
+        description:
+          error instanceof Error ? error.message : "Failed to process refund. Please try again.",
         variant: "destructive",
       });
     } finally {
@@ -193,7 +206,8 @@ export function RefundDialog({ onRefundProcessed }: RefundDialogProps) {
                           {order.customer_name && ` - ${order.customer_name}`}
                         </p>
                         <p className="text-sm text-muted-foreground">
-                          £{(order.total_amount || 0).toFixed(2)} • {new Date(order.created_at).toLocaleDateString()}
+                          £{(order.total_amount || 0).toFixed(2)} •{" "}
+                          {new Date(order.created_at).toLocaleDateString()}
                         </p>
                       </div>
                     </div>

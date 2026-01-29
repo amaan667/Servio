@@ -18,7 +18,6 @@ export async function signInWithGoogle() {
   // Test Supabase connection before OAuth
   try {
     const { data: testData, error: testError } = await sb.auth.getSession();
-
   } catch (e) {
     // Error handled
   }

@@ -102,7 +102,6 @@ export function withProductionFeatures<T = unknown>(
       // Call the handler with context
       return await handler(req, userId ? { userId, venueId } : undefined);
     } catch (error) {
-
       return NextResponse.json(
         { error: "Internal server error", message: "An unexpected error occurred" },
         { status: 500 }

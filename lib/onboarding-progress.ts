@@ -17,7 +17,6 @@ export async function saveOnboardingProgress(
     });
   } catch (_error) {
     // Silently fail - progress tracking is not critical
-
   }
 }
 

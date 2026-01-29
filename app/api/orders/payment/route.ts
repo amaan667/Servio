@@ -19,7 +19,7 @@ import { getRequestMetadata } from "@/lib/api/request-helpers";
 export async function POST(req: NextRequest) {
   const requestMetadata = getRequestMetadata(req);
   const requestId = requestMetadata.correlationId;
-  
+
   try {
     const body = await req.json();
     const { orderId, venue_id, payment_method, payment_status } = body;
@@ -43,7 +43,6 @@ export async function POST(req: NextRequest) {
       .single();
 
     if (checkError || !orderCheck) {
-
       return apiErrors.notFound("Order not found", requestId);
     }
 
@@ -110,7 +109,6 @@ export async function POST(req: NextRequest) {
       .single();
 
     if (updateError) {
-
       // Provide more specific error message
       if (updateError.code === "PGRST116") {
         return apiErrors.notFound("Order not found or access denied", requestId);
@@ -131,7 +129,6 @@ export async function POST(req: NextRequest) {
     }
 
     if (!updatedOrder) {
-
       return apiErrors.internal(
         "Payment update succeeded but order data not returned",
         undefined,

@@ -37,11 +37,7 @@ export default function CustomerOrderPage() {
   const orderLocation = isCounterOrder ? counterNumber : tableNumber;
 
   // Determine order type: counter, table, or table_pickup
-  const orderType = isCounterOrder
-    ? "counter"
-    : requiresCollection
-      ? "table_pickup"
-      : "table";
+  const orderType = isCounterOrder ? "counter" : requiresCollection ? "table_pickup" : "table";
 
   // Log QR code scan to Railway server logs
   useEffect(() => {

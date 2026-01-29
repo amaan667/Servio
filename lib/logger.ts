@@ -4,7 +4,9 @@
  */
 
 // No-op function that accepts any arguments
-const noop = (..._args: unknown[]) => { /* Intentionally empty */ };
+const noop = (..._args: unknown[]) => {
+  /* Intentionally empty */
+};
 
 export const logger = {
   debug: noop,

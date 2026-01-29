@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useEffect } from "react";
 import { supabaseBrowser as createClient } from "@/lib/supabase";
+import { normalizeVenueId } from "@/lib/utils/venueId";
 import { toast } from "@/hooks/use-toast";
 import { getCachedQueryData, setCachedQueryData } from "@/lib/persistent-cache";
 
@@ -660,16 +661,16 @@ export function useDeleteTable(venueId: string) {
       try {
         const { supabaseBrowser } = await import("@/lib/supabase");
         const supabase = supabaseBrowser();
-        const normalizedVenueId = venueId.startsWith("venue-") ? venueId : `venue-${venueId}`;
-        
+        const normalizedVenueId = normalizeVenueId(venueId) ?? venueId;
+
         const { data: activeTables } = await supabase
           .from("tables")
           .select("id, is_active")
           .eq("venue_id", normalizedVenueId)
           .eq("is_active", true);
-        
+
         const count = activeTables?.length || 0;
-        
+
         // Dispatch custom event for instant dashboard update
         if (typeof window !== "undefined") {
           window.dispatchEvent(
@@ -682,13 +683,10 @@ export function useDeleteTable(venueId: string) {
         // If fetch fails, still dispatch event with optimistic count (current - 1)
         // The realtime subscription will correct it shortly
         if (typeof window !== "undefined") {
-          const currentTables = queryClient.getQueryData<TableGridItem[]>([
-            "tables",
-            "grid",
-            venueId,
-          ]) || [];
+          const currentTables =
+            queryClient.getQueryData<TableGridItem[]>(["tables", "grid", venueId]) || [];
           const optimisticCount = Math.max(0, (currentTables?.length || 1) - 1);
-          const normalizedVenueId = venueId.startsWith("venue-") ? venueId : `venue-${venueId}`;
+          const normalizedVenueId = normalizeVenueId(venueId) ?? venueId;
           window.dispatchEvent(
             new CustomEvent("tablesChanged", {
               detail: { venueId: normalizedVenueId, count: optimisticCount },
@@ -696,7 +694,7 @@ export function useDeleteTable(venueId: string) {
           );
         }
       }
-      
+
       toast({
         title: "Table deleted",
         description: "The table has been removed successfully",

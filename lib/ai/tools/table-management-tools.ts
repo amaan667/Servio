@@ -67,7 +67,6 @@ export async function getTableAvailability(venueId: string): Promise<TableAvaila
     .order("label", { ascending: true });
 
   if (tablesError) {
-
     throw new Error(`Failed to fetch tables: ${tablesError.message}`);
   }
 
@@ -162,7 +161,6 @@ export async function createTable(
     .single();
 
   if (createError) {
-
     throw new Error(`Failed to create table: ${createError.message}`);
   }
 
@@ -207,7 +205,6 @@ export async function mergeTables(
   const allAvailable = tables.every((t) => t.status === "available");
   if (!allAvailable) {
     // For occupied tables, we need to merge the sessions
-
   }
 
   const tableLabels = tables.map((t) => t.label);
@@ -280,7 +277,6 @@ export async function getTablesWithActiveOrders(venueId: string): Promise<Tables
     .order("created_at", { ascending: true });
 
   if (error) {
-
     throw new Error(`Failed to fetch orders: ${error.message}`);
   }
 

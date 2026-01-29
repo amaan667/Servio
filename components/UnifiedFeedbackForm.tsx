@@ -9,6 +9,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import type { FeedbackQuestion, FeedbackAnswer } from "@/types/feedback";
+import { normalizeVenueId } from "@/lib/utils/venueId";
 
 interface UnifiedFeedbackFormProps {
   venueId: string;
@@ -103,8 +104,7 @@ export default function UnifiedFeedbackForm({
   const fetchQuestions = useCallback(async () => {
     try {
       setLoading(true);
-      // Normalize venueId - ensure it has venue- prefix
-      const normalizedVenueId = venueId.startsWith("venue-") ? venueId : `venue-${venueId}`;
+      const normalizedVenueId = normalizeVenueId(venueId) ?? venueId;
       const response = await fetch(`/api/feedback/questions/public?venueId=${normalizedVenueId}`);
 
       if (response.ok) {

@@ -71,7 +71,6 @@ export async function GET(
       .order("created_at", { ascending: true });
 
     if (error) {
-
       return apiErrors.internal("Failed to fetch orders");
     }
 
@@ -93,7 +92,6 @@ export async function GET(
       byPaymentMode: ordersByMode,
     });
   } catch (_error) {
-
     return apiErrors.internal("Internal server error");
   }
 }

@@ -68,7 +68,6 @@ export function useDesignSettings(venueId: string) {
         ...data,
       });
     } catch (_err) {
-
       setError("Failed to load design settings");
     } finally {
       setLoading(false);
@@ -98,7 +97,6 @@ export function useDesignSettings(venueId: string) {
         setSettings((prev) => ({ ...prev, ...updates }));
         return { success: true };
       } catch (_err) {
-
         setError("Failed to save design settings");
         return { success: false, error: _err };
       } finally {

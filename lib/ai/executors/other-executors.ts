@@ -122,7 +122,8 @@ export async function executeNavigationGoToPage(
   _userId: string,
   _preview: boolean
 ): Promise<AIPreviewDiff | AIExecutionResult> {
-  const { page, itemId, itemName, action, table, counter, bulkPrefix, bulkCount, bulkType } = params;
+  const { page, itemId, itemName, action, table, counter, bulkPrefix, bulkCount, bulkType } =
+    params;
 
   const routeMap: Record<string, string> = {
     dashboard: `/dashboard/${venueId}`,
@@ -150,7 +151,7 @@ export async function executeNavigationGoToPage(
   // Handle QR code navigation with query params
   if (page === "qr" || page === "qr-codes") {
     const queryParams = new URLSearchParams();
-    
+
     // Single QR code generation
     if (table) {
       queryParams.set("table", encodeURIComponent(table));
@@ -158,14 +159,14 @@ export async function executeNavigationGoToPage(
     if (counter) {
       queryParams.set("counter", encodeURIComponent(counter));
     }
-    
+
     // Bulk QR code generation
     if (bulkPrefix && bulkCount && bulkType) {
       queryParams.set("bulkPrefix", encodeURIComponent(bulkPrefix));
       queryParams.set("bulkCount", bulkCount.toString());
       queryParams.set("bulkType", bulkType);
     }
-    
+
     if (queryParams.toString()) {
       targetRoute = `${targetRoute}?${queryParams.toString()}`;
     }

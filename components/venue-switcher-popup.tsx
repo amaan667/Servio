@@ -154,7 +154,7 @@ export default function VenueSwitcherPopup({
 
       // Get organization_id - try current venue first, then user's organization
       let organizationId: string | null = null;
-      
+
       const { data: currentVenue } = await supabase
         .from("venues")
         .select("organization_id")
@@ -170,7 +170,7 @@ export default function VenueSwitcherPopup({
           .select("id")
           .eq("owner_user_id", user.id)
           .maybeSingle();
-        
+
         if (userOrg?.id) {
           organizationId = userOrg.id;
         }

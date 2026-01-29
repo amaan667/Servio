@@ -16,4 +16,3 @@ export function reorderList<T>(items: T[], fromIndex: number, toIndex: number): 
   next.splice(toIndex, 0, removed);
   return next;
 }
-

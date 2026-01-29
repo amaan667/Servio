@@ -77,7 +77,7 @@ export class InventoryService extends BaseService {
       p_ingredient_id: ingredientId,
       p_amount: amount,
       p_reason: reason,
-      p_user_id: userId
+      p_user_id: userId,
     });
 
     if (error) throw error;

@@ -55,7 +55,6 @@ export function OrderCard({
 
   const isTableVariant = finalVariant === "table";
 
-
   // Helper function to check ticket status (used by real-time subscriptions and polling)
   const triggerTicketCheck = React.useCallback(async () => {
     if (!venueId || !order.id) return;
@@ -78,7 +77,6 @@ export function OrderCard({
 
           setAllTicketsBumped(allBumped);
         } else {
-
           // If API fails, default to false (not ready) to prevent premature "Mark Served"
           setAllTicketsBumped(false);
         }
@@ -96,7 +94,6 @@ export function OrderCard({
         setAllTicketsBumped(false);
       }
     } catch (error) {
-
       // Silently fail - default to false (not ready) to prevent premature "Mark Served"
       setAllTicketsBumped(false);
     } finally {

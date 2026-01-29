@@ -1,4 +1,3 @@
-
 import { useCallback, useEffect, useRef, useState } from "react";
 
 interface GestureState {
@@ -310,7 +309,9 @@ export function usePullToRefresh(onRefresh: () => Promise<void>) {
     setIsRefreshing(true);
     try {
       await onRefresh();
-    } catch (_error) { /* Error handled silently */ } finally {
+    } catch (_error) {
+      /* Error handled silently */
+    } finally {
       setIsRefreshing(false);
     }
   }, [onRefresh, isRefreshing]);

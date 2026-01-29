@@ -76,106 +76,106 @@ export const POST = createUnifiedHandler(
     // Business logic
     const supabase = createAdminClient();
 
-      // Get invitation details
-      const { data: invitationData, error: fetchError } = await supabase.rpc(
-        "get_invitation_by_token",
-        { p_token: token }
-      );
+    // Get invitation details
+    const { data: invitationData, error: fetchError } = await supabase.rpc(
+      "get_invitation_by_token",
+      { p_token: token }
+    );
 
-      if (fetchError) {
-        return apiErrors.database("Failed to fetch invitation");
+    if (fetchError) {
+      return apiErrors.database("Failed to fetch invitation");
+    }
+
+    if (!invitationData || invitationData.length === 0) {
+      return apiErrors.notFound("Invitation not found or expired");
+    }
+
+    const invitation = invitationData[0];
+
+    // Check if invitation is expired
+    if (new Date(invitation.expires_at) < new Date()) {
+      return apiErrors.badRequest("Invitation has expired", { status: 410 });
+    }
+
+    // Check if invitation is already accepted
+    if (invitation.status !== "pending") {
+      return apiErrors.badRequest("Invitation is no longer valid", { status: 410 });
+    }
+
+    // Try to create new user account
+    const adminClient = createAdminClient();
+    const { data: newUser, error: signUpError } = await adminClient.auth.admin.createUser({
+      email: invitation.email,
+      password: body.password,
+      user_metadata: {
+        full_name: body.full_name,
+        invited_by: invitation.invited_by_name,
+      },
+      email_confirm: true, // Auto-confirm since they're invited
+    });
+
+    if (signUpError) {
+      // Check if the error is because user already exists
+      if (
+        signUpError.message?.includes("already registered") ||
+        signUpError.message?.includes("already exists")
+      ) {
+        return apiErrors.conflict(
+          "An account with this email already exists. Please sign in to your existing account and contact the person who invited you to resend the invitation."
+        );
       }
 
-      if (!invitationData || invitationData.length === 0) {
-        return apiErrors.notFound("Invitation not found or expired");
+      // Check for specific Supabase errors
+      if (signUpError.message?.includes("User not allowed")) {
+        return apiErrors.forbidden(
+          "Account creation is not allowed. Please contact the venue owner for assistance."
+        );
       }
 
-      const invitation = invitationData[0];
+      return apiErrors.internal("Failed to create account");
+    }
 
-      // Check if invitation is expired
-      if (new Date(invitation.expires_at) < new Date()) {
-        return apiErrors.badRequest("Invitation has expired", { status: 410 });
-      }
+    if (!newUser?.user) {
+      return apiErrors.internal("User creation failed - no user returned");
+    }
 
-      // Check if invitation is already accepted
-      if (invitation.status !== "pending") {
-        return apiErrors.badRequest("Invitation is no longer valid", { status: 410 });
-      }
+    const userId = newUser.user.id;
 
-      // Try to create new user account
-      const adminClient = createAdminClient();
-      const { data: newUser, error: signUpError } = await adminClient.auth.admin.createUser({
-        email: invitation.email,
-        password: body.password,
-        user_metadata: {
-          full_name: body.full_name,
-          invited_by: invitation.invited_by_name,
-        },
-        email_confirm: true, // Auto-confirm since they're invited
-      });
+    // Accept the invitation using the database function
+    const { data: acceptResult, error: acceptError } = await supabase.rpc("accept_invitation", {
+      p_token: token,
+      p_user_id: userId,
+    });
 
-      if (signUpError) {
-        // Check if the error is because user already exists
-        if (
-          signUpError.message?.includes("already registered") ||
-          signUpError.message?.includes("already exists")
-        ) {
-          return apiErrors.conflict(
-            "An account with this email already exists. Please sign in to your existing account and contact the person who invited you to resend the invitation."
-          );
-        }
+    if (acceptError) {
+      return apiErrors.database("Failed to accept invitation");
+    }
 
-        // Check for specific Supabase errors
-        if (signUpError.message?.includes("User not allowed")) {
-          return apiErrors.forbidden(
-            "Account creation is not allowed. Please contact the venue owner for assistance."
-          );
-        }
+    if (!acceptResult) {
+      return apiErrors.internal("Invitation acceptance returned no result");
+    }
 
-        return apiErrors.internal("Failed to create account");
-      }
-
-      if (!newUser?.user) {
-        return apiErrors.internal("User creation failed - no user returned");
-      }
-
-      const userId = newUser.user.id;
-
-      // Accept the invitation using the database function
-      const { data: acceptResult, error: acceptError } = await supabase.rpc("accept_invitation", {
-        p_token: token,
-        p_user_id: userId,
-      });
-
-      if (acceptError) {
-        return apiErrors.database("Failed to accept invitation");
-      }
-
-      if (!acceptResult) {
-        return apiErrors.internal("Invitation acceptance returned no result");
-      }
-
-      // Get the updated invitation details
-      const { data: updatedInvitation, error: updateError } = await supabase
-        .from("staff_invitations")
-        .select(
-          `
+    // Get the updated invitation details
+    const { data: updatedInvitation, error: updateError } = await supabase
+      .from("staff_invitations")
+      .select(
+        `
           *,
           venues!inner(venue_name),
           organizations(name)
         `
-        )
-        .eq("token", token)
-        .single();
+      )
+      .eq("token", token)
+      .single();
 
-      if (updateError) {
-        // Continue anyway - invitation was accepted
-      }
+    if (updateError) {
+      // Continue anyway - invitation was accepted
+    }
 
-      return success({
-        message: "Invitation accepted successfully",
-        invitation: updatedInvitation,
-      });
+    return success({
+      message: "Invitation accepted successfully",
+      invitation: updatedInvitation,
+    });
   },
   {
     schema: acceptInvitationSchema,

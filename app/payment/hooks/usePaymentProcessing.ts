@@ -1,13 +1,8 @@
-
 import { toast } from "@/hooks/use-toast";
 import { PaymentAction } from "./usePaymentState";
 import { CheckoutData } from "@/types/payment";
 import { queueOrder, queueStatusUpdate } from "@/lib/offline-queue";
-import {
-  getScopedCartKey,
-  safeRemoveItem,
-  safeSetItem,
-} from "@/app/order/utils/safeStorage";
+import { getScopedCartKey, safeRemoveItem, safeSetItem } from "@/app/order/utils/safeStorage";
 
 // Helper function to log to server (appears in Railway logs)
 // Uses fetch with fire-and-forget to not block the payment flow
@@ -42,7 +37,6 @@ export function usePaymentProcessing() {
     setIsProcessing: (processing: boolean) => void,
     setError: (error: string | null) => void
   ) => {
-
     // Log to server (appears in Railway) - fire and forget
     logToServer("info", "PAYMENT_METHOD_SELECTED", {
       action,
@@ -60,7 +54,6 @@ export function usePaymentProcessing() {
     try {
       // Helper function to create order in database (with offline support)
       const createOrder = async () => {
-
         // Build order payload that exactly matches database schema
         interface OrderItemPayload {
           menu_item_id: string | null;
@@ -92,8 +85,7 @@ export function usePaymentProcessing() {
         }
 
         // Determine fulfillment_type and counter_label from checkoutData
-        const fulfillmentType =
-          checkoutData.source === "counter" ? "counter" : "table";
+        const fulfillmentType = checkoutData.source === "counter" ? "counter" : "table";
         const counterLabel =
           fulfillmentType === "counter"
             ? (checkoutData as { counterLabel?: string }).counterLabel ||
@@ -180,7 +172,6 @@ export function usePaymentProcessing() {
 
         // Check if offline - queue order if offline
         if (!navigator.onLine) {
-
           const queueId = await queueOrder(orderData, "/api/orders");
           toast({
             title: "Order Queued",
@@ -243,7 +234,6 @@ export function usePaymentProcessing() {
           // Silently handle - error logging failed
         });
 
-
         const createOrderResponse = await fetch("/api/orders", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -254,7 +244,7 @@ export function usePaymentProcessing() {
           // If network error, queue the order
           if (!navigator.onLine || createOrderResponse.status === 0) {
             const queueId = await queueOrder(orderData, "/api/orders");
-            
+
             toast({
               title: "Order Queued",
               description:
@@ -302,7 +292,6 @@ export function usePaymentProcessing() {
 
                 // Log validation errors in detail - SEND TO SERVER FOR RAILWAY LOGS
                 if (errorData.details && Array.isArray(errorData.details)) {
-
                   // Send to server for Railway logs
                   fetch("/api/log-payment-flow", {
                     method: "POST",
@@ -329,7 +318,6 @@ export function usePaymentProcessing() {
               }
             }
           } catch (textError) {
-
             // Keep default error message
           }
 
@@ -409,7 +397,9 @@ export function usePaymentProcessing() {
 
         const raw = await createOrderResponse.json();
         // Unified API returns { success, data: { order, ... } }; support both shapes
-        const order = (raw.data?.order ?? raw.order) as { id?: string; order_number?: string; order_status?: string; payment_status?: string } | undefined;
+        const order = (raw.data?.order ?? raw.order) as
+          | { id?: string; order_number?: string; order_status?: string; payment_status?: string }
+          | undefined;
 
         logToServer("info", "ORDER_CREATION_SUCCESS", {
           orderId: order?.id,
@@ -419,13 +409,19 @@ export function usePaymentProcessing() {
           action,
         });
 
-        return { order } as { order: { id: string; order_number?: string; order_status?: string; payment_status?: string } };
+        return { order } as {
+          order: {
+            id: string;
+            order_number?: string;
+            order_status?: string;
+            payment_status?: string;
+          };
+        };
       };
 
       // Process payment based on selected method
 
       if (action === "demo") {
-
         // Create order immediately for demo
         const orderResult = await createOrder();
         const orderId = orderResult.order?.id;
@@ -540,7 +536,6 @@ export function usePaymentProcessing() {
             window.location.href = checkoutUrl;
             return; // No order yet; order is created on payment success page via create-from-checkout-session
           } else {
-
             throw new Error("No Stripe checkout URL returned from server");
           }
         } catch (fetchError) {
@@ -555,7 +550,6 @@ export function usePaymentProcessing() {
           }
         }
       } else if (action === "till") {
-
         let orderId: string;
 
         // If orderId exists in checkoutData, update existing order instead of creating new one
@@ -598,7 +592,6 @@ export function usePaymentProcessing() {
         window.location.href = `/order-summary?orderId=${orderId}`;
         return;
       } else if (action === "later") {
-
         let orderId: string;
 
         // If orderId exists in checkoutData, update existing order instead of creating new one
@@ -655,9 +648,7 @@ export function usePaymentProcessing() {
         window.location.href = `/order-summary?orderId=${orderId}`;
         return;
       }
-
     } catch (_err) {
-
       // Properly extract error message to prevent "[object Object]"
       let errorMessage = "Payment failed. Please try again.";
 
@@ -705,7 +696,6 @@ export function usePaymentProcessing() {
         }
       } catch (extractionError) {
         // If error extraction itself fails, use default message
-
       }
 
       // Ensure we never show "[object Object]" - final check
@@ -744,7 +734,6 @@ export function usePaymentProcessing() {
         variant: "destructive",
       });
     } finally {
-
       setIsProcessing(false);
     }
   };

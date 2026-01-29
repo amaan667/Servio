@@ -1,4 +1,3 @@
-
 // Session management utilities for QR rescan and order resume functionality
 
 export interface SessionData {
@@ -79,7 +78,9 @@ export function getSessionData(sessionId: string): SessionData | null {
     if (stored) {
       try {
         return JSON.parse(stored);
-      } catch (_error) { /* Error handled silently */ }
+      } catch (_error) {
+        /* Error handled silently */
+      }
     }
   }
   return null;
@@ -125,7 +126,6 @@ export async function checkForOpenOrder(sessionId: string): Promise<unknown | nu
 
     return null;
   } catch (_error) {
-
     return null;
   }
 }

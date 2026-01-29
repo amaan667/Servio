@@ -36,7 +36,6 @@ export const GET = withUnifiedAuth(
         .maybeSingle();
 
       if (error && error.code !== "PGRST116") {
-
         return apiErrors.database(
           "Failed to fetch progress",
           isDevelopment() ? error.message : undefined
@@ -53,7 +52,6 @@ export const GET = withUnifiedAuth(
         },
       });
     } catch (error) {
-
       if (isZodError(error)) {
         return handleZodError(error);
       }
@@ -93,7 +91,6 @@ export const POST = withUnifiedAuth(
       });
 
       if (error) {
-
         return apiErrors.database(
           "Failed to save progress",
           isDevelopment() ? error.message : undefined
@@ -103,7 +100,6 @@ export const POST = withUnifiedAuth(
       // STEP 5: Return success response
       return success({ success: true });
     } catch (error) {
-
       if (isZodError(error)) {
         return handleZodError(error);
       }

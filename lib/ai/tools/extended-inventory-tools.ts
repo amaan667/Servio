@@ -46,7 +46,6 @@ export async function adjustInventoryStock(
     .maybeSingle();
 
   if (fetchError) {
-
     throw new Error(`Failed to fetch ingredient: ${fetchError.message}`);
   }
 
@@ -76,7 +75,6 @@ export async function adjustInventoryStock(
   });
 
   if (ledgerError) {
-
     throw new Error(`Failed to adjust stock: ${ledgerError.message}`);
   }
 
@@ -104,7 +102,6 @@ export async function getLowStockItems(venueId: string): Promise<LowStockResult>
     .order("on_hand", { ascending: true });
 
   if (error) {
-
     throw new Error(`Failed to fetch inventory: ${error.message}`);
   }
 

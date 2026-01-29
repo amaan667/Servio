@@ -41,7 +41,6 @@ export function useMenuItems(venueId: string) {
 
       setMenuItems(data || []);
     } catch (_err) {
-
       setError("Failed to load menu items");
     } finally {
       setLoading(false);
@@ -68,7 +67,6 @@ export function useMenuItems(venueId: string) {
       setMenuItems((prev) => [...prev, data]);
       return { success: true, data };
     } catch (_err) {
-
       return { success: false, error: _err };
     }
   }, []);
@@ -88,7 +86,6 @@ export function useMenuItems(venueId: string) {
       setMenuItems((prev) => prev.map((item) => (item.id === id ? data : item)));
       return { success: true, data };
     } catch (_err) {
-
       return { success: false, error: _err };
     }
   }, []);
@@ -103,7 +100,6 @@ export function useMenuItems(venueId: string) {
       setMenuItems((prev) => prev.filter((item) => item.id !== id));
       return { success: true };
     } catch (_err) {
-
       return { success: false, error: _err };
     }
   }, []);
@@ -141,7 +137,6 @@ export function useMenuItems(venueId: string) {
       setMenuItems(items);
       return { success: true };
     } catch (_err) {
-
       return { success: false, error: _err };
     }
   }, []);

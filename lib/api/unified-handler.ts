@@ -1,6 +1,6 @@
 /**
  * Unified API Handler
- * 
+ *
  * This is the SINGLE SOURCE OF TRUTH for all API route handlers.
  * It combines the best features from all previous handler implementations:
  * - Production-grade error handling and logging
@@ -10,7 +10,7 @@
  * - APM monitoring
  * - Performance tracking
  * - Request/response standardization
- * 
+ *
  * Migration: All routes should use this handler going forward.
  * Existing routes using withUnifiedAuth will continue to work, but new routes
  * should use createUnifiedHandler for consistency.
@@ -18,18 +18,14 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { ZodSchema, ZodError } from "zod";
-import { 
-  apiErrors, 
-  success, 
-  handleZodError, 
-  ApiResponse 
-} from "./standard-response";
-import { 
-  getAuthUserFromRequest, 
-  verifyVenueAccess, 
+import { apiErrors, success, handleZodError, ApiResponse } from "./standard-response";
+import { normalizeVenueId } from "@/lib/utils/venueId";
+import {
+  getAuthUserFromRequest,
+  verifyVenueAccess,
   AuthContext,
   hasRole,
-  isOwner
+  isOwner,
 } from "@/lib/auth/unified-auth";
 import { rateLimit, RATE_LIMITS, type RateLimitConfig } from "@/lib/rate-limit";
 import { checkIdempotency, storeIdempotency } from "@/lib/db/idempotency";
@@ -76,7 +72,7 @@ export type UnifiedHandlerFunction<TBody = unknown, TResponse = unknown> = (
 
 /**
  * Create a unified API handler with all production features
- * 
+ *
  * This is the recommended handler for all new API routes.
  * It provides:
  * - Rate limiting
@@ -98,9 +94,12 @@ export function createUnifiedHandler<TBody = unknown, TResponse = unknown>(
     const startTime = Date.now();
     const requestId = crypto.randomUUID();
     const perf = performanceTracker.start(`api:${req.nextUrl.pathname}`);
-    
+
     // Start APM transaction
-    const apmTransaction = startTransaction(`api.${req.method.toLowerCase()}.${req.nextUrl.pathname}`, "web");
+    const apmTransaction = startTransaction(
+      `api.${req.method.toLowerCase()}.${req.nextUrl.pathname}`,
+      "web"
+    );
     apmTransaction.setTag("request.id", requestId);
     apmTransaction.setTag("http.method", req.method);
     apmTransaction.setTag("http.url", req.nextUrl.pathname);
@@ -119,21 +118,23 @@ export function createUnifiedHandler<TBody = unknown, TResponse = unknown>(
           method: req.method,
           type: "rate_limit",
         });
-        return apiErrors.rateLimit(Math.ceil((rlResult.reset - Date.now()) / 1000), requestId) as unknown as NextResponse<ApiResponse<TResponse>>;
+        return apiErrors.rateLimit(
+          Math.ceil((rlResult.reset - Date.now()) / 1000),
+          requestId
+        ) as unknown as NextResponse<ApiResponse<TResponse>>;
       }
 
       // 2. Resolve Params
       let params: Record<string, string> = {};
       if (routeContext?.params) {
-        params = routeContext.params instanceof Promise 
-          ? await routeContext.params 
-          : routeContext.params;
+        params =
+          routeContext.params instanceof Promise ? await routeContext.params : routeContext.params;
       }
 
       // 3. Authentication
       let user: { id: string; email?: string } | null = null;
       let authError: string | null = null;
-      
+
       // eslint-disable-next-line no-console
       console.log("[UNIFIED-HANDLER] Auth check", {
         path: req.nextUrl.pathname,
@@ -147,20 +148,20 @@ export function createUnifiedHandler<TBody = unknown, TResponse = unknown>(
           venueId: req.headers.get("x-venue-id"),
         },
       });
-      
+
       if (options.requireAuth !== false) {
         try {
           const authResult = await getAuthUserFromRequest(req);
           user = authResult.user;
           authError = authResult.error;
-          
+
           // eslint-disable-next-line no-console
           console.log("[UNIFIED-HANDLER] Auth result", {
             hasUser: !!user,
             userId: user?.id,
             error: authError,
           });
-          
+
           if (!user || authError) {
             perf.end();
             // eslint-disable-next-line no-console
@@ -171,7 +172,10 @@ export function createUnifiedHandler<TBody = unknown, TResponse = unknown>(
               error: authError,
               type: "authentication",
             });
-            return apiErrors.unauthorized(authError || "Authentication required", requestId) as unknown as NextResponse<ApiResponse<TResponse>>;
+            return apiErrors.unauthorized(
+              authError || "Authentication required",
+              requestId
+            ) as unknown as NextResponse<ApiResponse<TResponse>>;
           }
         } catch (authErr) {
           perf.end();
@@ -182,13 +186,16 @@ export function createUnifiedHandler<TBody = unknown, TResponse = unknown>(
             error: authErr instanceof Error ? authErr.message : "Unknown error",
             type: "authentication",
           });
-          return apiErrors.unauthorized("Authentication check failed", requestId) as unknown as NextResponse<ApiResponse<TResponse>>;
+          return apiErrors.unauthorized(
+            "Authentication check failed",
+            requestId
+          ) as unknown as NextResponse<ApiResponse<TResponse>>;
         }
       }
 
       // 4. Extract Venue ID
       let venueId: string | null = null;
-      
+
       if (options.extractVenueId) {
         venueId = await options.extractVenueId(req.clone() as NextRequest, routeContext);
       } else if (options.requireVenueAccess) {
@@ -202,9 +209,8 @@ export function createUnifiedHandler<TBody = unknown, TResponse = unknown>(
         }
       }
 
-      // Normalize venueId - database and access_context always use "venue-" prefix
       if (venueId) {
-        venueId = venueId.startsWith("venue-") ? venueId : `venue-${venueId}`;
+        venueId = normalizeVenueId(venueId) ?? venueId;
       }
 
       // 5. Parse and Validate Body
@@ -217,7 +223,11 @@ export function createUnifiedHandler<TBody = unknown, TResponse = unknown>(
         } catch (e) {
           if (req.method !== "GET" && req.method !== "DELETE") {
             perf.end();
-            return apiErrors.badRequest("Invalid JSON body", undefined, requestId) as unknown as NextResponse<ApiResponse<TResponse>>;
+            return apiErrors.badRequest(
+              "Invalid JSON body",
+              undefined,
+              requestId
+            ) as unknown as NextResponse<ApiResponse<TResponse>>;
           }
         }
       }
@@ -225,10 +235,12 @@ export function createUnifiedHandler<TBody = unknown, TResponse = unknown>(
       if (!venueId && options.requireVenueAccess && body && typeof body === "object") {
         const bodyObj = body as Record<string, unknown>;
         const bodyVenueId =
-          (bodyObj.venueId as string | undefined) || (bodyObj.venue_id as string | undefined) || null;
+          (bodyObj.venueId as string | undefined) ||
+          (bodyObj.venue_id as string | undefined) ||
+          null;
 
         if (bodyVenueId) {
-          venueId = bodyVenueId.startsWith("venue-") ? bodyVenueId : `venue-${bodyVenueId}`;
+          venueId = normalizeVenueId(bodyVenueId) ?? bodyVenueId;
         }
       }
 
@@ -237,12 +249,19 @@ export function createUnifiedHandler<TBody = unknown, TResponse = unknown>(
       if (options.requireVenueAccess) {
         if (!venueId) {
           perf.end();
-          return apiErrors.badRequest("venueId is required for this route", undefined, requestId) as unknown as NextResponse<ApiResponse<TResponse>>;
+          return apiErrors.badRequest(
+            "venueId is required for this route",
+            undefined,
+            requestId
+          ) as unknown as NextResponse<ApiResponse<TResponse>>;
         }
 
         if (!user) {
           perf.end();
-          return apiErrors.unauthorized("Authentication required", requestId) as unknown as NextResponse<ApiResponse<TResponse>>;
+          return apiErrors.unauthorized(
+            "Authentication required",
+            requestId
+          ) as unknown as NextResponse<ApiResponse<TResponse>>;
         }
 
         // Check if tier/role headers are already set (from middleware for dashboard routes)
@@ -269,8 +288,12 @@ export function createUnifiedHandler<TBody = unknown, TResponse = unknown>(
 
           const { getAccessContext } = await import("@/lib/access/getAccessContext");
           const accessContext = await getAccessContext(venueId);
-          
-          if (!accessContext || accessContext.user_id !== user.id || accessContext.venue_id !== venueId) {
+
+          if (
+            !accessContext ||
+            accessContext.user_id !== user.id ||
+            accessContext.venue_id !== venueId
+          ) {
             perf.end();
             // eslint-disable-next-line no-console
             console.error("[UNIFIED-HANDLER] RPC returned invalid access context", {
@@ -280,7 +303,11 @@ export function createUnifiedHandler<TBody = unknown, TResponse = unknown>(
               contextVenueId: accessContext?.venue_id,
               requestedVenueId: venueId,
             });
-            return apiErrors.forbidden("Access denied to this venue", undefined, requestId) as unknown as NextResponse<ApiResponse<TResponse>>;
+            return apiErrors.forbidden(
+              "Access denied to this venue",
+              undefined,
+              requestId
+            ) as unknown as NextResponse<ApiResponse<TResponse>>;
           }
 
           tier = accessContext.tier;
@@ -302,7 +329,7 @@ export function createUnifiedHandler<TBody = unknown, TResponse = unknown>(
         });
 
         const access = await verifyVenueAccess(venueId, user.id);
-        
+
         // eslint-disable-next-line no-console
         console.log("[UNIFIED-HANDLER] Venue access result", {
           hasAccess: !!access,
@@ -311,7 +338,7 @@ export function createUnifiedHandler<TBody = unknown, TResponse = unknown>(
           tier: access?.tier,
           role: access?.role,
         });
-        
+
         if (!access) {
           perf.end();
           // eslint-disable-next-line no-console
@@ -321,13 +348,20 @@ export function createUnifiedHandler<TBody = unknown, TResponse = unknown>(
             userId: user.id,
             venueId,
           });
-          return apiErrors.forbidden("Access denied to this venue", undefined, requestId) as unknown as NextResponse<ApiResponse<TResponse>>;
+          return apiErrors.forbidden(
+            "Access denied to this venue",
+            undefined,
+            requestId
+          ) as unknown as NextResponse<ApiResponse<TResponse>>;
         }
 
         // Feature check
         if (options.requireFeature) {
           const { enforceFeatureAccess } = await import("@/lib/auth/unified-auth");
-          const featureCheck = await enforceFeatureAccess(access.venue.owner_user_id, options.requireFeature);
+          const featureCheck = await enforceFeatureAccess(
+            access.venue.owner_user_id,
+            options.requireFeature
+          );
           if (!featureCheck.allowed) {
             perf.end();
             return featureCheck.response as unknown as NextResponse<ApiResponse<TResponse>>;
@@ -338,8 +372,8 @@ export function createUnifiedHandler<TBody = unknown, TResponse = unknown>(
         if (options.requireRole && !hasRole(access as AuthContext, options.requireRole)) {
           perf.end();
           return apiErrors.forbidden(
-            `Requires one of: ${options.requireRole.join(", ")}`, 
-            { currentRole: access.role }, 
+            `Requires one of: ${options.requireRole.join(", ")}`,
+            { currentRole: access.role },
             requestId
           ) as unknown as NextResponse<ApiResponse<TResponse>>;
         }
@@ -347,7 +381,11 @@ export function createUnifiedHandler<TBody = unknown, TResponse = unknown>(
         // Owner check
         if (options.requireOwner && !isOwner(access as AuthContext)) {
           perf.end();
-          return apiErrors.forbidden("This action requires owner role", { currentRole: access.role }, requestId) as unknown as NextResponse<ApiResponse<TResponse>>;
+          return apiErrors.forbidden(
+            "This action requires owner role",
+            { currentRole: access.role },
+            requestId
+          ) as unknown as NextResponse<ApiResponse<TResponse>>;
         }
 
         authContext = { ...access, venueId } as AuthContext;
@@ -371,7 +409,7 @@ export function createUnifiedHandler<TBody = unknown, TResponse = unknown>(
             role: "none",
             venueId: "",
             tier: "starter",
-            venue_ids: []
+            venue_ids: [],
           };
         }
       } else {
@@ -389,7 +427,7 @@ export function createUnifiedHandler<TBody = unknown, TResponse = unknown>(
           role: "none",
           venueId: "",
           tier: "starter",
-          venue_ids: []
+          venue_ids: [],
         };
       }
 
@@ -415,19 +453,22 @@ export function createUnifiedHandler<TBody = unknown, TResponse = unknown>(
           return success(existing.response.response_data as TResponse, {
             timestamp: new Date().toISOString(),
             requestId,
-            duration: Date.now() - startTime
+            duration: Date.now() - startTime,
           });
         }
       } else if (options.enforceIdempotency) {
         perf.end();
-        return apiErrors.badRequest("x-idempotency-key header is required", requestId) as unknown as NextResponse<ApiResponse<TResponse>>;
+        return apiErrors.badRequest(
+          "x-idempotency-key header is required",
+          requestId
+        ) as unknown as NextResponse<ApiResponse<TResponse>>;
       }
 
       // 9. Execute Handler
       const result = await handler(req, {
         ...authContext,
         body,
-        params
+        params,
       });
 
       // If handler returns NextResponse directly, use it
@@ -445,11 +486,11 @@ export function createUnifiedHandler<TBody = unknown, TResponse = unknown>(
 
       const duration = Date.now() - startTime;
       perf.end();
-      
+
       // Finish APM transaction
       apmTransaction.setTag("http.status_code", "200");
       apmTransaction.finish();
-      
+
       // Log successful request
       logger.logResponse(
         req.method,
@@ -467,20 +508,19 @@ export function createUnifiedHandler<TBody = unknown, TResponse = unknown>(
       return success(responseData, {
         timestamp: new Date().toISOString(),
         requestId,
-        duration
+        duration,
       });
-
     } catch (error) {
       perf.end();
       const duration = Date.now() - startTime;
       const err = error as Error;
-      
+
       // Record error in APM
       apmTransaction.setTag("http.status_code", "500");
       apmTransaction.setTag("error", "true");
       apmTransaction.addError(err);
       apmTransaction.finish();
-      
+
       // Log error with full context
       logger.error(
         `API handler error: ${err.message}`,
@@ -497,16 +537,24 @@ export function createUnifiedHandler<TBody = unknown, TResponse = unknown>(
 
       // Handle specific error types
       if (err.name === "UnauthorizedError") {
-        return apiErrors.unauthorized(err.message, requestId) as unknown as NextResponse<ApiResponse<TResponse>>;
+        return apiErrors.unauthorized(err.message, requestId) as unknown as NextResponse<
+          ApiResponse<TResponse>
+        >;
       }
       if (err.name === "ForbiddenError") {
-        return apiErrors.forbidden(err.message, requestId) as unknown as NextResponse<ApiResponse<TResponse>>;
+        return apiErrors.forbidden(err.message, requestId) as unknown as NextResponse<
+          ApiResponse<TResponse>
+        >;
       }
       if (err.name === "NotFoundError") {
-        return apiErrors.notFound(err.message, requestId) as unknown as NextResponse<ApiResponse<TResponse>>;
+        return apiErrors.notFound(err.message, requestId) as unknown as NextResponse<
+          ApiResponse<TResponse>
+        >;
       }
       if (err.name === "ValidationError") {
-        return apiErrors.validation(err.message, requestId) as unknown as NextResponse<ApiResponse<TResponse>>;
+        return apiErrors.validation(err.message, requestId) as unknown as NextResponse<
+          ApiResponse<TResponse>
+        >;
       }
 
       // Always include error message for debugging (even in production for now)
@@ -518,10 +566,12 @@ export function createUnifiedHandler<TBody = unknown, TResponse = unknown>(
         path: req.nextUrl.pathname,
         requestId,
       });
-      
+
       return apiErrors.internal(
         err.message || "Internal server error",
-        isDevelopment() ? { message: err.message, stack: err.stack, name: err.name } : { message: err.message },
+        isDevelopment()
+          ? { message: err.message, stack: err.stack, name: err.name }
+          : { message: err.message },
         requestId
       ) as unknown as NextResponse<ApiResponse<TResponse>>;
     }

@@ -82,7 +82,9 @@ export function QuestionForm({
             <Label htmlFor="type">Question Type</Label>
             <Select
               value={formData.type}
-              onValueChange={(value: FeedbackType) => onFormDataChange({ ...formData, type: value })}
+              onValueChange={(value: FeedbackType) =>
+                onFormDataChange({ ...formData, type: value })
+              }
             >
               <SelectTrigger id="type">
                 <SelectValue />

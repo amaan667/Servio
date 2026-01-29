@@ -47,7 +47,6 @@ export const POST = withUnifiedAuth(
         .single();
 
       if (stockError && stockError.code !== "PGRST116") {
-
         return apiErrors.database(
           "Failed to fetch current stock level",
           isDevelopment() ? stockError.message : undefined
@@ -65,7 +64,6 @@ export const POST = withUnifiedAuth(
         .single();
 
       if (ingredientError || !ingredient) {
-
         return apiErrors.notFound("Ingredient not found");
       }
 
@@ -89,7 +87,6 @@ export const POST = withUnifiedAuth(
         .single();
 
       if (ledgerError || !ledgerEntry) {
-
         return apiErrors.database(
           "Failed to create stocktake entry",
           isDevelopment() ? ledgerError?.message : undefined
@@ -104,7 +101,6 @@ export const POST = withUnifiedAuth(
         delta,
       });
     } catch (error) {
-
       if (isZodError(error)) {
         return handleZodError(error);
       }

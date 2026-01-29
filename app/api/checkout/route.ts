@@ -41,9 +41,7 @@ export const POST = createUnifiedHandler(
       customerName: body.customer_name || "Customer",
       customerPhone: body.customer_phone,
       customerEmail:
-        body.customer_email && body.customer_email !== ""
-          ? body.customer_email
-          : undefined,
+        body.customer_email && body.customer_email !== "" ? body.customer_email : undefined,
       items: body.items,
       source: body.source,
       qrType: body.qr_type,

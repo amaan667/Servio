@@ -79,7 +79,6 @@ export function useTableCounters(venueId: string) {
         p_venue_id: venueId,
       });
       if (error) {
-
         throw error;
       }
 
@@ -131,7 +130,6 @@ export function useSeatParty() {
         p_server_id: serverId || null,
       });
       if (error) {
-
         throw error;
       }
     },
@@ -153,7 +151,6 @@ export function useCloseTable() {
         p_venue_id: venueId,
       });
       if (error) {
-
         throw error;
       }
     },

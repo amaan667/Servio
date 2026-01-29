@@ -561,8 +561,16 @@ export const QRGenerateBulkSchema = z
   .object({
     startNumber: z.number().int().min(1),
     endNumber: z.number().int().min(1),
-    prefix: z.string().nullable().default(null).describe("Prefix for QR code labels (e.g., 'Table', 'VIP', 'Counter'). Defaults to 'Table'"),
-    type: z.enum(["table", "counter"]).nullable().default(null).describe("Type of QR codes to generate. Defaults to 'table'"),
+    prefix: z
+      .string()
+      .nullable()
+      .default(null)
+      .describe("Prefix for QR code labels (e.g., 'Table', 'VIP', 'Counter'). Defaults to 'Table'"),
+    type: z
+      .enum(["table", "counter"])
+      .nullable()
+      .default(null)
+      .describe("Type of QR codes to generate. Defaults to 'table'"),
   })
   .strict();
 
@@ -1209,7 +1217,9 @@ export const AssistantPlanSchema = z
       .string()
       .nullable()
       .default(null)
-      .describe("For questions that can be answered directly from data summaries without executing tools, provide the answer here. Use this when the user asks informational questions like 'how many items', 'what is the revenue', 'which items don't have images', etc."),
+      .describe(
+        "For questions that can be answered directly from data summaries without executing tools, provide the answer here. Use this when the user asks informational questions like 'how many items', 'what is the revenue', 'which items don't have images', etc."
+      ),
   })
   .strict();
 

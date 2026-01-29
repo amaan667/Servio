@@ -33,7 +33,6 @@ export async function GET(_req: Request) {
       .maybeSingle();
 
     if (orderError) {
-
       return NextResponse.json(
         {
           error: "Failed to fetch recent order",
@@ -65,7 +64,6 @@ export async function GET(_req: Request) {
       order: transformedOrder,
     });
   } catch (_error) {
-
     return NextResponse.json(
       {
         error: "Internal server error",

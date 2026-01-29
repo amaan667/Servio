@@ -1,9 +1,9 @@
-export type KDSMode = 'single' | 'multi' | 'enterprise' | null;
-export type AnalyticsLevel = 'basic' | 'advanced' | 'enterprise';
-export type BrandingLevel = 'basic' | 'full' | 'white_label';
-export type ApiLevel = 'light' | 'full' | null;
-export type SupportLevel = 'email' | 'priority' | 'sla';
-export type Tier = 'starter' | 'pro' | 'enterprise';
+export type KDSMode = "single" | "multi" | "enterprise" | null;
+export type AnalyticsLevel = "basic" | "advanced" | "enterprise";
+export type BrandingLevel = "basic" | "full" | "white_label";
+export type ApiLevel = "light" | "full" | null;
+export type SupportLevel = "email" | "priority" | "sla";
+export type Tier = "starter" | "pro" | "enterprise";
 
 export interface VenueEntitlements {
   tier: string;
@@ -35,7 +35,7 @@ export interface VenueAddon {
   id: string;
   venue_id: string;
   addon_key: string; // e.g., 'kds_starter', 'api_pro_light'
-  status: 'active' | 'cancelled' | 'expired';
+  status: "active" | "cancelled" | "expired";
   stripe_subscription_item_id?: string | null;
   stripe_price_id?: string | null;
   created_at?: string;

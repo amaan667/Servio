@@ -24,7 +24,10 @@ export class ReservationService extends BaseService {
   /**
    * Get reservations for a venue
    */
-  async getReservations(venueId: string, filters?: { status?: string; date?: string }): Promise<Reservation[]> {
+  async getReservations(
+    venueId: string,
+    filters?: { status?: string; date?: string }
+  ): Promise<Reservation[]> {
     const supabase = await createSupabaseClient();
     let query = supabase
       .from("reservations")
@@ -33,7 +36,7 @@ export class ReservationService extends BaseService {
       .order("start_at", { ascending: true });
 
     if (filters?.status) query = query.eq("status", filters.status);
-    
+
     if (filters?.date) {
       const start = new Date(filters.date);
       start.setHours(0, 0, 0, 0);

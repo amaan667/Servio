@@ -1,8 +1,8 @@
 import { useState, useEffect, useCallback } from "react";
 import { supabaseBrowser as createClient } from "@/lib/supabase";
-
 import { todayWindowForTZ } from "@/lib/time";
 import { fetchMenuItemCount } from "@/lib/counts/unified-counts";
+import { normalizeVenueId } from "@/lib/utils/venueId";
 
 export interface DashboardCounts {
   live_count: number;
@@ -94,7 +94,7 @@ export function useDashboardData(
       try {
         setError(null);
         const supabase = createClient();
-        const normalizedVenueId = venueId.startsWith("venue-") ? venueId : `venue-${venueId}`;
+        const normalizedVenueId = normalizeVenueId(venueId) ?? venueId;
 
         // Fetch dashboard counts using RPC
         const { data: countsData, error: countsError } = await supabase
@@ -106,7 +106,6 @@ export function useDashboardData(
           .single();
 
         if (countsError) {
-
           setError("Failed to fetch dashboard counts");
           return;
         }
@@ -114,10 +113,7 @@ export function useDashboardData(
         // Batch fetch table-related data in parallel for better performance
         const now = new Date();
         const [tablesResult, sessionsResult, reservationsResult] = await Promise.all([
-          supabase
-            .from("tables")
-            .select("id, is_active")
-            .eq("venue_id", normalizedVenueId),
+          supabase.from("tables").select("id, is_active").eq("venue_id", normalizedVenueId),
           supabase
             .from("table_sessions")
             .select("id")
@@ -153,7 +149,6 @@ export function useDashboardData(
           setCounts(finalCounts);
         }
       } catch (err) {
-
         setError("Failed to fetch dashboard counts");
       }
     },
@@ -172,7 +167,7 @@ export function useDashboardData(
       try {
         setError(null);
         const supabase = createClient();
-        const normalizedVenueId = venueId.startsWith("venue-") ? venueId : `venue-${venueId}`;
+        const normalizedVenueId = normalizeVenueId(venueId) ?? venueId;
         const window = todayWindowForTZ(venueTz);
 
         // Fetch menu items count
@@ -196,7 +191,6 @@ export function useDashboardData(
         const freshStats = { revenue, menuItems, unpaid };
         setStats(freshStats);
       } catch (err) {
-
         setError("Failed to fetch dashboard stats");
       }
     },
@@ -248,7 +242,7 @@ export function useDashboardData(
     if (!supabase || typeof (supabase as unknown as { channel?: unknown }).channel !== "function") {
       return;
     }
-    const normalizedVenueId = venueId.startsWith("venue-") ? venueId : `venue-${venueId}`;
+    const normalizedVenueId = normalizeVenueId(venueId) ?? venueId;
 
     // Separate debounce timeouts for counts and stats to prevent conflicts
     let countsDebounceTimeout: NodeJS.Timeout | null = null;

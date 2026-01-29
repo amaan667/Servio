@@ -44,15 +44,15 @@ export const POST = createUnifiedHandler(
 
     // 2. Create Table
     const table = await tableService.createTable(venueId, {
-      table_number: parseInt(String(body.table_number), 10) || (tables.length + 1),
+      table_number: parseInt(String(body.table_number), 10) || tables.length + 1,
       label: body.label || String(body.table_number),
       seat_count: body.seat_count || body.capacity || 4,
       section: body.section || body.area || "Main",
     });
 
-    return { 
+    return {
       table,
-      message: `Table "${table.label}" created successfully!`
+      message: `Table "${table.label}" created successfully!`,
     };
   },
   {

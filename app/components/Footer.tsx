@@ -28,7 +28,11 @@ export function Footer() {
                 className="text-gray-300 hover:text-white"
                 asChild
               >
-                <Link href="https://www.instagram.com/servio__/" target="_blank" rel="noopener noreferrer">
+                <Link
+                  href="https://www.instagram.com/servio__/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
                   <span className="sr-only">Instagram</span>
                   <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 24 24">
                     <path
@@ -45,7 +49,11 @@ export function Footer() {
                 className="text-gray-300 hover:text-white"
                 asChild
               >
-                <Link href="http://linkedin.com/company/servioplatform" target="_blank" rel="noopener noreferrer">
+                <Link
+                  href="http://linkedin.com/company/servioplatform"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
                   <span className="sr-only">LinkedIn</span>
                   <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
                     <path

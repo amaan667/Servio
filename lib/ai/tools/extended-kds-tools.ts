@@ -82,7 +82,6 @@ export async function getStationTickets(
     .order("created_at", { ascending: true });
 
   if (ticketsError) {
-
     throw new Error(`Failed to fetch tickets: ${ticketsError.message}`);
   }
 
@@ -157,7 +156,6 @@ export async function bulkUpdateTickets(
   const { data, error } = await query.select("id");
 
   if (error) {
-
     throw new Error(`Failed to update tickets: ${error.message}`);
   }
 
@@ -189,7 +187,6 @@ export async function getOverdueKDSTickets(
     .order("created_at", { ascending: true });
 
   if (error) {
-
     throw new Error(`Failed to fetch overdue tickets: ${error.message}`);
   }
 

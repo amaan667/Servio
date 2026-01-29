@@ -7,7 +7,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createSupabaseClient } from "@/lib/supabase";
 import { getAuthenticatedUser as getAuthUser } from "@/lib/supabase";
-
+import { normalizeVenueId } from "@/lib/utils/venueId";
 
 export interface Venue {
   venue_id: string;
@@ -64,7 +64,7 @@ export async function verifyVenueAccess(
       return null;
     }
 
-    const normalizedVenueId = venueId.startsWith("venue-") ? venueId : `venue-${venueId}`;
+    const normalizedVenueId = normalizeVenueId(venueId) ?? venueId;
     const { data: ctx, error: rpcError } = await supabase.rpc("get_access_context", {
       p_venue_id: normalizedVenueId,
     });
@@ -110,18 +110,15 @@ export async function verifyVenueExists(
       .maybeSingle();
 
     if (venueError) {
-
       return { valid: false, error: venueError.message };
     }
 
     if (!venue) {
-
       return { valid: false, error: "Venue not found" };
     }
 
     return { valid: true, venue };
   } catch (error) {
-
     return { valid: false, error: error instanceof Error ? error.message : "Unknown error" };
   }
 }
@@ -145,18 +142,15 @@ export async function verifyOrderVenueAccess(
       .maybeSingle();
 
     if (orderError) {
-
       return { valid: false, error: orderError.message };
     }
 
     if (!order) {
-
       return { valid: false, error: "Order not found or access denied" };
     }
 
     return { valid: true };
   } catch (error) {
-
     return { valid: false, error: error instanceof Error ? error.message : "Unknown error" };
   }
 }
@@ -220,7 +214,6 @@ export function withAuthorization(
         venue_ids: access.venue_ids,
       });
     } catch (_error) {
-
       return NextResponse.json(
         { error: "Internal Server Error", message: "Authorization failed" },
         { status: 500 }
@@ -269,7 +262,6 @@ export function withOptionalAuth(
         venue_ids: access.venue_ids,
       });
     } catch (_error) {
-
       return await handler(req, null);
     }
   };

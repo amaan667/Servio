@@ -60,7 +60,7 @@ import { MenuItem, ActiveTab, PreviewMode } from "./types";
 
 export default function MenuManagementClient({
   venueId,
-  initialMenuItems
+  initialMenuItems,
 }: {
   venueId: string;
   initialMenuItems?: MenuItem[];
@@ -88,10 +88,14 @@ export default function MenuManagementClient({
     useMenuItems(venueId, initialMenuItems);
 
   // Log component state changes
-  useEffect(() => { /* Intentionally empty */ }, [venueId, activeTab, menuItems.length, loading, isClearing, categoryOrder]);
+  useEffect(() => {
+    /* Intentionally empty */
+  }, [venueId, activeTab, menuItems.length, loading, isClearing, categoryOrder]);
 
   // Log tab changes
-  useEffect(() => { /* Intentionally empty */ }, [activeTab, venueId, menuItems.length]);
+  useEffect(() => {
+    /* Intentionally empty */
+  }, [activeTab, venueId, menuItems.length]);
   const { designSettings, setDesignSettings, isSavingDesign, saveDesignSettings } =
     useDesignSettings(venueId);
   const { handleItemDragEnd, handleCategoryDragEnd } = useDragAndDrop(

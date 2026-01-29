@@ -30,113 +30,115 @@ export const POST = createUnifiedHandler(
 
     // Business logic
     const supabase = createAdminClient();
-      let result;
+    let result;
 
-      switch (body.action) {
-        case "transfer_orders":
-          // Transfer specific orders from source to target table
-          if (!body.order_ids || !Array.isArray(body.order_ids) || body.order_ids.length === 0) {
-            return apiErrors.badRequest("order_ids array is required for transfer");
-          }
+    switch (body.action) {
+      case "transfer_orders":
+        // Transfer specific orders from source to target table
+        if (!body.order_ids || !Array.isArray(body.order_ids) || body.order_ids.length === 0) {
+          return apiErrors.badRequest("order_ids array is required for transfer");
+        }
 
-          const { error: transferError } = await supabase
+        const { error: transferError } = await supabase
+          .from("orders")
+          .update({ table_id: body.target_table_id })
+          .in("id", body.order_ids)
+          .eq("venue_id", venue_id)
+          .eq("table_id", body.source_table_id);
+
+        if (transferError) {
+          return apiErrors.database("Failed to transfer orders");
+        }
+
+        result = {
+          action: "transferred",
+          transferred_orders: body.order_ids.length,
+          from_table: body.source_table_id,
+          to_table: body.target_table_id,
+        };
+        break;
+
+      case "merge_tables":
+        // Merge all orders from source table to target table
+        const { data: sourceOrders, error: sourceError } = await supabase
+          .from("orders")
+          .select("id")
+          .eq("venue_id", venue_id)
+          .eq("table_id", body.source_table_id)
+          .eq("is_active", true);
+
+        if (sourceError) {
+          return apiErrors.database("Failed to fetch source orders");
+        }
+
+        if (sourceOrders && sourceOrders.length > 0) {
+          const orderIds = sourceOrders.map((order: { id: string }) => order.id);
+
+          const { error: mergeError } = await supabase
             .from("orders")
             .update({ table_id: body.target_table_id })
-            .in("id", body.order_ids)
-            .eq("venue_id", venue_id)
-            .eq("table_id", body.source_table_id);
+            .in("id", orderIds)
+            .eq("venue_id", venue_id);
 
-          if (transferError) {
-            return apiErrors.database("Failed to transfer orders");
+          if (mergeError) {
+            return apiErrors.database("Failed to merge orders");
           }
+        }
 
-          result = {
-            action: "transferred",
-            transferred_orders: body.order_ids.length,
-            from_table: body.source_table_id,
-            to_table: body.target_table_id,
-          };
-          break;
-
-        case "merge_tables":
-          // Merge all orders from source table to target table
-          const { data: sourceOrders, error: sourceError } = await supabase
-            .from("orders")
-            .select("id")
+        // Merge table sessions if requested
+        if (body.merge_sessions) {
+          const { error: sessionError } = await supabase
+            .from("table_sessions")
+            .update({
+              closed_at: new Date().toISOString(),
+              status: "CLOSED",
+            })
             .eq("venue_id", venue_id)
             .eq("table_id", body.source_table_id)
-            .eq("is_active", true);
+            .eq("closed_at", null);
 
-          if (sourceError) {
-            return apiErrors.database("Failed to fetch source orders");
+          if (sessionError) {
+            /* Condition handled */
           }
+        }
 
-          if (sourceOrders && sourceOrders.length > 0) {
-            const orderIds = sourceOrders.map((order: { id: string }) => order.id);
+        result = {
+          action: "merged",
+          merged_orders: sourceOrders?.length || 0,
+          from_table: body.source_table_id,
+          to_table: body.target_table_id,
+        };
+        break;
 
-            const { error: mergeError } = await supabase
-              .from("orders")
-              .update({ table_id: body.target_table_id })
-              .in("id", orderIds)
-              .eq("venue_id", venue_id);
+      case "split_table":
+        // Split orders between two tables
+        if (!body.order_ids || !Array.isArray(body.order_ids) || body.order_ids.length === 0) {
+          return apiErrors.badRequest("order_ids array is required for split");
+        }
 
-            if (mergeError) {
-              return apiErrors.database("Failed to merge orders");
-            }
-          }
+        // Move specified orders to target table
+        const { error: splitError } = await supabase
+          .from("orders")
+          .update({ table_id: body.target_table_id })
+          .in("id", body.order_ids)
+          .eq("venue_id", venue_id)
+          .eq("table_id", body.source_table_id);
 
-          // Merge table sessions if requested
-          if (body.merge_sessions) {
-            const { error: sessionError } = await supabase
-              .from("table_sessions")
-              .update({
-                closed_at: new Date().toISOString(),
-                status: "CLOSED",
-              })
-              .eq("venue_id", venue_id)
-              .eq("table_id", body.source_table_id)
-              .eq("closed_at", null);
+        if (splitError) {
+          return apiErrors.database("Failed to split orders");
+        }
 
-            if (sessionError) { /* Condition handled */ }
-          }
+        result = {
+          action: "split",
+          split_orders: body.order_ids.length,
+          remaining_at_source: body.source_table_id,
+          moved_to_target: body.target_table_id,
+        };
+        break;
 
-          result = {
-            action: "merged",
-            merged_orders: sourceOrders?.length || 0,
-            from_table: body.source_table_id,
-            to_table: body.target_table_id,
-          };
-          break;
-
-        case "split_table":
-          // Split orders between two tables
-          if (!body.order_ids || !Array.isArray(body.order_ids) || body.order_ids.length === 0) {
-            return apiErrors.badRequest("order_ids array is required for split");
-          }
-
-          // Move specified orders to target table
-          const { error: splitError } = await supabase
-            .from("orders")
-            .update({ table_id: body.target_table_id })
-            .in("id", body.order_ids)
-            .eq("venue_id", venue_id)
-            .eq("table_id", body.source_table_id);
-
-          if (splitError) {
-            return apiErrors.database("Failed to split orders");
-          }
-
-          result = {
-            action: "split",
-            split_orders: body.order_ids.length,
-            remaining_at_source: body.source_table_id,
-            moved_to_target: body.target_table_id,
-          };
-          break;
-
-        default:
-          return apiErrors.badRequest("Invalid action");
-      }
+      default:
+        return apiErrors.badRequest("Invalid action");
+    }
 
     return success(result);
   },
@@ -146,7 +148,10 @@ export const POST = createUnifiedHandler(
     rateLimit: RATE_LIMITS.GENERAL,
     extractVenueId: async (req) => {
       try {
-        const body = await req.clone().json().catch(() => ({}));
+        const body = await req
+          .clone()
+          .json()
+          .catch(() => ({}));
         return (
           (body as { venue_id?: string; venueId?: string })?.venue_id ||
           (body as { venue_id?: string; venueId?: string })?.venueId ||

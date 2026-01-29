@@ -103,7 +103,6 @@ export const PATCH = withUnifiedAuth(async (req: NextRequest, context, routePara
     .select("*")
     .maybeSingle();
   if (error) {
-
     return apiErrors.database(error.message);
   }
 
@@ -115,7 +114,6 @@ export const PATCH = withUnifiedAuth(async (req: NextRequest, context, routePara
         p_venue_id: data.venue_id,
       });
     } catch (inventoryError) {
-
       // Don't fail the order completion if inventory deduction fails
     }
   }
@@ -131,7 +129,9 @@ export const PATCH = withUnifiedAuth(async (req: NextRequest, context, routePara
         orderId: id,
       });
 
-      if (!cleanupResult.success) { /* Condition handled */ } else {
+      if (!cleanupResult.success) {
+        /* Condition handled */
+      } else {
         // Cleanup successful
       }
     }
@@ -161,7 +161,6 @@ export const DELETE = withUnifiedAuth(async (_req: NextRequest, context, routePa
       .eq("venue_id", context.venueId); // Explicit venue check (RLS also enforces this)
 
     if (error) {
-
       return apiErrors.database(error.message);
     }
 

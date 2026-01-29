@@ -178,22 +178,26 @@ export class OrderService extends BaseService {
 
     // Determine fulfillment_type from source if not provided
     const fulfillmentType =
-      orderData.fulfillment_type ||
-      (orderData.source === "counter" ? "counter" : "table");
+      orderData.fulfillment_type || (orderData.source === "counter" ? "counter" : "table");
 
     // Standardize table number
-    const tableNumber = fulfillmentType === "table" ? 
-      (typeof orderData.table_number === 'string' ? parseInt(orderData.table_number) : orderData.table_number) 
-      : null;
+    const tableNumber =
+      fulfillmentType === "table"
+        ? typeof orderData.table_number === "string"
+          ? parseInt(orderData.table_number)
+          : orderData.table_number
+        : null;
 
     // Calculate payment_mode based on payment_method
-    const paymentMode = orderData.payment_mode || (() => {
-      const method = orderData.payment_method ?? "PAY_NOW";
-      if (method === "PAY_NOW") return "online";
-      if (method === "PAY_AT_TILL") return "offline";
-      if (method === "PAY_LATER") return "deferred";
-      return "online";
-    })();
+    const paymentMode =
+      orderData.payment_mode ||
+      (() => {
+        const method = orderData.payment_method ?? "PAY_NOW";
+        if (method === "PAY_NOW") return "online";
+        if (method === "PAY_AT_TILL") return "offline";
+        if (method === "PAY_LATER") return "deferred";
+        return "online";
+      })();
 
     const insertPayload = {
       venue_id: venueId,
@@ -210,9 +214,9 @@ export class OrderService extends BaseService {
       payment_mode: paymentMode,
       source: orderData.source || "qr",
       fulfillment_type: fulfillmentType,
-      counter_label: fulfillmentType === "counter" ? orderData.counter_label ?? null : null,
+      counter_label: fulfillmentType === "counter" ? (orderData.counter_label ?? null) : null,
       qr_type: orderData.qr_type ?? null,
-      requires_collection: orderData.requires_collection ?? false
+      requires_collection: orderData.requires_collection ?? false,
     };
 
     // Direct insert - don't use .single() as it fails when no rows returned
@@ -228,7 +232,7 @@ export class OrderService extends BaseService {
 
     // Handle array response - take first row
     const data = Array.isArray(insertedRows) ? insertedRows[0] : insertedRows;
-    
+
     if (!data) {
       throw new Error("Failed to create order: No data returned from insert");
     }
@@ -319,7 +323,7 @@ export class OrderService extends BaseService {
    */
   async markServed(orderId: string, venueId: string): Promise<Order> {
     const supabase = await createSupabaseClient();
-    
+
     // Canonical transition: SERVE (requires kitchen_status=BUMPED in DB)
     const { data, error } = await supabase.rpc("orders_set_served", {
       p_order_id: orderId,
@@ -329,7 +333,7 @@ export class OrderService extends BaseService {
     if (error) throw error;
 
     const result = Array.isArray(data) ? data[0] : data;
-    
+
     // Best-effort: update table_sessions
     await supabase
       .from("table_sessions")
@@ -345,8 +349,8 @@ export class OrderService extends BaseService {
    * Mark order as completed (handles RPC + cleanup)
    */
   async completeOrder(
-    orderId: string, 
-    venueId: string, 
+    orderId: string,
+    venueId: string,
     options: { forced?: boolean; userId?: string; forcedReason?: string } = {}
   ): Promise<Order> {
     const supabase = await createSupabaseClient();
@@ -383,7 +387,7 @@ export class OrderService extends BaseService {
 
     await this.invalidateCachePattern(`orders:*:${venueId}:*`);
     await this.invalidateCachePattern(`tables:*:${venueId}:*`);
-    
+
     return order;
   }
 
@@ -399,7 +403,7 @@ export class OrderService extends BaseService {
    */
   async bulkCompleteOrders(orderIds: string[], venueId: string): Promise<number> {
     const supabase = await createSupabaseClient();
-    
+
     // 1. Get orders to complete
     const { data: orders } = await supabase
       .from("orders")
@@ -428,10 +432,16 @@ export class OrderService extends BaseService {
           p_forced_reason: "Bulk complete all",
         });
         if (rpcError) {
-          logger.info("[bulkCompleteOrders] RPC orders_complete", { orderId: order.id, error: rpcError.message });
+          logger.info("[bulkCompleteOrders] RPC orders_complete", {
+            orderId: order.id,
+            error: rpcError.message,
+          });
         }
       } catch (rpcErr) {
-        logger.info("[bulkCompleteOrders] RPC exception", { orderId: order.id, err: String(rpcErr) });
+        logger.info("[bulkCompleteOrders] RPC exception", {
+          orderId: order.id,
+          err: String(rpcErr),
+        });
       }
       // Single update: COMPLETED + PAID so check constraint orders_completed_requires_served_and_paid is satisfied
       await this.forceCompleteOrder(order.id, venueId);
@@ -446,7 +456,7 @@ export class OrderService extends BaseService {
 
     await this.invalidateCachePattern(`orders:*:${venueId}:*`);
     await this.invalidateCachePattern(`tables:*:${venueId}:*`);
-    
+
     return completedCount;
   }
 

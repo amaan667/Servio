@@ -240,7 +240,11 @@ export function generateOpenAPISpec(): OpenAPIV3.Document {
                     },
                   },
                   total_amount: { type: "number" },
-                  table_number: { type: "string", nullable: true, description: "Table number (string or number)" },
+                  table_number: {
+                    type: "string",
+                    nullable: true,
+                    description: "Table number (string or number)",
+                  },
                   payment_method: {
                     type: "string",
                     enum: ["PAY_NOW", "PAY_LATER", "PAY_AT_TILL"],

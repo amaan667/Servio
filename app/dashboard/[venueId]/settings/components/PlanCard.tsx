@@ -62,7 +62,9 @@ export function PlanCard({ organization, venueId }: PlanCardProps) {
       } else if (data.tier) {
         setCurrentTier(data.tier);
       }
-    } catch (error) { /* Error handled silently */ } finally {
+    } catch (error) {
+      /* Error handled silently */
+    } finally {
       setSyncing(false);
     }
   };

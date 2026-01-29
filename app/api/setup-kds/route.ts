@@ -76,7 +76,6 @@ export const POST = withUnifiedAuth(
       });
 
       if (stationsError) {
-
         // Continue anyway - table might already exist
       }
 
@@ -85,7 +84,6 @@ export const POST = withUnifiedAuth(
       });
 
       if (ticketsError) {
-
         // Continue anyway - table might already exist
       }
 

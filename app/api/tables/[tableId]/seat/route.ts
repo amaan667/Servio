@@ -76,7 +76,6 @@ export async function POST(req: NextRequest, context: TableParams = {}) {
           .single();
 
         if (sessionError) {
-
           return apiErrors.database(
             "Failed to seat party",
             isDevelopment() ? sessionError.message : undefined
@@ -89,7 +88,6 @@ export async function POST(req: NextRequest, context: TableParams = {}) {
           table,
         });
       } catch (error) {
-
         if (isZodError(error)) {
           return handleZodError(error);
         }

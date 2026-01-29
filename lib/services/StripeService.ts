@@ -16,38 +16,45 @@ export class StripeService extends BaseService {
    */
   async getTierPriceIds(): Promise<Record<string, string>> {
     const cacheKey = "stripe:tier_prices";
-    
-    return this.withCache(cacheKey, async () => {
-      const priceIds: Record<string, string> = {
-        starter: env("STRIPE_BASIC_PRICE_ID") || "",
-        pro: env("STRIPE_STANDARD_PRICE_ID") || "",
-        enterprise: env("STRIPE_PREMIUM_PRICE_ID") || "",
-      };
 
-      if (priceIds.starter && priceIds.pro && priceIds.enterprise) {
-        return priceIds;
-      }
+    return this.withCache(
+      cacheKey,
+      async () => {
+        const priceIds: Record<string, string> = {
+          starter: env("STRIPE_BASIC_PRICE_ID") || "",
+          pro: env("STRIPE_STANDARD_PRICE_ID") || "",
+          enterprise: env("STRIPE_PREMIUM_PRICE_ID") || "",
+        };
 
-      // Search Stripe if env vars missing
-      const products = await stripe.products.list({ limit: 100, active: true });
-      for (const product of products.data) {
-        const tier = product.metadata?.tier;
-        if (tier && ["starter", "pro", "enterprise"].includes(tier) && !priceIds[tier]) {
-          const prices = await stripe.prices.list({ product: product.id, active: true });
-          if (prices.data[0]) {
-            priceIds[tier] = prices.data[0].id;
+        if (priceIds.starter && priceIds.pro && priceIds.enterprise) {
+          return priceIds;
+        }
+
+        // Search Stripe if env vars missing
+        const products = await stripe.products.list({ limit: 100, active: true });
+        for (const product of products.data) {
+          const tier = product.metadata?.tier;
+          if (tier && ["starter", "pro", "enterprise"].includes(tier) && !priceIds[tier]) {
+            const prices = await stripe.prices.list({ product: product.id, active: true });
+            if (prices.data[0]) {
+              priceIds[tier] = prices.data[0].id;
+            }
           }
         }
-      }
 
-      return priceIds;
-    }, 3600); // Cache for 1 hour
+        return priceIds;
+      },
+      3600
+    ); // Cache for 1 hour
   }
 
   /**
    * Create or retrieve a Stripe customer for an organization
    */
-  async getOrCreateCustomer(org: { id: string; stripe_customer_id?: string | null }, user: { id: string; email: string }): Promise<string> {
+  async getOrCreateCustomer(
+    org: { id: string; stripe_customer_id?: string | null },
+    user: { id: string; email: string }
+  ): Promise<string> {
     if (org.stripe_customer_id) return org.stripe_customer_id;
 
     const customer = await stripe.customers.create({
@@ -75,11 +82,11 @@ export class StripeService extends BaseService {
     metadata?: Record<string, string>;
   }): Promise<Stripe.Checkout.Session> {
     const { isSignup, customerId, customerEmail, priceId, tier, orgId, userId, metadata } = params;
-    
-    const successUrl = isSignup 
+
+    const successUrl = isSignup
       ? `${env("NEXT_PUBLIC_APP_URL")}/auth/create-account?session_id={CHECKOUT_SESSION_ID}`
       : `${env("NEXT_PUBLIC_APP_URL")}/checkout/success?session_id={CHECKOUT_SESSION_ID}&tier=${tier}`;
-    
+
     const cancelUrl = isSignup
       ? `${env("NEXT_PUBLIC_APP_URL")}/?cancelled=true`
       : `${env("NEXT_PUBLIC_APP_URL")}/?upgrade=cancelled`;
@@ -181,9 +188,9 @@ export class StripeService extends BaseService {
       .eq("event_id", eventId)
       .maybeSingle();
 
-    return { 
+    return {
       processed: data?.status === "succeeded",
-      status: data?.status
+      status: data?.status,
     };
   }
 
@@ -192,26 +199,36 @@ export class StripeService extends BaseService {
    */
   async recordWebhookProcessing(event: Stripe.Event): Promise<void> {
     const supabase = createAdminClient();
-    await supabase.from("stripe_webhook_events").upsert({
-      event_id: event.id,
-      type: event.type,
-      status: "processing",
-      payload: event as unknown as Record<string, unknown>,
-      updated_at: new Date().toISOString(),
-    }, { onConflict: "event_id" });
+    await supabase.from("stripe_webhook_events").upsert(
+      {
+        event_id: event.id,
+        type: event.type,
+        status: "processing",
+        payload: event as unknown as Record<string, unknown>,
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: "event_id" }
+    );
   }
 
   /**
    * Finalize a Stripe webhook event status
    */
-  async finalizeWebhookEvent(eventId: string, status: "succeeded" | "failed", error?: Error): Promise<void> {
+  async finalizeWebhookEvent(
+    eventId: string,
+    status: "succeeded" | "failed",
+    error?: Error
+  ): Promise<void> {
     const supabase = createAdminClient();
-    await supabase.from("stripe_webhook_events").update({
-      status,
-      processed_at: status === "succeeded" ? new Date().toISOString() : null,
-      last_error: error ? { message: error.message, stack: error.stack } : null,
-      updated_at: new Date().toISOString(),
-    }).eq("event_id", eventId);
+    await supabase
+      .from("stripe_webhook_events")
+      .update({
+        status,
+        processed_at: status === "succeeded" ? new Date().toISOString() : null,
+        last_error: error ? { message: error.message, stack: error.stack } : null,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("event_id", eventId);
   }
 
   /**
@@ -263,12 +280,15 @@ export class StripeService extends BaseService {
     const { getTierFromStripeSubscription } = await import("@/lib/stripe-tier-helper");
     const tier = await getTierFromStripeSubscription(subscription, stripe);
 
-    await supabase.from("organizations").update({
-      stripe_subscription_id: subscription.id,
-      subscription_tier: tier,
-      subscription_status: subscription.status,
-      updated_at: new Date().toISOString(),
-    }).eq("id", orgId);
+    await supabase
+      .from("organizations")
+      .update({
+        stripe_subscription_id: subscription.id,
+        subscription_tier: tier,
+        subscription_status: subscription.status,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", orgId);
   }
 
   /**
@@ -279,17 +299,20 @@ export class StripeService extends BaseService {
       case "checkout.session.completed":
         // Subscriptions webhook uses metadata to link org
         const session = event.data.object as Stripe.Checkout.Session;
-        if (session.mode === 'subscription') {
+        if (session.mode === "subscription") {
           const orgId = session.metadata?.organization_id;
           const tier = session.metadata?.tier;
           if (orgId && tier) {
             const supabase = createAdminClient();
-            await supabase.from("organizations").update({
-              stripe_subscription_id: session.subscription as string,
-              subscription_tier: tier,
-              subscription_status: "active",
-              updated_at: new Date().toISOString(),
-            }).eq("id", orgId);
+            await supabase
+              .from("organizations")
+              .update({
+                stripe_subscription_id: session.subscription as string,
+                subscription_tier: tier,
+                subscription_status: "active",
+                updated_at: new Date().toISOString(),
+              })
+              .eq("id", orgId);
           }
         }
         break;

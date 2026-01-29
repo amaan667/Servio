@@ -112,7 +112,6 @@ export default function BillingSection({ organization }: BillingSectionProps) {
         });
       } catch (syncError) {
         // Non-critical - continue even if sync fails
-
       }
 
       // Open Stripe billing portal where users can upgrade/downgrade

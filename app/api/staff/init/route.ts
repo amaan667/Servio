@@ -10,7 +10,7 @@ export const POST = createUnifiedHandler(
   async (_req: NextRequest) => {
     // Business logic
     const admin = createAdminClient();
-      const sql = `
+    const sql = `
   create table if not exists public.staff (
     id uuid primary key default gen_random_uuid(),
     venue_id text not null references public.venues(venue_id) on delete cascade,

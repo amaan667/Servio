@@ -4,6 +4,7 @@ import { enforceResourceLimit } from "@/lib/enforce-tier-limits";
 import { z } from "zod";
 import { NextResponse } from "next/server";
 import { ApiResponse } from "@/lib/api/standard-response";
+import { normalizeVenueId } from "@/lib/utils/venueId";
 
 export const runtime = "nodejs";
 
@@ -18,7 +19,7 @@ const addStaffSchema = z.object({
 export const POST = createUnifiedHandler(
   async (req, context) => {
     const { body, venueId, venue } = context;
-    const normalizedVenueId = venueId.startsWith("venue-") ? venueId : `venue-${venueId}`;
+    const normalizedVenueId = normalizeVenueId(venueId) ?? venueId;
 
     // 1. Check Tier Limits
     const currentStaff = await staffService.getStaff(normalizedVenueId);

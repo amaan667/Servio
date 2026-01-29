@@ -229,7 +229,9 @@ export default function OrderSummary({ orderId, sessionId, orderData }: OrderSum
           logoUrl,
           primaryColor,
         });
-      } catch (error) { /* Error handled silently */ }
+      } catch (error) {
+        /* Error handled silently */
+      }
     };
 
     fetchVenueInfo();

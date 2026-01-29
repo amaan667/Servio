@@ -23,11 +23,11 @@ export const POST = createUnifiedHandler(
     // Business logic
     const adminSupabase = createAdminClient();
 
-      // Clear all table sessions
-      const { error: clearSessionsError } = await adminSupabase
-        .from("table_sessions")
-        .delete()
-        .eq("venue_id", context.venueId);
+    // Clear all table sessions
+    const { error: clearSessionsError } = await adminSupabase
+      .from("table_sessions")
+      .delete()
+      .eq("venue_id", context.venueId);
 
     if (clearSessionsError) {
       return apiErrors.database("Failed to clear table sessions");
@@ -52,7 +52,10 @@ export const POST = createUnifiedHandler(
     rateLimit: RATE_LIMITS.GENERAL,
     extractVenueId: async (req) => {
       try {
-        const body = await req.clone().json().catch(() => ({}));
+        const body = await req
+          .clone()
+          .json()
+          .catch(() => ({}));
         return (
           (body as { venueId?: string; venue_id?: string })?.venueId ||
           (body as { venueId?: string; venue_id?: string })?.venue_id ||

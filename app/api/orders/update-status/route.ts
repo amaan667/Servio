@@ -15,13 +15,13 @@ const updateStatusSchema = z.object({
 export const POST = createUnifiedHandler(
   async (_req, context) => {
     const { body, venueId } = context;
-    
+
     // Check for specialized transitions
     if (body.status === "COMPLETED") {
       const order = await orderService.completeOrder(body.orderId, venueId);
       return { order };
     }
-    
+
     if (body.status === "SERVED") {
       const order = await orderService.markServed(body.orderId, venueId);
       return { order };

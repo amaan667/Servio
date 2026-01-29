@@ -55,7 +55,6 @@ export async function GET(req: Request) {
       .single();
 
     if (fetchError || !order) {
-
       return NextResponse.json(
         {
           error: "Order not found. The order may not have been created properly.",
@@ -96,7 +95,6 @@ export async function GET(req: Request) {
       .single();
 
     if (updateError) {
-
       return NextResponse.json(
         {
           error: "Failed to update order payment status",
@@ -111,7 +109,6 @@ export async function GET(req: Request) {
       updated: true,
     });
   } catch (_error) {
-
     return NextResponse.json(
       {
         error: "Internal server error",

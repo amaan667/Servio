@@ -12,6 +12,7 @@
 
 import { supabaseBrowser as createClient, createAdminClient } from "@/lib/supabase";
 import { todayWindowForTZ } from "@/lib/time";
+import { normalizeVenueId } from "@/lib/utils/venueId";
 
 import { withRetry, DEFAULT_RETRY_OPTIONS } from "@/lib/retry";
 
@@ -62,11 +63,10 @@ function safeExtractNumber(data: unknown, key: keyof DashboardCountsRPC, default
  */
 export async function fetchMenuItemCount(venueId: string): Promise<number> {
   if (!venueId || typeof venueId !== "string") {
-
     return 0;
   }
 
-  const normalizedVenueId = venueId.startsWith("venue-") ? venueId : `venue-${venueId}`;
+  const normalizedVenueId = normalizeVenueId(venueId) ?? venueId;
 
   try {
     return await withRetry(
@@ -82,7 +82,6 @@ export async function fetchMenuItemCount(venueId: string): Promise<number> {
           .order("created_at", { ascending: false });
 
         if (error) {
-
           throw new Error(`Failed to fetch menu items: ${error.message}`);
         }
 
@@ -107,7 +106,6 @@ export async function fetchMenuItemCount(venueId: string): Promise<number> {
       }
     );
   } catch (error) {
-
     return 0;
   }
 }
@@ -121,7 +119,6 @@ export async function fetchUnifiedCounts(
   venueTz: string = "Europe/London"
 ): Promise<UnifiedCounts> {
   if (!venueId || typeof venueId !== "string") {
-
     return {
       menuItems: 0,
       liveOrders: 0,
@@ -132,7 +129,7 @@ export async function fetchUnifiedCounts(
     };
   }
 
-  const normalizedVenueId = venueId.startsWith("venue-") ? venueId : `venue-${venueId}`;
+  const normalizedVenueId = normalizeVenueId(venueId) ?? venueId;
   // Use admin client on server (Node.js), browser client on client
   const supabase = typeof globalThis.window === "undefined" ? createAdminClient() : createClient();
 
@@ -144,7 +141,6 @@ export async function fetchUnifiedCounts(
       throw new Error("Invalid time window");
     }
   } catch (error) {
-
     // Fallback to default window
     window = todayWindowForTZ("Europe/London");
   }
@@ -165,11 +161,15 @@ export async function fetchUnifiedCounts(
       })
       .single();
 
-    if (rpcError) { /* Condition handled */ } else if (countsData) {
+    if (rpcError) {
+      /* Condition handled */
+    } else if (countsData) {
       liveOrders = safeExtractNumber(countsData, "live_count", 0);
       todayOrders = safeExtractNumber(countsData, "today_orders_count", 0);
     }
-  } catch (error) { /* Error handled silently */ }
+  } catch (error) {
+    /* Error handled silently */
+  }
 
   // Fetch revenue and unpaid (with error handling)
   let revenue = 0;
@@ -185,7 +185,9 @@ export async function fetchUnifiedCounts(
       .neq("order_status", "CANCELLED")
       .neq("order_status", "REFUNDED");
 
-    if (ordersError) { /* Condition handled */ } else if (orders) {
+    if (ordersError) {
+      /* Condition handled */
+    } else if (orders) {
       revenue = orders.reduce((sum, order) => {
         const amount = order.total_amount;
         return sum + (typeof amount === "number" && !Number.isNaN(amount) ? amount : 0);
@@ -195,7 +197,9 @@ export async function fetchUnifiedCounts(
         (o) => o.payment_status === "UNPAID" || o.payment_status === "PAY_LATER"
       ).length;
     }
-  } catch (error) { /* Error handled silently */ }
+  } catch (error) {
+    /* Error handled silently */
+  }
 
   // Fetch tables set up count (with error handling)
   let tablesSetUp = 0;
@@ -206,11 +210,15 @@ export async function fetchUnifiedCounts(
       .select("id, is_active")
       .eq("venue_id", normalizedVenueId);
 
-    if (tablesError) { /* Condition handled */ } else if (allTables) {
+    if (tablesError) {
+      /* Condition handled */
+    } else if (allTables) {
       const activeTables = allTables.filter((t) => t.is_active === true);
       tablesSetUp = activeTables.length;
     }
-  } catch (error) { /* Error handled silently */ }
+  } catch (error) {
+    /* Error handled silently */
+  }
 
   return {
     menuItems,
@@ -231,13 +239,12 @@ export function subscribeToMenuItemsChanges(
   onUpdate: (count: number) => void
 ): () => void {
   if (!venueId || typeof venueId !== "string") {
-
     return () => {
       /* Empty */
     };
   }
 
-  const normalizedVenueId = venueId.startsWith("venue-") ? venueId : `venue-${venueId}`;
+  const normalizedVenueId = normalizeVenueId(venueId) ?? venueId;
   const supabase = createClient();
 
   let debounceTimeout: NodeJS.Timeout | null = null;
@@ -267,7 +274,9 @@ export function subscribeToMenuItemsChanges(
             })
           );
         }
-      } catch (error) { /* Error handled silently */ }
+      } catch (error) {
+        /* Error handled silently */
+      }
     }, 500);
   };
 
@@ -313,13 +322,12 @@ export function subscribeToOrdersChanges(
   venueTz: string = "Europe/London"
 ): () => void {
   if (!venueId || typeof venueId !== "string") {
-
     return () => {
       /* Empty */
     };
   }
 
-  const normalizedVenueId = venueId.startsWith("venue-") ? venueId : `venue-${venueId}`;
+  const normalizedVenueId = normalizeVenueId(venueId) ?? venueId;
   const supabase = createClient();
 
   let debounceTimeout: NodeJS.Timeout | null = null;
@@ -355,7 +363,9 @@ export function subscribeToOrdersChanges(
             })
           );
         }
-      } catch (error) { /* Error handled silently */ } finally {
+      } catch (error) {
+        /* Error handled silently */
+      } finally {
         debounceTimeout = null;
       }
     }, 500);

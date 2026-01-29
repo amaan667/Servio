@@ -62,8 +62,8 @@ export abstract class BaseService {
    */
   protected handleError(error: unknown, _operation: string): never {
     const err = error as { code?: string; message?: string };
-    if (err.code === 'PGRST116') throw new Error('Resource not found');
-    if (err.code === '23505') throw new Error('Resource already exists');
+    if (err.code === "PGRST116") throw new Error("Resource not found");
+    if (err.code === "23505") throw new Error("Resource already exists");
     throw error;
   }
 }

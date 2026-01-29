@@ -50,7 +50,10 @@ export const POST = createUnifiedHandler(
     rateLimit: RATE_LIMITS.GENERAL,
     extractVenueId: async (req) => {
       try {
-        const body = await req.clone().json().catch(() => ({}));
+        const body = await req
+          .clone()
+          .json()
+          .catch(() => ({}));
         return (
           (body as { venueId?: string; venue_id?: string })?.venueId ||
           (body as { venueId?: string; venue_id?: string })?.venue_id ||

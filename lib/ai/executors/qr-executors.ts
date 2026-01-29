@@ -72,14 +72,19 @@ export async function executeQRGenerateTable(
  * Execute bulk QR code generation for tables
  */
 export async function executeQRGenerateBulk(
-  params: { startNumber: number; endNumber: number; prefix: string | null; type: "table" | "counter" | null },
+  params: {
+    startNumber: number;
+    endNumber: number;
+    prefix: string | null;
+    type: "table" | "counter" | null;
+  },
   venueId: string,
   _userId: string,
   preview: boolean
 ): Promise<AIPreviewDiff | AIExecutionResult> {
   const prefix = params.prefix || (params.type === "counter" ? "Counter" : "Table");
   const type = params.type || "table";
-  
+
   if (preview) {
     const count = params.endNumber - params.startNumber + 1;
     return {
@@ -95,7 +100,13 @@ export async function executeQRGenerateBulk(
     };
   }
 
-  const result = await generateBulkTableQRCodes(venueId, params.startNumber, params.endNumber, prefix, type);
+  const result = await generateBulkTableQRCodes(
+    venueId,
+    params.startNumber,
+    params.endNumber,
+    prefix,
+    type
+  );
 
   return {
     success: true,

@@ -75,10 +75,7 @@ export function BillSplitModal({
           if (itemIndex >= 0) {
             // Remove item from this split
             const newItems = split.items.filter((item) => item.id !== itemId);
-            const newTotal = newItems.reduce(
-              (sum, item) => sum + item.price * item.quantity,
-              0
-            );
+            const newTotal = newItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
             return { ...split, items: newItems, total: newTotal };
           } else {
             // Add item to this split (check if it's already in another split)

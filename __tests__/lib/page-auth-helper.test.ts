@@ -108,5 +108,3 @@ describe("requirePageAuth", () => {
     expect(result?.role).toBe("owner");
   });
 });
-
-

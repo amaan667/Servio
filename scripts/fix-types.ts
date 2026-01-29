@@ -17,7 +17,7 @@ for (const file of files) {
   let modified = false;
 
   // Fix empty interfaces that should have properties
-  if (content.includes('interface MenuItem {\n\n}')) {
+  if (content.includes("interface MenuItem {\n\n}")) {
     content = content.replace(
       /interface MenuItem \{\s*\n\s*\n\}/g,
       `interface MenuItem {
@@ -45,7 +45,7 @@ for (const file of files) {
   }
 
   // Fix HybridExtractionOptions
-  if (content.includes('interface HybridExtractionOptions') && content.includes('venueId')) {
+  if (content.includes("interface HybridExtractionOptions") && content.includes("venueId")) {
     content = content.replace(
       /interface HybridExtractionOptions \{[^}]*venueId[^}]*\n\s*\}/gs,
       `interface HybridExtractionOptions {
@@ -58,7 +58,7 @@ for (const file of files) {
   }
 
   // Fix HybridMenuResult
-  if (content.includes('interface HybridMenuResult') && content.includes('items:')) {
+  if (content.includes("interface HybridMenuResult") && content.includes("items:")) {
     content = content.replace(
       /interface HybridMenuResult \{\s*\n\s*\n\}/g,
       `interface HybridMenuResult {
@@ -73,7 +73,10 @@ for (const file of files) {
   }
 
   // Fix extractMenuHybrid function signature
-  if (content.includes('export async function extractMenuHybrid(') && !content.includes('options: HybridExtractionOptions')) {
+  if (
+    content.includes("export async function extractMenuHybrid(") &&
+    !content.includes("options: HybridExtractionOptions")
+  ) {
     content = content.replace(
       /export async function extractMenuHybrid\(\s*\n\s*\)/g,
       `export async function extractMenuHybrid(
@@ -84,7 +87,7 @@ for (const file of files) {
   }
 
   // Fix MatchCorrection interface
-  if (content.includes('interface MatchCorrection') && content.includes('wasMatched')) {
+  if (content.includes("interface MatchCorrection") && content.includes("wasMatched")) {
     content = content.replace(
       /interface MatchCorrection \{\s*\n\s*\n\s*metadata\?/g,
       `interface MatchCorrection {
@@ -101,7 +104,7 @@ for (const file of files) {
   }
 
   // Fix CategoryCorrection interface
-  if (content.includes('interface CategoryCorrection') && content.includes('aiSuggestedCategory')) {
+  if (content.includes("interface CategoryCorrection") && content.includes("aiSuggestedCategory")) {
     content = content.replace(
       /interface CategoryCorrection \{\s*\n\s*\n\s*metadata\?/g,
       `interface CategoryCorrection {
@@ -117,7 +120,7 @@ for (const file of files) {
   }
 
   // Fix CircuitBreakerState
-  if (content.includes('interface CircuitBreakerState') && content.includes('state:')) {
+  if (content.includes("interface CircuitBreakerState") && content.includes("state:")) {
     content = content.replace(
       /interface CircuitBreakerState \{\s*\n\s*\n\}/g,
       `interface CircuitBreakerState {
@@ -131,7 +134,7 @@ for (const file of files) {
   }
 
   // Fix DEFAULT_RETRY_OPTIONS
-  if (content.includes('const DEFAULT_RETRY_OPTIONS') && !content.includes('maxRetries:')) {
+  if (content.includes("const DEFAULT_RETRY_OPTIONS") && !content.includes("maxRetries:")) {
     content = content.replace(
       /const DEFAULT_RETRY_OPTIONS: Required<RetryOptions> = \{\s*\n\s*\n\s*initialDelay:/g,
       `const DEFAULT_RETRY_OPTIONS: Required<RetryOptions> = {
@@ -148,7 +151,11 @@ for (const file of files) {
   }
 
   // Fix return statements in extractMenuHybrid
-  if (content.includes('return {') && content.includes('webItems,') && !content.includes('items:')) {
+  if (
+    content.includes("return {") &&
+    content.includes("webItems,") &&
+    !content.includes("items:")
+  ) {
     content = content.replace(
       /return \{\s*\n\s*\n\s*\};/g,
       `return {
@@ -162,7 +169,11 @@ for (const file of files) {
     modified = true;
   }
 
-  if (content.includes('return {') && content.includes('pdfData.items,') && !content.includes('items:')) {
+  if (
+    content.includes("return {") &&
+    content.includes("pdfData.items,") &&
+    !content.includes("items:")
+  ) {
     content = content.replace(
       /return \{\s*\n\s*\n\s*\};/g,
       `return {
@@ -176,7 +187,11 @@ for (const file of files) {
     modified = true;
   }
 
-  if (content.includes('return {') && content.includes('mergedItems,') && !content.includes('items:')) {
+  if (
+    content.includes("return {") &&
+    content.includes("mergedItems,") &&
+    !content.includes("items:")
+  ) {
     content = content.replace(
       /return \{\s*\n\s*\n\s*\};/g,
       `return {
@@ -191,7 +206,11 @@ for (const file of files) {
   }
 
   // Fix recordMatchCorrection
-  if (content.includes('const correctionType =') && content.includes('correction.wasMatched') && !content.includes('correction.shouldMatch')) {
+  if (
+    content.includes("const correctionType =") &&
+    content.includes("correction.wasMatched") &&
+    !content.includes("correction.shouldMatch")
+  ) {
     content = content.replace(
       /const correctionType =\s*\n\s*correction\.wasMatched === correction\.shouldMatch\s*\n\s*\? "correct"\s*\n\s*:/g,
       `const correctionType =
@@ -204,7 +223,10 @@ for (const file of files) {
     modified = true;
   }
 
-  if (content.includes('await supabase.from("match_corrections").insert({') && !content.includes('venue_id:')) {
+  if (
+    content.includes('await supabase.from("match_corrections").insert({') &&
+    !content.includes("venue_id:")
+  ) {
     content = content.replace(
       /await supabase\.from\("match_corrections"\)\.insert\(\{\s*\n\s*\n\s*metadata:/g,
       `await supabase.from("match_corrections").insert({
@@ -222,7 +244,10 @@ for (const file of files) {
   }
 
   // Fix recordCategoryCorrection
-  if (content.includes('await supabase.from("category_corrections").insert({') && !content.includes('venue_id:')) {
+  if (
+    content.includes('await supabase.from("category_corrections").insert({') &&
+    !content.includes("venue_id:")
+  ) {
     content = content.replace(
       /await supabase\.from\("category_corrections"\)\.insert\(\{\s*\n\s*\n\s*metadata:/g,
       `await supabase.from("category_corrections").insert({
@@ -239,7 +264,10 @@ for (const file of files) {
   }
 
   // Fix getAdaptiveMatchingThreshold
-  if (content.includes('export async function getAdaptiveMatchingThreshold(') && !content.includes('venueId: string')) {
+  if (
+    content.includes("export async function getAdaptiveMatchingThreshold(") &&
+    !content.includes("venueId: string")
+  ) {
     content = content.replace(
       /export async function getAdaptiveMatchingThreshold\(\s*\n\s*\n\s*defaultThreshold:/g,
       `export async function getAdaptiveMatchingThreshold(
@@ -250,7 +278,10 @@ for (const file of files) {
   }
 
   // Fix recordAIPerformanceMetric
-  if (content.includes('export async function recordAIPerformanceMetric(') && !content.includes('metricType:')) {
+  if (
+    content.includes("export async function recordAIPerformanceMetric(") &&
+    !content.includes("metricType:")
+  ) {
     content = content.replace(
       /export async function recordAIPerformanceMetric\(\s*\n\s*\n\s*metadata\?/g,
       `export async function recordAIPerformanceMetric(
@@ -264,7 +295,10 @@ for (const file of files) {
   }
 
   // Fix withStripeRetry
-  if (content.includes('export async function withStripeRetry<T>(') && !content.includes('fn: () => Promise<T>')) {
+  if (
+    content.includes("export async function withStripeRetry<T>(") &&
+    !content.includes("fn: () => Promise<T>")
+  ) {
     content = content.replace(
       /export async function withStripeRetry<T>\(\s*\n\s*\n\s*options:/g,
       `export async function withStripeRetry<T>(
@@ -275,7 +309,10 @@ for (const file of files) {
   }
 
   // Fix getCircuitBreakerState return type
-  if (content.includes('export function getCircuitBreakerState():') && !content.includes('state:')) {
+  if (
+    content.includes("export function getCircuitBreakerState():") &&
+    !content.includes("state:")
+  ) {
     content = content.replace(
       /export function getCircuitBreakerState\(\): \{\s*\n\s*\n\s*\}/g,
       `export function getCircuitBreakerState(): {
@@ -294,6 +331,5 @@ for (const file of files) {
   if (modified) {
     writeFileSync(file, content, "utf-8");
     fixed++;
-
   }
 }

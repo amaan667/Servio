@@ -107,7 +107,7 @@ export function usePaymentsData(venueId: string) {
 
       if (!error && data) {
         setHistoryReceipts(data as PaymentOrder[]);
-        
+
         // Group by date
         const grouped: GroupedReceipts = {};
         data.forEach((order) => {
@@ -201,7 +201,6 @@ export function usePaymentsData(venueId: string) {
 
   useEffect(() => {
     loadAllData();
-     
   }, [venueId]);
 
   return {

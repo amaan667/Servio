@@ -1,5 +1,9 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { createMockRequest, createAuthenticatedRequest, parseJsonResponse } from "../helpers/api-test-helpers";
+import {
+  createMockRequest,
+  createAuthenticatedRequest,
+  parseJsonResponse,
+} from "../helpers/api-test-helpers";
 import { GET as getGET } from "@/app/api/kds/status/route";
 
 // =====================================================================================
@@ -42,7 +46,10 @@ vi.mock("@/lib/auth/unified-auth", () => ({
 import type { NextRequest } from "next/server";
 import type { RateLimitConfig, RateLimitResult } from "@/lib/rate-limit";
 
-const rateLimitMock = vi.fn<[_req: NextRequest, _options: RateLimitConfig], Promise<RateLimitResult>>();
+const rateLimitMock = vi.fn<
+  [_req: NextRequest, _options: RateLimitConfig],
+  Promise<RateLimitResult>
+>();
 
 vi.mock("@/lib/rate-limit", () => ({
   RATE_LIMITS: {
@@ -92,19 +99,27 @@ beforeEach(() => {
 describe("Kds Status API", () => {
   describe("GET /api/kds/status", () => {
     it("handles a basic request (legacy smoke test)", async () => {
-      const request = createMockRequest("GET", "http://localhost:3000/api/kds/status?venueId=venue-123");
+      const request = createMockRequest(
+        "GET",
+        "http://localhost:3000/api/kds/status?venueId=venue-123"
+      );
 
       const response = await getGET(request);
       expect([200, 400, 401, 403, 404, 429, 500]).toContain(response.status);
     });
 
     it("returns 401 when auth headers are missing", async () => {
-      const request = createMockRequest("GET", "http://localhost:3000/api/kds/status?venueId=venue-123");
+      const request = createMockRequest(
+        "GET",
+        "http://localhost:3000/api/kds/status?venueId=venue-123"
+      );
 
       const response = await getGET(request);
       expect(response.status).toBe(401);
 
-      const body = await parseJsonResponse<{ success: boolean; error?: { code: string } }>(response);
+      const body = await parseJsonResponse<{ success: boolean; error?: { code: string } }>(
+        response
+      );
       expect(body.success).toBe(false);
       expect(body.error?.code).toBe("UNAUTHORIZED");
     });

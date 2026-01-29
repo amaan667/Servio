@@ -21,7 +21,6 @@ export async function POST(req: Request) {
       .eq("venue_id", venue_id);
 
     if (error) {
-
       return apiErrors.database(error.message);
     }
 

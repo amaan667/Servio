@@ -1,6 +1,7 @@
 import MenuManagementClientPage from "./page.client";
 import { requirePageAuth } from "@/lib/auth/page-auth-helper";
 import { createAdminClient } from "@/lib/supabase";
+import { normalizeVenueId } from "@/lib/utils/venueId";
 
 // Force dynamic rendering to prevent caching
 export const dynamic = "force-dynamic";
@@ -14,23 +15,25 @@ export default async function MenuManagementPage({ params }: { params: { venueId
   const auth = await requirePageAuth(venueId).catch(() => null);
 
   // Fetch initial menu items to prevent flickering "0 menu items"
-  let initialMenuItems: {
-    id: string;
-    venue_id: string;
-    name: string;
-    description: string | null;
-    price: number;
-    category: string;
-    image_url?: string | null;
-    is_available: boolean;
-    created_at: string;
-    position?: number;
-  }[] | undefined = undefined;
+  let initialMenuItems:
+    | {
+        id: string;
+        venue_id: string;
+        name: string;
+        description: string | null;
+        price: number;
+        category: string;
+        image_url?: string | null;
+        is_available: boolean;
+        created_at: string;
+        position?: number;
+      }[]
+    | undefined = undefined;
 
   try {
     if (process.env.SUPABASE_SERVICE_ROLE_KEY) {
       const supabase = createAdminClient();
-      const normalizedVenueId = venueId.startsWith("venue-") ? venueId : `venue-${venueId}`;
+      const normalizedVenueId = normalizeVenueId(venueId) ?? venueId;
 
       const { data: menuItems, error } = await supabase
         .from("menu_items")

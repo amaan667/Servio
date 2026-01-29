@@ -39,16 +39,20 @@ export const POST = createUnifiedHandler(
       if (!has) {
         await adminSupabase.storage.createBucket("menus", { public: false });
       }
-    } catch (_e) { /* Ignore */ }
+    } catch (_e) {
+      /* Ignore */
+    }
 
     const arrayBuf = await file.arrayBuffer();
     const hash = await sha256(arrayBuf);
-    
+
     const originalName = file.name || `${hash}`;
     const lower = originalName.toLowerCase();
     const ext = lower.includes(".") ? lower.substring(lower.lastIndexOf(".")) : ".pdf";
-    const safeExt = [".pdf", ".png", ".jpg", ".jpeg", ".webp", ".heic"].includes(ext) ? ext : ".pdf";
-    
+    const safeExt = [".pdf", ".png", ".jpg", ".jpeg", ".webp", ".heic"].includes(ext)
+      ? ext
+      : ".pdf";
+
     const contentTypes: Record<string, string> = {
       ".pdf": "application/pdf",
       ".png": "image/png",

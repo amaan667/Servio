@@ -86,7 +86,6 @@ export async function PUT(req: NextRequest, context: ReservationParams = {}) {
           .single();
 
         if (updateError) {
-
           return NextResponse.json(
             {
               ok: false,
@@ -101,7 +100,6 @@ export async function PUT(req: NextRequest, context: ReservationParams = {}) {
           reservation: updatedReservation,
         });
       } catch (_error) {
-
         return NextResponse.json(
           {
             ok: false,

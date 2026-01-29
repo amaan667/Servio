@@ -121,9 +121,7 @@ export default function OrderDetailsPage() {
                   </div>
                 </div>
 
-                <h2 className="text-3xl font-bold text-center mb-2">
-                  🎉 Your Order is Ready!
-                </h2>
+                <h2 className="text-3xl font-bold text-center mb-2">🎉 Your Order is Ready!</h2>
 
                 <p className="text-xl text-center text-white/90 mb-4">
                   Please collect your order at the counter
@@ -237,9 +235,7 @@ export default function OrderDetailsPage() {
               <>
                 <Separator />
                 <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
-                  <p className="text-sm text-amber-800 font-medium">
-                    📢 Collection Required
-                  </p>
+                  <p className="text-sm text-amber-800 font-medium">📢 Collection Required</p>
                   <p className="text-xs text-amber-700 mt-1">
                     When your order is ready, please collect it at the counter and return to your
                     table.

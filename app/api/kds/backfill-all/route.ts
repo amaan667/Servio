@@ -20,16 +20,17 @@ interface KDSStation {
   [key: string]: unknown;
 }
 
-export const POST = createUnifiedHandler(async (_req: NextRequest, context) => {
-  const { body } = context;
-  const venueIdFromBody = body?.venueId || body?.venue_id;
+export const POST = createUnifiedHandler(
+  async (_req: NextRequest, context) => {
+    const { body } = context;
+    const venueIdFromBody = body?.venueId || body?.venue_id;
 
-  // Use venueId from context or body
-  const finalVenueId = context.venueId || venueIdFromBody;
+    // Use venueId from context or body
+    const finalVenueId = context.venueId || venueIdFromBody;
 
-  if (!finalVenueId) {
-    return apiErrors.badRequest("venueId is required");
-  }
+    if (!finalVenueId) {
+      return apiErrors.badRequest("venueId is required");
+    }
 
     const supabase = await createClient();
 
@@ -49,7 +50,6 @@ export const POST = createUnifiedHandler(async (_req: NextRequest, context) => {
         .eq("is_active", true);
 
       if (!existingStations || existingStations.length === 0) {
-
         // Create default stations
         const defaultStations = [
           { name: "Expo", type: "expo", order: 0, color: "#3b82f6" },
@@ -119,7 +119,6 @@ export const POST = createUnifiedHandler(async (_req: NextRequest, context) => {
       const { data: orders, error: ordersError } = await query;
 
       if (ordersError) {
-
         results.push({ scope, error: ordersError.message });
         continue;
       }
@@ -140,9 +139,7 @@ export const POST = createUnifiedHandler(async (_req: NextRequest, context) => {
         .select("order_id")
         .in("order_id", orderIds);
 
-      const ordersWithTickets = new Set(
-        existingTicketsData?.map((t) => t.order_id) || []
-      );
+      const ordersWithTickets = new Set(existingTicketsData?.map((t) => t.order_id) || []);
 
       // Process each order
       for (const order of orders) {
@@ -166,7 +163,6 @@ export const POST = createUnifiedHandler(async (_req: NextRequest, context) => {
             });
             scopeTicketsCreated += items.length;
           } catch (ticketError) {
-
             scopeErrors.push(
               `Failed to create tickets for order ${order.id}: ${ticketError instanceof Error ? ticketError.message : "Unknown error"}`
             );
@@ -174,9 +170,7 @@ export const POST = createUnifiedHandler(async (_req: NextRequest, context) => {
           }
 
           scopeOrdersProcessed++;
-
         } catch (_error) {
-
           scopeErrors.push(
             `Error processing order ${order.id}: ${_error instanceof Error ? _error.message : "Unknown _error"}`
           );
@@ -192,7 +186,6 @@ export const POST = createUnifiedHandler(async (_req: NextRequest, context) => {
         tickets_created: scopeTicketsCreated,
         errors: scopeErrors.length > 0 ? scopeErrors : undefined,
       });
-
     }
 
     return success({
@@ -209,7 +202,10 @@ export const POST = createUnifiedHandler(async (_req: NextRequest, context) => {
     rateLimit: RATE_LIMITS.GENERAL,
     extractVenueId: async (req) => {
       try {
-        const body = await req.clone().json().catch(() => ({}));
+        const body = await req
+          .clone()
+          .json()
+          .catch(() => ({}));
         return (
           (body as { venueId?: string; venue_id?: string })?.venueId ||
           (body as { venueId?: string; venue_id?: string })?.venue_id ||

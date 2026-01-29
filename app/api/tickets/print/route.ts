@@ -18,10 +18,11 @@ const printTicketSchema = z.object({
  * Print physical ticket for counter/table orders
  * Supports ESC/POS format for thermal printers
  */
-export const POST = createUnifiedHandler(async (_req: NextRequest, context) => {
-  const { body } = context;
-  const { orderId, printerType = "thermal" } = body;
-  const finalVenueId = context.venueId || body.venueId;
+export const POST = createUnifiedHandler(
+  async (_req: NextRequest, context) => {
+    const { body } = context;
+    const { orderId, printerType = "thermal" } = body;
+    const finalVenueId = context.venueId || body.venueId;
 
     if (!orderId || !finalVenueId) {
       return apiErrors.badRequest("orderId and venueId are required");

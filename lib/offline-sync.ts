@@ -54,7 +54,7 @@ class OfflineSync {
    */
   public enqueue(url: string, method: string, body: unknown, headers: Record<string, string> = {}) {
     const idempotencyKey = headers["x-idempotency-key"] || crypto.randomUUID();
-    
+
     const item: SyncItem = {
       id: crypto.randomUUID(),
       url,
@@ -63,12 +63,12 @@ class OfflineSync {
       body,
       idempotencyKey,
       timestamp: Date.now(),
-      retries: 0
+      retries: 0,
     };
 
     this.queue.push(item);
     this.saveQueue();
-    
+
     if (getConnectionMonitor().getState().isOnline) {
       this.processQueue();
     }
@@ -84,12 +84,12 @@ class OfflineSync {
     while (this.queue.length > 0) {
       const item = this.queue[0];
       if (!item) return;
-      
+
       try {
         const response = await fetch(item.url, {
           method: item.method,
           headers: item.headers,
-          body: JSON.stringify(item.body)
+          body: JSON.stringify(item.body),
         });
 
         if (response.ok || response.status < 500) {

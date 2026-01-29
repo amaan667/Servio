@@ -92,7 +92,10 @@ export async function POST(req: NextRequest) {
     let tableNumber: number | null = null;
 
     if (!isCounterOrder && body.tableNumber) {
-      tableNumber = typeof body.tableNumber === "number" ? body.tableNumber : parseInt(String(body.tableNumber)) || null;
+      tableNumber =
+        typeof body.tableNumber === "number"
+          ? body.tableNumber
+          : parseInt(String(body.tableNumber)) || null;
 
       if (tableNumber) {
         // Check if table exists
@@ -188,8 +191,7 @@ export async function POST(req: NextRequest) {
     }, 0);
 
     // Use provided total if it matches computed total (within 0.01 tolerance), otherwise use computed
-    const finalTotal =
-      Math.abs(computedTotal - body.total) < 0.01 ? body.total : computedTotal;
+    const finalTotal = Math.abs(computedTotal - body.total) < 0.01 ? body.total : computedTotal;
 
     // Determine payment mode based on payment method
     const paymentMode = (() => {

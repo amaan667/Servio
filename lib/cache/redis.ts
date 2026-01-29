@@ -44,7 +44,6 @@ function getRedisClient(): Redis | null {
 
     return redis;
   } catch (_error) {
-
     return null;
   }
 }
@@ -71,7 +70,6 @@ export class RedisCache {
       }
       return JSON.parse(value) as T;
     } catch (_error) {
-
       return null;
     }
   }
@@ -88,7 +86,6 @@ export class RedisCache {
       await this.client.setex(key, ttlSeconds, JSON.stringify(value));
       return true;
     } catch (_error) {
-
       return false;
     }
   }
@@ -105,7 +102,6 @@ export class RedisCache {
       await this.client.del(key);
       return true;
     } catch (_error) {
-
       return false;
     }
   }
@@ -125,7 +121,6 @@ export class RedisCache {
       }
       return true;
     } catch (_error) {
-
       return false;
     }
   }
@@ -142,7 +137,6 @@ export class RedisCache {
       const result = await this.client.exists(key);
       return result === 1;
     } catch (_error) {
-
       return false;
     }
   }
@@ -158,7 +152,6 @@ export class RedisCache {
     try {
       return await this.client.ttl(key);
     } catch (_error) {
-
       return -1;
     }
   }
@@ -174,7 +167,6 @@ export class RedisCache {
     try {
       return await this.client.incrby(key, by);
     } catch (_error) {
-
       return 0;
     }
   }
@@ -191,7 +183,6 @@ export class RedisCache {
       const values = await this.client.mget(...keys);
       return values.map((v) => (v ? JSON.parse(v) : null)) as T[];
     } catch (_error) {
-
       return [];
     }
   }
@@ -218,7 +209,6 @@ export class RedisCache {
       await pipeline.exec();
       return true;
     } catch (_error) {
-
       return false;
     }
   }
@@ -235,7 +225,6 @@ export class RedisCache {
       await this.client.flushdb();
       return true;
     } catch (_error) {
-
       return false;
     }
   }

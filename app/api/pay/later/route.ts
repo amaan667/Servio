@@ -20,7 +20,6 @@ export async function POST(req: NextRequest) {
     const { order_id, venue_id, sessionId } = body;
 
     if (!order_id) {
-
       return apiErrors.badRequest("Order ID is required");
     }
 
@@ -40,7 +39,6 @@ export async function POST(req: NextRequest) {
       .single();
 
     if (checkError || !orderCheck) {
-
       return apiErrors.notFound("Order not found or access denied");
     }
 
@@ -62,7 +60,6 @@ export async function POST(req: NextRequest) {
       .single();
 
     if (updateError || !order) {
-
       return apiErrors.internal("Failed to process order", updateError?.message || "Unknown error");
     }
 

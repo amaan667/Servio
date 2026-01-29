@@ -20,7 +20,6 @@ export async function GET(req: NextRequest) {
     const expectedSecret = env("CRON_SECRET") || "demo-reset-secret";
 
     if (authHeader !== `Bearer ${expectedSecret}`) {
-
       return apiErrors.unauthorized("Unauthorized");
     }
 

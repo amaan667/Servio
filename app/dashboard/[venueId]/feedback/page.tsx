@@ -1,6 +1,7 @@
 import FeedbackClientPage from "./page.client";
 import { requirePageAuth } from "@/lib/auth/page-auth-helper";
 import { createAdminClient } from "@/lib/supabase";
+import { normalizeVenueId } from "@/lib/utils/venueId";
 
 export default async function FeedbackPage({ params }: { params: { venueId: string } }) {
   const { venueId } = params;
@@ -18,7 +19,7 @@ export default async function FeedbackPage({ params }: { params: { venueId: stri
   }> = [];
 
   try {
-    const normalizedVenueId = venueId.startsWith("venue-") ? venueId : `venue-${venueId}`;
+    const normalizedVenueId = normalizeVenueId(venueId) ?? venueId;
     const supabase = createAdminClient();
 
     const { data: questionsData, error } = await supabase

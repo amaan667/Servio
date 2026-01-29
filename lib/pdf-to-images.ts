@@ -29,7 +29,6 @@ export async function convertPDFToImages(pdfBuffer: Buffer): Promise<string[]> {
 
     return imageUrls;
   } catch (_error) {
-
     throw new Error("Failed to convert PDF to images");
   }
 }

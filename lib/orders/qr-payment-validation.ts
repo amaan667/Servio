@@ -24,7 +24,8 @@ export function normalizeQrType(value?: string | null): QrType | null {
 export function normalizePaymentMethod(value?: string | null): PaymentMethod | null {
   if (!value) return null;
   const normalized = value.toString().trim().toUpperCase();
-  if (normalized === "PAY_NOW" || normalized === "STRIPE" || normalized === "CARD") return "PAY_NOW";
+  if (normalized === "PAY_NOW" || normalized === "STRIPE" || normalized === "CARD")
+    return "PAY_NOW";
   if (normalized === "PAY_LATER") return "PAY_LATER";
   if (normalized === "PAY_AT_TILL" || normalized === "TILL" || normalized === "CASH")
     return "PAY_AT_TILL";
@@ -110,7 +111,8 @@ export function validateOrderStatusTransition(input: {
   if (next === "COMPLETED" && paymentStatus !== "PAID") {
     return {
       ok: false,
-      error: "Cannot complete order: payment status is UNPAID. Order must be PAID before completion.",
+      error:
+        "Cannot complete order: payment status is UNPAID. Order must be PAID before completion.",
     };
   }
 

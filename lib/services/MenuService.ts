@@ -237,7 +237,7 @@ export class MenuService extends BaseService {
         try {
           // Use admin client to bypass RLS - customers don't have auth cookies
           const supabase = createAdminClient();
-          
+
           // Parallelize queries for better performance
           const [venueResult, menuItemsResult, uploadResult] = await Promise.all([
             // 1. Get Venue
@@ -279,7 +279,6 @@ export class MenuService extends BaseService {
           if (menuError) {
             throw new Error(`Failed to fetch menu items: ${menuError.message}`);
           }
-
 
           // Upload data is optional - don't fail if it doesn't exist
           // PGRST116 is "not found" which is fine

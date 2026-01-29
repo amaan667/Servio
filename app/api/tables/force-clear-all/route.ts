@@ -13,13 +13,14 @@ const forceClearAllSchema = z.object({
   venueId: z.string().optional(),
 });
 
-export const POST = createUnifiedHandler(async (_req: NextRequest, context) => {
-  const { body } = context;
-  const venue_id = context.venueId || body.venue_id || body.venueId;
+export const POST = createUnifiedHandler(
+  async (_req: NextRequest, context) => {
+    const { body } = context;
+    const venue_id = context.venueId || body.venue_id || body.venueId;
 
-  if (!venue_id) {
-    return apiErrors.badRequest("venue_id is required");
-  }
+    if (!venue_id) {
+      return apiErrors.badRequest("venue_id is required");
+    }
 
     const supabase = createAdminClient();
 
@@ -40,7 +41,6 @@ export const POST = createUnifiedHandler(async (_req: NextRequest, context) => {
       .eq("venue_id", venue_id);
 
     if (sessionsError) {
-
       // Continue anyway
     } else {
       // Intentionally empty
@@ -60,7 +60,6 @@ export const POST = createUnifiedHandler(async (_req: NextRequest, context) => {
       .eq("venue_id", venue_id);
 
     if (runtimeError) {
-
       // Continue anyway
     } else {
       // Intentionally empty
@@ -73,7 +72,6 @@ export const POST = createUnifiedHandler(async (_req: NextRequest, context) => {
       .eq("venue_id", venue_id);
 
     if (groupSessionsError) {
-
       // Continue anyway
     } else {
       // Intentionally empty
@@ -90,7 +88,10 @@ export const POST = createUnifiedHandler(async (_req: NextRequest, context) => {
     rateLimit: RATE_LIMITS.GENERAL,
     extractVenueId: async (req) => {
       try {
-        const body = await req.clone().json().catch(() => ({}));
+        const body = await req
+          .clone()
+          .json()
+          .catch(() => ({}));
         return (
           (body as { venue_id?: string; venueId?: string })?.venue_id ||
           (body as { venue_id?: string; venueId?: string })?.venueId ||

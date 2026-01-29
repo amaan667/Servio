@@ -13,7 +13,6 @@ export async function POST() {
     } = await supabase.auth.getUser();
 
     if (userError) {
-
       return NextResponse.json(
         {
           ok: false,
@@ -51,7 +50,6 @@ export async function POST() {
       },
     });
   } catch (_error) {
-
     return NextResponse.json(
       {
         ok: false,

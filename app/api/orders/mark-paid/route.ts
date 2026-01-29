@@ -116,7 +116,10 @@ export const POST = createUnifiedHandler(
     rateLimit: RATE_LIMITS.GENERAL,
     extractVenueId: async (req) => {
       try {
-        const body = await req.clone().json().catch(() => ({}));
+        const body = await req
+          .clone()
+          .json()
+          .catch(() => ({}));
         if (body?.venue_id) return body.venue_id;
         const orderId = body?.orderId;
         if (orderId) {

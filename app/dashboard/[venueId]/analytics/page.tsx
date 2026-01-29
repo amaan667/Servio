@@ -26,7 +26,7 @@ export default async function AnalyticsPage({ params }: { params: { venueId: str
   ]);
 
   const tier = auth?.tier ?? "starter";
-  
+
   // Log all auth information for browser console
   const authInfo = {
     hasAuth: !!auth,

@@ -56,7 +56,9 @@ export function QuickActionsToolbar({
   const [supportFormType, setSupportFormType] = useState<"feature" | "bug">("feature");
 
   // Track role changes (must be before return)
-  useEffect(() => { /* Intentionally empty */ }, [userRole]);
+  useEffect(() => {
+    /* Intentionally empty */
+  }, [userRole]);
 
   // Don't render until we know if mobile or desktop (prevents flicker)
   if (isMobile === undefined) {
@@ -203,7 +205,12 @@ export function QuickActionsToolbar({
               <RoleManagementPopup />
               <VenueSwitcherPopup
                 currentVenueId={venueId}
-                onVenueChange={onVenueChange || (() => { /* Intentionally empty */ })}
+                onVenueChange={
+                  onVenueChange ||
+                  (() => {
+                    /* Intentionally empty */
+                  })
+                }
               />
             </div>
           </div>

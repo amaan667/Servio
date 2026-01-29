@@ -36,7 +36,9 @@ describe("MenuService", () => {
         })),
       })),
     };
-    vi.mocked(createSupabaseClient).mockResolvedValue(mockSupabase as unknown as ReturnType<typeof createSupabaseClient>);
+    vi.mocked(createSupabaseClient).mockResolvedValue(
+      mockSupabase as unknown as ReturnType<typeof createSupabaseClient>
+    );
   });
 
   describe("getMenuItems", () => {

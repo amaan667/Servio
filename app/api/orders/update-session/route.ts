@@ -26,7 +26,6 @@ export async function POST(req: Request) {
       .single();
 
     if (findError || !order) {
-
       return apiErrors.notFound("Order not found");
     }
 
@@ -40,7 +39,6 @@ export async function POST(req: Request) {
       .eq("id", order.id);
 
     if (updateError) {
-
       return apiErrors.database("Failed to update order");
     }
 

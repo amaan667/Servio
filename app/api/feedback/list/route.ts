@@ -71,7 +71,6 @@ export const POST = withUnifiedAuth(
         .range(offset, offset + limit - 1);
 
       if (error) {
-
         return NextResponse.json(
           {
             ok: false,

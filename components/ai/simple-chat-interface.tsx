@@ -62,7 +62,6 @@ export function SimpleChatInterface({
     };
 
     try {
-
       const fetchStartTime = Date.now();
 
       const response = await fetch("/api/ai/simple-chat", {
@@ -77,7 +76,6 @@ export function SimpleChatInterface({
       const fetchDuration = Date.now() - fetchStartTime;
 
       if (!response.ok) {
-
         let errorData;
         try {
           const responseText = await response.text();
@@ -86,12 +84,15 @@ export function SimpleChatInterface({
 
           // Log debug information if available
           if (errorData.debug) {
-
-            if (errorData.debug.stack) { /* Condition handled */ }
+            if (errorData.debug.stack) {
+              /* Condition handled */
+            }
           }
         } catch (parseError) {
-
-          errorData = { error: "Unknown error", rawResponse: await response.text().catch(() => "Could not read response") };
+          errorData = {
+            error: "Unknown error",
+            rawResponse: await response.text().catch(() => "Could not read response"),
+          };
         }
 
         throw new Error(errorData.error || errorData.message || `HTTP ${response.status}`);
@@ -108,17 +109,16 @@ export function SimpleChatInterface({
 
       // Handle navigation if present
       if (data.navigation?.route) {
-
         setTimeout(() => {
-
           router.push(data.navigation.route);
           onClose();
         }, 500);
-      } else { /* Else case handled */ }
+      } else {
+        /* Else case handled */
+      }
 
       console.groupEnd();
     } catch (err) {
-
       const errorMessage = err instanceof Error ? err.message : String(err);
       setError(errorMessage);
 
@@ -131,7 +131,6 @@ export function SimpleChatInterface({
       console.groupEnd();
     } finally {
       setLoading(false);
-
     }
   };
 

@@ -489,7 +489,9 @@ export function HomePageClient({ initialAuthState, initialUserPlan = null }: Hom
                         <span className="text-gray-900 ml-2 font-medium">/{plan.period}</span>
                       )}
                     </div>
-                    <p className="text-sm text-gray-600 mt-2">14-day free trial · No credit card required</p>
+                    <p className="text-sm text-gray-600 mt-2">
+                      14-day free trial · No credit card required
+                    </p>
                     <CardDescription className="mt-4 text-gray-800 font-medium">
                       {plan.description}
                     </CardDescription>

@@ -52,7 +52,6 @@ export async function GET(_request: NextRequest) {
       .maybeSingle();
 
     if (uploadError) {
-
       return apiErrors.internal("Failed to fetch category order");
     }
 
@@ -64,7 +63,6 @@ export async function GET(_request: NextRequest) {
       .limit(limit);
 
     if (menuError) {
-
       return apiErrors.internal("Failed to fetch menu items");
     }
 
@@ -93,7 +91,6 @@ export async function GET(_request: NextRequest) {
 
     return NextResponse.json(response);
   } catch (_error) {
-
     return apiErrors.internal("Internal server error");
   }
 }
@@ -126,7 +123,6 @@ export async function PUT(_request: NextRequest) {
       .maybeSingle();
 
     if (fetchError) {
-
       return apiErrors.internal("Failed to fetch existing upload");
     }
 
@@ -141,7 +137,6 @@ export async function PUT(_request: NextRequest) {
         .eq("id", existingUpload.id);
 
       if (updateError) {
-
         return apiErrors.internal("Failed to update category order");
       }
     } else {
@@ -154,7 +149,6 @@ export async function PUT(_request: NextRequest) {
       });
 
       if (insertError) {
-
         return apiErrors.internal("Failed to create category order");
       }
     }
@@ -165,7 +159,6 @@ export async function PUT(_request: NextRequest) {
       categories,
     });
   } catch (_error) {
-
     return apiErrors.internal("Internal server error");
   }
 }
@@ -190,7 +183,6 @@ export async function POST(_request: NextRequest) {
       .maybeSingle();
 
     if (fetchError) {
-
       return apiErrors.internal("Failed to fetch category order");
     }
 
@@ -217,7 +209,6 @@ export async function POST(_request: NextRequest) {
         .eq("id", existingUpload.id);
 
       if (updateError) {
-
         return apiErrors.internal("Failed to update category order");
       }
     } else {
@@ -266,7 +257,7 @@ export async function DELETE(req: NextRequest) {
       .maybeSingle();
 
     if (uploadData?.category_order) {
-      const newOrder = (uploadData.category_order as string[]).filter(c => c !== categoryName);
+      const newOrder = (uploadData.category_order as string[]).filter((c) => c !== categoryName);
       await supabase
         .from("menu_uploads")
         .update({ category_order: newOrder, updated_at: new Date().toISOString() })

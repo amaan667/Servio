@@ -1,10 +1,10 @@
 /**
  * Universal API Handler
  * Standardized handler with validation, auth, logging, and error handling
- * 
+ *
  * @deprecated Use createUnifiedHandler from './unified-handler' instead.
  * This handler is kept for backward compatibility but will be removed in a future version.
- * 
+ *
  * Migration: Replace createUniversalHandler with createUnifiedHandler for better features.
  */
 
@@ -87,7 +87,6 @@ export function createUniversalHandler<TBody = unknown, TResponse = unknown>(
           body = options.schema.parse(body) as TBody;
         } catch (error) {
           if (error instanceof ZodError) {
-
             return handleZodError(error) as NextResponse<ApiResponse<TResponse>>;
           }
           throw error;
@@ -95,14 +94,15 @@ export function createUniversalHandler<TBody = unknown, TResponse = unknown>(
       }
 
       // Log request if enabled
-      if (options.logRequest) { /* Condition handled */ }
+      if (options.logRequest) {
+        /* Condition handled */
+      }
 
       // Handle authentication
       let user: { id: string; email?: string } | undefined;
       if (options.requireAuth || options.requireVenueAccess) {
         const authResult = await getAuthenticatedUser();
         if (!authResult.user) {
-
           return fail("Unauthorized", 401) as NextResponse<ApiResponse<TResponse>>;
         }
         user = authResult.user;
@@ -133,7 +133,6 @@ export function createUniversalHandler<TBody = unknown, TResponse = unknown>(
 
         const access = await verifyVenueAccess(venueId, user.id);
         if (!access) {
-
           return fail("Forbidden - access denied to this venue", 403) as NextResponse<
             ApiResponse<TResponse>
           >;
@@ -169,7 +168,6 @@ export function createUniversalHandler<TBody = unknown, TResponse = unknown>(
       // Log response if enabled
       if (options.logResponse) {
         const duration = Date.now() - startTime;
-
       }
 
       return ok(result) as NextResponse<ApiResponse<TResponse>>;

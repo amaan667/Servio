@@ -70,7 +70,6 @@ class Cache {
       this.memoryCache.set(key, { value, expires });
       return true;
     } catch (_error) {
-
       return false;
     }
   }
@@ -89,7 +88,6 @@ class Cache {
       this.memoryCache.delete(key);
       return true;
     } catch (_error) {
-
       return false;
     }
   }
@@ -117,7 +115,6 @@ class Cache {
       }
       return true;
     } catch (_error) {
-
       return false;
     }
   }
@@ -153,7 +150,6 @@ class Cache {
       );
       return true;
     } catch (_error) {
-
       return false;
     }
   }
@@ -169,7 +165,6 @@ class Cache {
       this.memoryCache.clear();
       return true;
     } catch (_error) {
-
       return false;
     }
   }
@@ -199,13 +194,7 @@ export const cacheTTL = {
 };
 
 // Export new standardized cache constants
-export {
-  CACHE_TTL,
-  CACHE_PREFIX,
-  cacheKeys,
-  cacheTags,
-  RECOMMENDED_TTL,
-} from "./constants";
+export { CACHE_TTL, CACHE_PREFIX, cacheKeys, cacheTags, RECOMMENDED_TTL } from "./constants";
 
 // Export cache interface for type safety
 export interface CacheInterface {

@@ -49,13 +49,11 @@ export async function PATCH(_request: NextRequest, context: OrderParams = {}) {
       .single();
 
     if (fetchError || !order) {
-
       return apiErrors.notFound("Order not found");
     }
 
     // Validate order state - can only change payment mode if unpaid
     if (order.payment_status === "PAID") {
-
       return NextResponse.json(
         { error: "Cannot change payment mode for already paid orders" },
         { status: 400 }
@@ -64,7 +62,6 @@ export async function PATCH(_request: NextRequest, context: OrderParams = {}) {
 
     // Validate order is not completed
     if (order.order_status === "COMPLETED") {
-
       return NextResponse.json(
         { error: "Cannot change payment mode for completed orders" },
         { status: 400 }
@@ -120,7 +117,6 @@ export async function PATCH(_request: NextRequest, context: OrderParams = {}) {
       .single();
 
     if (updateError) {
-
       return apiErrors.internal("Failed to update payment mode");
     }
 
@@ -132,7 +128,6 @@ export async function PATCH(_request: NextRequest, context: OrderParams = {}) {
       changed_to: new_payment_mode,
     });
   } catch (_error) {
-
     return apiErrors.internal("Internal server error");
   }
 }

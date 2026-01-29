@@ -38,7 +38,13 @@ export async function POST(req: NextRequest) {
     const message = `[DASHBOARD] ${event}`;
 
     // Use console.* so Railway always captures these logs from server runtime
-    if (level === "error") { /* Condition handled */ } else if (level === "warn") { /* Condition handled */ } else { /* Else case handled */ }
+    if (level === "error") {
+      /* Condition handled */
+    } else if (level === "warn") {
+      /* Condition handled */
+    } else {
+      /* Else case handled */
+    }
 
     return NextResponse.json({ ok: true });
   } catch (error) {

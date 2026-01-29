@@ -27,7 +27,6 @@ export async function POST(_request: NextRequest) {
       .maybeSingle();
 
     if (uploadError) {
-
       return NextResponse.json(
         {
           ok: false,
@@ -56,7 +55,6 @@ export async function POST(_request: NextRequest) {
       .eq("venue_id", venueId);
 
     if (menuItemsError) {
-
       return NextResponse.json(
         {
           ok: false,
@@ -97,7 +95,6 @@ export async function POST(_request: NextRequest) {
         .in("category", manuallyAddedCategories);
 
       if (deleteError) {
-
         return NextResponse.json(
           {
             ok: false,
@@ -125,9 +122,7 @@ export async function POST(_request: NextRequest) {
       .limit(1);
 
     if (updateError) {
-
       // Don't fail the entire operation for this
-
     }
 
     return NextResponse.json({
@@ -139,7 +134,6 @@ export async function POST(_request: NextRequest) {
         menuItems?.filter((item) => manuallyAddedCategories.includes(item.category)).length || 0,
     });
   } catch (_error) {
-
     return NextResponse.json(
       {
         ok: false,

@@ -47,7 +47,7 @@ export async function middleware(request: NextRequest) {
   // - Keep dashboard navigation non-blocking (no redirects), but do not inject auth headers
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-  
+
   if (!supabaseUrl || !supabaseAnonKey) {
     // eslint-disable-next-line no-console
     console.error("[MIDDLEWARE] Missing Supabase env vars", {
@@ -67,7 +67,7 @@ export async function middleware(request: NextRequest) {
     // Dashboard: allow to load (client-side can show auth/env error states)
     return response;
   }
-  
+
   // Create middleware-specific Supabase client that properly uses request/response cookies
   // This is CRITICAL: middleware cannot use cookies() from next/headers - must use request.cookies
   const supabase = createServerClient(supabaseUrl, supabaseAnonKey, {
@@ -77,7 +77,7 @@ export async function middleware(request: NextRequest) {
         // eslint-disable-next-line no-console
         console.log("[MIDDLEWARE] Reading cookies", {
           count: allCookies.length,
-          names: allCookies.map(c => c.name).filter(n => n.includes("sb-")),
+          names: allCookies.map((c) => c.name).filter((n) => n.includes("sb-")),
         });
         return allCookies;
       },
@@ -101,7 +101,7 @@ export async function middleware(request: NextRequest) {
   // Get user - use getUser() instead of getSession() for secure authentication
   // getUser() authenticates the data by contacting the Supabase Auth server
   // It also automatically refreshes the session if needed
-  
+
   // First, log incoming cookies for debugging
   const cookieHeader = request.headers.get("cookie") || "";
   const hasAuthCookies = cookieHeader.includes("sb-") && cookieHeader.includes("auth-token");
@@ -111,7 +111,7 @@ export async function middleware(request: NextRequest) {
     hasAuthCookies,
     cookiePreview: cookieHeader.slice(0, 200) + (cookieHeader.length > 200 ? "..." : ""),
   });
-  
+
   let {
     data: { user },
     error: authError,
@@ -139,14 +139,14 @@ export async function middleware(request: NextRequest) {
         data: { session: refreshedSession },
         error: refreshError,
       } = await supabase.auth.refreshSession();
-      
+
       // eslint-disable-next-line no-console
       console.log("[MIDDLEWARE] Session refresh result", {
         hasSession: !!refreshedSession,
         hasUser: !!refreshedSession?.user,
         refreshError: refreshError?.message,
       });
-      
+
       if (refreshedSession?.user && !refreshError) {
         user = refreshedSession.user;
         authError = null;
@@ -169,7 +169,7 @@ export async function middleware(request: NextRequest) {
 
   // If getUser() fails, treat as unauthenticated
   const session = user ? { user } : null;
-  
+
   // eslint-disable-next-line no-console
   console.log("[MIDDLEWARE] Final auth state", {
     pathname,
@@ -186,21 +186,21 @@ export async function middleware(request: NextRequest) {
       const requestHeaders = new Headers(request.headers);
       requestHeaders.set("x-user-id", session.user.id);
       requestHeaders.set("x-user-email", session.user.email || "");
-      
+
       // Note: Tier/role headers are set by unified handler after it extracts venueId
       // This is more reliable than trying to parse venueId from URL patterns here
-      
+
       // Create new response with updated headers, preserving any cookies set during auth
       const newResponse = NextResponse.next({
         request: { headers: requestHeaders },
       });
       // Copy cookies from original response (set by Supabase during token refresh)
-      response.cookies.getAll().forEach(cookie => {
+      response.cookies.getAll().forEach((cookie) => {
         newResponse.cookies.set(cookie.name, cookie.value);
       });
       return newResponse;
     }
-    
+
     // No session - pass through without headers, let unified handler decide
     // This allows public routes (requireAuth: false) to work
     return response;
@@ -237,8 +237,11 @@ export async function middleware(request: NextRequest) {
       });
 
       // Verify we have an authenticated session before calling RPC
-      const { data: { user: verifyUser }, error: verifyError } = await supabase.auth.getUser();
-      
+      const {
+        data: { user: verifyUser },
+        error: verifyError,
+      } = await supabase.auth.getUser();
+
       // eslint-disable-next-line no-console
       console.log("[MIDDLEWARE] Session verification", {
         hasUser: !!verifyUser,
@@ -255,11 +258,14 @@ export async function middleware(request: NextRequest) {
       // Call RPC with proper error handling
       // NOTE: In Edge/middleware, Supabase rpc() returns a promise-like object but does NOT
       // support chaining .catch() directly in all environments, so we use try/catch around await.
-      let data: { user_id?: string; venue_id?: string | null; role?: string; tier?: string } | null =
+      let data: {
+        user_id?: string;
+        venue_id?: string | null;
+        role?: string;
+        tier?: string;
+      } | null = null;
+      let rpcErr: { message: string; code?: string; details?: unknown; hint?: unknown } | null =
         null;
-      let rpcErr:
-        | { message: string; code?: string; details?: unknown; hint?: unknown }
-        | null = null;
       try {
         const result = await supabase.rpc("get_access_context", {
           p_venue_id: normalizedVenueId,
@@ -280,18 +286,22 @@ export async function middleware(request: NextRequest) {
       console.log("[MIDDLEWARE] get_access_context result", {
         hasData: !!data,
         hasError: !!rpcErr,
-        error: rpcErr ? {
-          message: rpcErr.message,
-          code: rpcErr.code,
-          details: rpcErr.details,
-          hint: rpcErr.hint,
-        } : null,
-        data: data ? { 
-          userId: data.user_id, 
-          role: data.role, 
-          tier: data.tier,
-          venueId: data.venue_id,
-        } : null,
+        error: rpcErr
+          ? {
+              message: rpcErr.message,
+              code: rpcErr.code,
+              details: rpcErr.details,
+              hint: rpcErr.hint,
+            }
+          : null,
+        data: data
+          ? {
+              userId: data.user_id,
+              role: data.role,
+              tier: data.tier,
+              venueId: data.venue_id,
+            }
+          : null,
       });
 
       // Always set basic user headers (user-id, email) even if RPC fails
@@ -319,7 +329,7 @@ export async function middleware(request: NextRequest) {
         const errResponse = NextResponse.next({
           request: { headers: requestHeaders },
         });
-        response.cookies.getAll().forEach(c => errResponse.cookies.set(c.name, c.value));
+        response.cookies.getAll().forEach((c) => errResponse.cookies.set(c.name, c.value));
         return errResponse;
       }
 
@@ -338,14 +348,19 @@ export async function middleware(request: NextRequest) {
         const noDataResponse = NextResponse.next({
           request: { headers: requestHeaders },
         });
-        response.cookies.getAll().forEach(c => noDataResponse.cookies.set(c.name, c.value));
+        response.cookies.getAll().forEach((c) => noDataResponse.cookies.set(c.name, c.value));
         return noDataResponse;
       }
 
       // Validate RPC response structure
       // Validate RPC response structure - must have user_id and role
-      const ctx = data as { user_id?: string; venue_id?: string | null; role?: string; tier?: string };
-      
+      const ctx = data as {
+        user_id?: string;
+        venue_id?: string | null;
+        role?: string;
+        tier?: string;
+      };
+
       if (!ctx.user_id || !ctx.role) {
         // eslint-disable-next-line no-console
         console.error("[MIDDLEWARE] CRITICAL: RPC returned invalid data structure", {
@@ -364,12 +379,12 @@ export async function middleware(request: NextRequest) {
         const invalidResponse = NextResponse.next({
           request: { headers: requestHeaders },
         });
-        response.cookies.getAll().forEach(c => invalidResponse.cookies.set(c.name, c.value));
+        response.cookies.getAll().forEach((c) => invalidResponse.cookies.set(c.name, c.value));
         return invalidResponse;
       }
 
       // Validate tier is one of the valid values
-      const tier = (ctx.tier?.toLowerCase().trim() || "starter");
+      const tier = ctx.tier?.toLowerCase().trim() || "starter";
       if (!["starter", "pro", "enterprise"].includes(tier)) {
         // eslint-disable-next-line no-console
         console.error("[MIDDLEWARE] CRITICAL: RPC returned invalid tier", {
@@ -387,7 +402,7 @@ export async function middleware(request: NextRequest) {
         const tierResponse = NextResponse.next({
           request: { headers: requestHeaders },
         });
-        response.cookies.getAll().forEach(c => tierResponse.cookies.set(c.name, c.value));
+        response.cookies.getAll().forEach((c) => tierResponse.cookies.set(c.name, c.value));
         return tierResponse;
       }
 
@@ -423,7 +438,7 @@ export async function middleware(request: NextRequest) {
         request: { headers: requestHeaders },
       });
       // Preserve any cookies set during auth (e.g., token refresh)
-      response.cookies.getAll().forEach(c => successResponse.cookies.set(c.name, c.value));
+      response.cookies.getAll().forEach((c) => successResponse.cookies.set(c.name, c.value));
       return successResponse;
     } catch (error) {
       // eslint-disable-next-line no-console

@@ -47,7 +47,6 @@ export const POST = withUnifiedAuth(
         .single();
 
       if (orgError || !org) {
-
         return apiErrors.notFound("Organization not found");
       }
 
@@ -80,7 +79,6 @@ export const POST = withUnifiedAuth(
           .eq("id", organizationId);
 
         if (updateError) {
-
           return apiErrors.database(
             "Failed to update organization",
             isDevelopment() ? updateError.message : undefined
@@ -113,7 +111,6 @@ export const POST = withUnifiedAuth(
         .eq("id", organizationId);
 
       if (updateError) {
-
         return apiErrors.database(
           "Failed to update organization",
           isDevelopment() ? updateError.message : undefined
@@ -127,7 +124,6 @@ export const POST = withUnifiedAuth(
         status: subscription.status,
       });
     } catch (error) {
-
       if (isZodError(error)) {
         return handleZodError(error);
       }

@@ -1,4 +1,3 @@
-
 /**
  * Centralized table cleanup utilities
  * Ensures consistent table state management when orders are completed
@@ -60,7 +59,6 @@ export async function cleanupTableOnOrderCompletion(params: TableCleanupParams):
 
     // If completion_status column doesn't exist, fall back to order_status check
     if (activeOrdersError && activeOrdersError.message?.includes("completion_status")) {
-
       let fallbackQuery = supabase
         .from("orders")
         .select("id, order_status, table_id, table_number")
@@ -91,14 +89,12 @@ export async function cleanupTableOnOrderCompletion(params: TableCleanupParams):
     }
 
     if (activeOrdersError) {
-
       return { success: false, error: "Failed to check active orders" };
     }
 
     // If there are still active orders on this table, don't clean up the table
     // Only set table to FREE when ALL orders on the table are completed
     if (activeOrders && activeOrders.length > 0) {
-
       return {
         success: true,
         details: { sessionsCleared: 0, runtimeStateCleared: false },
@@ -131,9 +127,13 @@ export async function cleanupTableOnOrderCompletion(params: TableCleanupParams):
 
     const { data: sessionData, error: sessionClearError } = await sessionQuery.select();
 
-    if (sessionClearError) { /* Condition handled */ } else {
+    if (sessionClearError) {
+      /* Condition handled */
+    } else {
       sessionsCleared = sessionData?.length || 0;
-      if (sessionsCleared > 0) { /* Condition handled */ }
+      if (sessionsCleared > 0) {
+        /* Condition handled */
+      }
     }
 
     // 2. Clear table runtime state - update ALL matching records to ensure table is FREE
@@ -149,9 +149,13 @@ export async function cleanupTableOnOrderCompletion(params: TableCleanupParams):
         .eq("label", `Table ${tableNumber}`)
         .select();
 
-      if (runtimeClearError) { /* Condition handled */ } else {
+      if (runtimeClearError) {
+        /* Condition handled */
+      } else {
         runtimeStateCleared = true;
-        if (runtimeData && runtimeData.length > 0) { /* Condition handled */ }
+        if (runtimeData && runtimeData.length > 0) {
+          /* Condition handled */
+        }
       }
     }
 
@@ -168,9 +172,13 @@ export async function cleanupTableOnOrderCompletion(params: TableCleanupParams):
         .eq("table_id", tableId)
         .select();
 
-      if (runtimeClearErrorById) { /* Condition handled */ } else {
+      if (runtimeClearErrorById) {
+        /* Condition handled */
+      } else {
         runtimeStateCleared = true;
-        if (runtimeDataById && runtimeDataById.length > 0) { /* Condition handled */ }
+        if (runtimeDataById && runtimeDataById.length > 0) {
+          /* Condition handled */
+        }
       }
     }
 
@@ -182,7 +190,6 @@ export async function cleanupTableOnOrderCompletion(params: TableCleanupParams):
       },
     };
   } catch (_error) {
-
     return {
       success: false,
       error: _error instanceof Error ? _error.message : "Unknown _error during table cleanup",
@@ -227,7 +234,6 @@ export async function hasActiveOrders(params: TableCleanupParams): Promise<{
 
     // If completion_status column doesn't exist, fall back to order_status check
     if (error && (error.message?.includes("completion_status") || error.code === "PGRST116")) {
-
       let fallbackQuery = supabase
         .from("orders")
         .select("id", { count: "exact" })
@@ -250,7 +256,6 @@ export async function hasActiveOrders(params: TableCleanupParams): Promise<{
     }
 
     if (error) {
-
       return { hasActive: false, count: 0, error: error.message };
     }
 
@@ -259,7 +264,6 @@ export async function hasActiveOrders(params: TableCleanupParams): Promise<{
       count: count || 0,
     };
   } catch (_error) {
-
     return {
       hasActive: false,
       count: 0,

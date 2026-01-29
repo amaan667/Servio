@@ -1,4 +1,3 @@
-
 export interface PerformanceMetrics {
   // Core Web Vitals
   lcp: number; // Largest Contentful Paint
@@ -235,7 +234,8 @@ export class PerformanceMonitor {
     const current = this.metrics[this.metrics.length - 1];
     const trends: Record<string, number> = {};
 
-    if (!firstMetric || !current) return { average, current: current ?? ({} as PerformanceMetrics), trends };
+    if (!firstMetric || !current)
+      return { average, current: current ?? ({} as PerformanceMetrics), trends };
 
     Object.keys(firstMetric).forEach((key) => {
       const values = this.metrics
@@ -289,7 +289,9 @@ export class PerformanceMonitor {
           userAgent: navigator.userAgent,
         }),
       });
-    } catch (_error) { /* Error handled silently */ }
+    } catch (_error) {
+      /* Error handled silently */
+    }
   }
 
   /**

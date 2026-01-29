@@ -5,6 +5,7 @@ import { apiErrors } from "@/lib/api/standard-response";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import { paginationSchema, validateQuery } from "@/lib/api/validation-schemas";
 import { z } from "zod";
+import { normalizeVenueId } from "@/lib/utils/venueId";
 
 // GET - List active questions for venue (public endpoint for customers)
 export async function GET(req: NextRequest) {
@@ -29,7 +30,7 @@ export async function GET(req: NextRequest) {
     });
 
     // Normalize venueId - database stores with venue- prefix
-    const normalizedVenueId = venueId.startsWith("venue-") ? venueId : `venue-${venueId}`;
+    const normalizedVenueId = normalizeVenueId(venueId) ?? venueId;
 
     const serviceClient = await createAdminClient();
 

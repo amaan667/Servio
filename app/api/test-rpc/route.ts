@@ -50,19 +50,24 @@ export async function GET(req: NextRequest) {
       venueId,
       rpcResult: {
         data,
-        error: rpcError ? {
-          message: rpcError.message,
-          code: rpcError.code,
-          details: rpcError.details,
-          hint: rpcError.hint,
-        } : null,
+        error: rpcError
+          ? {
+              message: rpcError.message,
+              code: rpcError.code,
+              details: rpcError.details,
+              hint: rpcError.hint,
+            }
+          : null,
       },
       authUid: user.id,
     });
   } catch (error) {
-    return Response.json({
-      error: "Internal error",
-      message: error instanceof Error ? error.message : String(error),
-    }, { status: 500 });
+    return Response.json(
+      {
+        error: "Internal error",
+        message: error instanceof Error ? error.message : String(error),
+      },
+      { status: 500 }
+    );
   }
 }

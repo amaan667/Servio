@@ -40,7 +40,6 @@ export class QueryCache {
       await redisCache.set(key, result, { ttl, tags });
       return result;
     } catch (_error) {
-
       return await queryFn();
     }
   }

@@ -28,10 +28,10 @@ export const POST = createUnifiedHandler(
       forcedReason: body.forcedReason,
     });
 
-    return { 
-      success: true, 
+    return {
+      success: true,
       message: body.forced ? "Order force-completed" : "Order completed",
-      order 
+      order,
     };
   },
   {

@@ -41,7 +41,6 @@ async function getRedisClient() {
   const redisUrl = env("REDIS_URL");
 
   if (!redisUrl) {
-
     return null;
   }
 
@@ -62,7 +61,6 @@ async function getRedisClient() {
 
     return client;
   } catch (error) {
-
     return null;
   }
 }
@@ -94,7 +92,8 @@ export function getClientIdentifier(req: NextRequest): string {
   // Fall back to IP address
   const forwarded = req.headers.get("x-forwarded-for");
   const first = forwarded?.split(",")[0];
-  const ip = (typeof first === "string" ? first.trim() : null) ?? req.headers.get("x-real-ip") ?? "unknown";
+  const ip =
+    (typeof first === "string" ? first.trim() : null) ?? req.headers.get("x-real-ip") ?? "unknown";
   return ip;
 }
 
@@ -124,7 +123,6 @@ export async function rateLimit(
       await redis.expire(bucketKey, options.window * 2); // Keep for 2 windows
 
       if (count > options.limit) {
-
         return {
           success: false,
           remaining: 0,
@@ -141,7 +139,6 @@ export async function rateLimit(
       };
     } catch (error) {
       // Redis error - fall back to in-memory
-
     }
   }
 

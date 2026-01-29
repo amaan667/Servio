@@ -48,7 +48,6 @@ export const POST = withUnifiedAuth(async (req: NextRequest, context) => {
       .eq("is_active", true);
 
     if (!existingStations || existingStations.length === 0) {
-
       // Create default stations
       const defaultStations = [
         { name: "Expo", type: "expo", order: 0, color: "#3b82f6" },
@@ -118,7 +117,6 @@ export const POST = withUnifiedAuth(async (req: NextRequest, context) => {
     const { data: orders, error: ordersError } = await query;
 
     if (ordersError) {
-
       return NextResponse.json(
         {
           ok: false,
@@ -169,7 +167,6 @@ export const POST = withUnifiedAuth(async (req: NextRequest, context) => {
           });
           ticketsCreated += items.length;
         } catch (ticketError) {
-
           errors.push(
             `Failed to create tickets for order ${order.id}: ${ticketError instanceof Error ? ticketError.message : "Unknown error"}`
           );
@@ -178,7 +175,6 @@ export const POST = withUnifiedAuth(async (req: NextRequest, context) => {
 
         ordersProcessed++;
       } catch (_error) {
-
         errors.push(
           `Error processing order ${order.id}: ${_error instanceof Error ? _error.message : "Unknown _error"}`
         );
@@ -193,7 +189,6 @@ export const POST = withUnifiedAuth(async (req: NextRequest, context) => {
       errors: errors.length > 0 ? errors : undefined,
     });
   } catch (_error) {
-
     return NextResponse.json(
       {
         ok: false,

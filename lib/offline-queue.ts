@@ -35,10 +35,8 @@ class OfflineQueue {
       const stored = localStorage.getItem(this.STORAGE_KEY);
       if (stored) {
         this.queue = JSON.parse(stored);
-
       }
     } catch (error) {
-
       this.queue = [];
     }
   }
@@ -49,7 +47,9 @@ class OfflineQueue {
   private saveQueue(): void {
     try {
       localStorage.setItem(this.STORAGE_KEY, JSON.stringify(this.queue));
-    } catch (error) { /* Error handled silently */ }
+    } catch (error) {
+      /* Error handled silently */
+    }
   }
 
   /**
@@ -59,7 +59,6 @@ class OfflineQueue {
     if (typeof window === "undefined") return;
 
     window.addEventListener("online", () => {
-
       this.syncQueue();
     });
 
@@ -109,7 +108,6 @@ class OfflineQueue {
     }
 
     if (!navigator.onLine) {
-
       return;
     }
 
@@ -124,9 +122,10 @@ class OfflineQueue {
         if (!success && operation.retries < (operation.maxRetries || this.MAX_RETRIES)) {
           operation.retries++;
           operationsToRetry.push(operation);
-        } else if (!success) { /* Condition handled */ }
+        } else if (!success) {
+          /* Condition handled */
+        }
       } catch (error) {
-
         if (operation.retries < (operation.maxRetries || this.MAX_RETRIES)) {
           operation.retries++;
           operationsToRetry.push(operation);
@@ -140,7 +139,11 @@ class OfflineQueue {
 
     this.isProcessing = false;
 
-    if (operationsToRetry.length === 0) { /* Condition handled */ } else { /* Else case handled */ }
+    if (operationsToRetry.length === 0) {
+      /* Condition handled */
+    } else {
+      /* Else case handled */
+    }
   }
 
   /**
@@ -164,11 +167,9 @@ class OfflineQueue {
             operation.data as { orderId: string; email?: string; phone?: string; endpoint: string }
           );
         default:
-
           return false;
       }
     } catch (error) {
-
       return false;
     }
   }
@@ -281,7 +282,6 @@ class OfflineQueue {
   clearQueue(): void {
     this.queue = [];
     this.saveQueue();
-
   }
 }
 
@@ -293,9 +293,13 @@ export function getOfflineQueue(): OfflineQueue {
     // Return a no-op instance for SSR
     return {
       queueOperation: async () => "",
-      syncQueue: async () => { /* Intentionally empty */ },
+      syncQueue: async () => {
+        /* Intentionally empty */
+      },
       getQueueStatus: () => ({ count: 0, oldestTimestamp: null }),
-      clearQueue: () => { /* Intentionally empty */ },
+      clearQueue: () => {
+        /* Intentionally empty */
+      },
     } as unknown as OfflineQueue;
   }
   if (!offlineQueueInstance) {

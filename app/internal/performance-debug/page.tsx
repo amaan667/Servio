@@ -85,8 +85,8 @@ export default function PerformanceDebugPage() {
                             trend > 0
                               ? "text-red-600"
                               : trend < 0
-                              ? "text-green-600"
-                              : "text-gray-500"
+                                ? "text-green-600"
+                                : "text-gray-500"
                           }
                         >
                           {trend.toFixed(1)}%
@@ -108,4 +108,3 @@ export default function PerformanceDebugPage() {
     </div>
   );
 }
-

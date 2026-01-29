@@ -1,4 +1,3 @@
-
 import { useEffect } from "react";
 
 /**
@@ -17,7 +16,6 @@ export function usePerformanceMonitor(componentName: string) {
 
       if (renderTime > 16) {
         // More than one frame (16ms at 60fps)
-
       }
     };
   }, [componentName]);
@@ -41,7 +39,6 @@ export function useApiPerformanceMonitor(_apiName: string) {
 
         if (duration > 1000) {
           // More than 1 second
-
         }
 
         return result;

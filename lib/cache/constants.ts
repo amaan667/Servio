@@ -1,6 +1,6 @@
 /**
  * Cache Constants
- * 
+ *
  * Standardized cache keys, TTLs, and tags for consistent caching across the application.
  * Use these constants instead of hardcoding cache keys and TTLs.
  */
@@ -12,15 +12,15 @@ export const CACHE_TTL = {
   // Short-lived cache (frequently changing data)
   SHORT: 30, // 30 seconds - for live orders, real-time data
   VERY_SHORT: 10, // 10 seconds - for extremely dynamic data
-  
+
   // Medium cache (moderately changing data)
   MEDIUM: 300, // 5 minutes - for dashboard counts, recent orders
   MEDIUM_LONG: 600, // 10 minutes - for menu items, tables
-  
+
   // Long cache (rarely changing data)
   LONG: 1800, // 30 minutes - for venue settings, staff list
   VERY_LONG: 3600, // 1 hour - for static configuration
-  
+
   // Extended cache (rarely changes)
   EXTENDED: 7200, // 2 hours - for subscription info, tier data
 } as const;
@@ -54,20 +54,20 @@ export const cacheKeys = {
     settings: (venueId: string) => `${CACHE_PREFIX.VENUE}:${venueId}:settings`,
     tier: (venueId: string) => `${CACHE_PREFIX.VENUE}:${venueId}:tier`,
   },
-  
+
   /**
    * Order-related cache keys
    */
   order: {
-    list: (venueId: string, filters?: Record<string, unknown>) => 
+    list: (venueId: string, filters?: Record<string, unknown>) =>
       `${CACHE_PREFIX.ORDER}:${venueId}:list:${JSON.stringify(filters || {})}`,
     live: (venueId: string) => `${CACHE_PREFIX.ORDER}:${venueId}:live`,
-    dashboard: (venueId: string, status?: string, scope?: string) => 
+    dashboard: (venueId: string, status?: string, scope?: string) =>
       `${CACHE_PREFIX.ORDER}:${venueId}:dashboard:${status || "all"}:${scope || "live"}`,
     pos: (venueId: string) => `${CACHE_PREFIX.ORDER}:${venueId}:pos`,
     byId: (orderId: string) => `${CACHE_PREFIX.ORDER}:${orderId}`,
   },
-  
+
   /**
    * Menu-related cache keys
    */
@@ -76,7 +76,7 @@ export const cacheKeys = {
     categories: (venueId: string) => `${CACHE_PREFIX.MENU}:${venueId}:categories`,
     categoryOrder: (venueId: string) => `${CACHE_PREFIX.MENU}:${venueId}:category-order`,
   },
-  
+
   /**
    * Table-related cache keys
    */
@@ -85,45 +85,45 @@ export const cacheKeys = {
     sessions: (venueId: string) => `${CACHE_PREFIX.TABLE}:${venueId}:sessions`,
     reservations: (venueId: string) => `${CACHE_PREFIX.TABLE}:${venueId}:reservations`,
   },
-  
+
   /**
    * Dashboard-related cache keys
    */
   dashboard: {
-    counts: (venueId: string, tz?: string) => 
+    counts: (venueId: string, tz?: string) =>
       `${CACHE_PREFIX.DASHBOARD}:${venueId}:counts${tz ? `:${tz}` : ""}`,
-    stats: (venueId: string, period?: string) => 
+    stats: (venueId: string, period?: string) =>
       `${CACHE_PREFIX.DASHBOARD}:${venueId}:stats:${period || "today"}`,
   },
-  
+
   /**
    * Inventory-related cache keys
    */
   inventory: {
     items: (venueId: string) => `${CACHE_PREFIX.INVENTORY}:${venueId}:items`,
     lowStock: (venueId: string) => `${CACHE_PREFIX.INVENTORY}:${venueId}:low-stock`,
-    movements: (venueId: string, filters?: Record<string, unknown>) => 
+    movements: (venueId: string, filters?: Record<string, unknown>) =>
       `${CACHE_PREFIX.INVENTORY}:${venueId}:movements:${JSON.stringify(filters || {})}`,
   },
-  
+
   /**
    * KDS-related cache keys
    */
   kds: {
     stations: (venueId: string) => `${CACHE_PREFIX.KDS}:${venueId}:stations`,
-    tickets: (venueId: string, stationId?: string) => 
+    tickets: (venueId: string, stationId?: string) =>
       `${CACHE_PREFIX.KDS}:${venueId}:tickets${stationId ? `:${stationId}` : ""}`,
   },
-  
+
   /**
    * Staff-related cache keys
    */
   staff: {
     list: (venueId: string) => `${CACHE_PREFIX.STAFF}:${venueId}:list`,
-    shifts: (venueId: string, date?: string) => 
+    shifts: (venueId: string, date?: string) =>
       `${CACHE_PREFIX.STAFF}:${venueId}:shifts${date ? `:${date}` : ""}`,
   },
-  
+
   /**
    * User-related cache keys
    */
@@ -131,7 +131,7 @@ export const cacheKeys = {
     venues: (userId: string) => `${CACHE_PREFIX.USER}:${userId}:venues`,
     profile: (userId: string) => `${CACHE_PREFIX.USER}:${userId}:profile`,
   },
-  
+
   /**
    * Subscription-related cache keys
    */
@@ -165,17 +165,17 @@ export const RECOMMENDED_TTL = {
   LIVE_ORDERS: CACHE_TTL.SHORT,
   TABLE_SESSIONS: CACHE_TTL.SHORT,
   DASHBOARD_COUNTS: CACHE_TTL.MEDIUM,
-  
+
   // Frequently accessed but less dynamic
   MENU_ITEMS: CACHE_TTL.MEDIUM_LONG,
   TABLES: CACHE_TTL.MEDIUM_LONG,
   STAFF_LIST: CACHE_TTL.LONG,
-  
+
   // Rarely changing
   VENUE_SETTINGS: CACHE_TTL.LONG,
   SUBSCRIPTION: CACHE_TTL.EXTENDED,
   TIER_INFO: CACHE_TTL.EXTENDED,
-  
+
   // Dashboard and analytics
   DASHBOARD_STATS: CACHE_TTL.MEDIUM,
   ANALYTICS: CACHE_TTL.MEDIUM_LONG,

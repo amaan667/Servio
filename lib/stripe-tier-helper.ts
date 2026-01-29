@@ -24,7 +24,6 @@ export async function getTierFromStripeSubscription(
     const priceId = subscription.items.data[0]?.price.id;
 
     if (!priceId) {
-
       return "starter";
     }
 
@@ -41,7 +40,6 @@ export async function getTierFromStripeSubscription(
       if (["starter", "pro", "enterprise"].includes(tier)) {
         return tier;
       }
-
     }
 
     // 2. Check product metadata - use raw value from Stripe
@@ -55,7 +53,6 @@ export async function getTierFromStripeSubscription(
       if (["starter", "pro", "enterprise"].includes(tier)) {
         return tier;
       }
-
     }
 
     // 3. Parse from product name
@@ -69,7 +66,6 @@ export async function getTierFromStripeSubscription(
 
     return "starter";
   } catch (error) {
-
     return "starter";
   }
 }

@@ -19,20 +19,22 @@ vi.mock("@/lib/supabase", () => ({
       insert: vi.fn(() => ({ select: vi.fn(() => ({ single: vi.fn() })) })),
       update: vi.fn(() => ({ select: vi.fn(() => ({ single: vi.fn() })) })),
     })),
-    rpc: vi.fn(() => Promise.resolve({
-      data: {
-        tier: "starter",
-        maxStaff: 5,
-        maxTables: 25,
-        maxLocations: 1,
-        kds: { enabled: false, mode: null },
-        analytics: { level: "basic", csvExport: false, financeExport: false },
-        branding: { level: "basic", customDomain: false },
-        api: { enabled: false, level: null },
-        support: { level: "email" },
-      },
-      error: null,
-    })),
+    rpc: vi.fn(() =>
+      Promise.resolve({
+        data: {
+          tier: "starter",
+          maxStaff: 5,
+          maxTables: 25,
+          maxLocations: 1,
+          kds: { enabled: false, mode: null },
+          analytics: { level: "basic", csvExport: false, financeExport: false },
+          branding: { level: "basic", customDomain: false },
+          api: { enabled: false, level: null },
+          support: { level: "email" },
+        },
+        error: null,
+      })
+    ),
   })),
 }));
 
@@ -59,20 +61,22 @@ describe("API Entitlements Enforcement", () => {
             })),
           })),
         })),
-        rpc: vi.fn(() => Promise.resolve({
-          data: {
-            tier: "starter",
-            maxStaff: 5,
-            maxTables: 25,
-            maxLocations: 1,
-            kds: { enabled: false, mode: null },
-            analytics: { level: "basic", csvExport: false, financeExport: false },
-            branding: { level: "basic", customDomain: false },
-            api: { enabled: false, level: null },
-            support: { level: "email" },
-          },
-          error: null,
-        })),
+        rpc: vi.fn(() =>
+          Promise.resolve({
+            data: {
+              tier: "starter",
+              maxStaff: 5,
+              maxTables: 25,
+              maxLocations: 1,
+              kds: { enabled: false, mode: null },
+              analytics: { level: "basic", csvExport: false, financeExport: false },
+              branding: { level: "basic", customDomain: false },
+              api: { enabled: false, level: null },
+              support: { level: "email" },
+            },
+            error: null,
+          })
+        ),
       };
       vi.mocked(createServerSupabase).mockReturnValue(mockSupabase);
 
@@ -93,20 +97,22 @@ describe("API Entitlements Enforcement", () => {
             })),
           })),
         })),
-        rpc: vi.fn(() => Promise.resolve({
-          data: {
-            tier: "starter",
-            maxStaff: 5,
-            maxTables: 25,
-            maxLocations: 1,
-            kds: { enabled: false, mode: null },
-            analytics: { level: "basic", csvExport: false, financeExport: false },
-            branding: { level: "basic", customDomain: false },
-            api: { enabled: false, level: null },
-            support: { level: "email" },
-          },
-          error: null,
-        })),
+        rpc: vi.fn(() =>
+          Promise.resolve({
+            data: {
+              tier: "starter",
+              maxStaff: 5,
+              maxTables: 25,
+              maxLocations: 1,
+              kds: { enabled: false, mode: null },
+              analytics: { level: "basic", csvExport: false, financeExport: false },
+              branding: { level: "basic", customDomain: false },
+              api: { enabled: false, level: null },
+              support: { level: "email" },
+            },
+            error: null,
+          })
+        ),
       };
       vi.mocked(createServerSupabase).mockReturnValue(mockSupabase);
 
@@ -133,20 +139,22 @@ describe("API Entitlements Enforcement", () => {
             })),
           })),
         })),
-        rpc: vi.fn(() => Promise.resolve({
-          data: {
-            tier: "starter",
-            maxStaff: 5,
-            maxTables: 25,
-            maxLocations: 1,
-            kds: { enabled: false, mode: null },
-            analytics: { level: "basic", csvExport: false, financeExport: false },
-            branding: { level: "basic", customDomain: false },
-            api: { enabled: false, level: null },
-            support: { level: "email" },
-          },
-          error: null,
-        })),
+        rpc: vi.fn(() =>
+          Promise.resolve({
+            data: {
+              tier: "starter",
+              maxStaff: 5,
+              maxTables: 25,
+              maxLocations: 1,
+              kds: { enabled: false, mode: null },
+              analytics: { level: "basic", csvExport: false, financeExport: false },
+              branding: { level: "basic", customDomain: false },
+              api: { enabled: false, level: null },
+              support: { level: "email" },
+            },
+            error: null,
+          })
+        ),
       };
       vi.mocked(createServerSupabase).mockReturnValue(mockSupabase);
 
@@ -165,20 +173,22 @@ describe("API Entitlements Enforcement", () => {
             })),
           })),
         })),
-        rpc: vi.fn(() => Promise.resolve({
-          data: {
-            tier: "starter",
-            maxStaff: 5,
-            maxTables: 25,
-            maxLocations: 1,
-            kds: { enabled: false, mode: null },
-            analytics: { level: "basic", csvExport: false, financeExport: false },
-            branding: { level: "basic", customDomain: false },
-            api: { enabled: false, level: null },
-            support: { level: "email" },
-          },
-          error: null,
-        })),
+        rpc: vi.fn(() =>
+          Promise.resolve({
+            data: {
+              tier: "starter",
+              maxStaff: 5,
+              maxTables: 25,
+              maxLocations: 1,
+              kds: { enabled: false, mode: null },
+              analytics: { level: "basic", csvExport: false, financeExport: false },
+              branding: { level: "basic", customDomain: false },
+              api: { enabled: false, level: null },
+              support: { level: "email" },
+            },
+            error: null,
+          })
+        ),
       };
       vi.mocked(createServerSupabase).mockReturnValue(mockSupabase);
 
@@ -204,20 +214,22 @@ describe("API Entitlements Enforcement", () => {
             })),
           })),
         })),
-        rpc: vi.fn(() => Promise.resolve({
-          data: {
-            tier: "starter",
-            maxStaff: 5,
-            maxTables: 25,
-            maxLocations: 1,
-            kds: { enabled: false, mode: null },
-            analytics: { level: "basic", csvExport: false, financeExport: false },
-            branding: { level: "basic", customDomain: false },
-            api: { enabled: false, level: null },
-            support: { level: "email" },
-          },
-          error: null,
-        })),
+        rpc: vi.fn(() =>
+          Promise.resolve({
+            data: {
+              tier: "starter",
+              maxStaff: 5,
+              maxTables: 25,
+              maxLocations: 1,
+              kds: { enabled: false, mode: null },
+              analytics: { level: "basic", csvExport: false, financeExport: false },
+              branding: { level: "basic", customDomain: false },
+              api: { enabled: false, level: null },
+              support: { level: "email" },
+            },
+            error: null,
+          })
+        ),
       };
       vi.mocked(createServerSupabase).mockReturnValue(mockSupabase);
 
@@ -236,20 +248,22 @@ describe("API Entitlements Enforcement", () => {
             })),
           })),
         })),
-        rpc: vi.fn(() => Promise.resolve({
-          data: {
-            tier: "starter",
-            maxStaff: 5,
-            maxTables: 25,
-            maxLocations: 1,
-            kds: { enabled: false, mode: null },
-            analytics: { level: "basic", csvExport: false, financeExport: false },
-            branding: { level: "basic", customDomain: false },
-            api: { enabled: false, level: null },
-            support: { level: "email" },
-          },
-          error: null,
-        })),
+        rpc: vi.fn(() =>
+          Promise.resolve({
+            data: {
+              tier: "starter",
+              maxStaff: 5,
+              maxTables: 25,
+              maxLocations: 1,
+              kds: { enabled: false, mode: null },
+              analytics: { level: "basic", csvExport: false, financeExport: false },
+              branding: { level: "basic", customDomain: false },
+              api: { enabled: false, level: null },
+              support: { level: "email" },
+            },
+            error: null,
+          })
+        ),
       };
       vi.mocked(createServerSupabase).mockReturnValue(mockSupabase);
 
@@ -275,20 +289,22 @@ describe("API Entitlements Enforcement", () => {
             })),
           })),
         })),
-        rpc: vi.fn(() => Promise.resolve({
-          data: {
-            tier: "pro",
-            maxStaff: 15,
-            maxTables: 100,
-            maxLocations: 3,
-            kds: { enabled: true, mode: "multi" },
-            analytics: { level: "advanced", csvExport: true, financeExport: false },
-            branding: { level: "full", customDomain: false },
-            api: { enabled: false, level: null },
-            support: { level: "priority" },
-          },
-          error: null,
-        })),
+        rpc: vi.fn(() =>
+          Promise.resolve({
+            data: {
+              tier: "pro",
+              maxStaff: 15,
+              maxTables: 100,
+              maxLocations: 3,
+              kds: { enabled: true, mode: "multi" },
+              analytics: { level: "advanced", csvExport: true, financeExport: false },
+              branding: { level: "full", customDomain: false },
+              api: { enabled: false, level: null },
+              support: { level: "priority" },
+            },
+            error: null,
+          })
+        ),
       };
       vi.mocked(createServerSupabase).mockReturnValue(mockSupabase);
 
@@ -307,20 +323,22 @@ describe("API Entitlements Enforcement", () => {
             })),
           })),
         })),
-        rpc: vi.fn(() => Promise.resolve({
-          data: {
-            tier: "starter",
-            maxStaff: 5,
-            maxTables: 25,
-            maxLocations: 1,
-            kds: { enabled: true, mode: "single" }, // Starter + addon
-            analytics: { level: "basic", csvExport: false, financeExport: false },
-            branding: { level: "basic", customDomain: false },
-            api: { enabled: false, level: null },
-            support: { level: "email" },
-          },
-          error: null,
-        })),
+        rpc: vi.fn(() =>
+          Promise.resolve({
+            data: {
+              tier: "starter",
+              maxStaff: 5,
+              maxTables: 25,
+              maxLocations: 1,
+              kds: { enabled: true, mode: "single" }, // Starter + addon
+              analytics: { level: "basic", csvExport: false, financeExport: false },
+              branding: { level: "basic", customDomain: false },
+              api: { enabled: false, level: null },
+              support: { level: "email" },
+            },
+            error: null,
+          })
+        ),
       };
       vi.mocked(createServerSupabase).mockReturnValue(mockSupabase);
 
@@ -338,20 +356,22 @@ describe("API Entitlements Enforcement", () => {
             })),
           })),
         })),
-        rpc: vi.fn(() => Promise.resolve({
-          data: {
-            tier: "starter",
-            maxStaff: 5,
-            maxTables: 25,
-            maxLocations: 1,
-            kds: { enabled: false, mode: null }, // No addon
-            analytics: { level: "basic", csvExport: false, financeExport: false },
-            branding: { level: "basic", customDomain: false },
-            api: { enabled: false, level: null },
-            support: { level: "email" },
-          },
-          error: null,
-        })),
+        rpc: vi.fn(() =>
+          Promise.resolve({
+            data: {
+              tier: "starter",
+              maxStaff: 5,
+              maxTables: 25,
+              maxLocations: 1,
+              kds: { enabled: false, mode: null }, // No addon
+              analytics: { level: "basic", csvExport: false, financeExport: false },
+              branding: { level: "basic", customDomain: false },
+              api: { enabled: false, level: null },
+              support: { level: "email" },
+            },
+            error: null,
+          })
+        ),
       };
       vi.mocked(createServerSupabase).mockReturnValue(mockSupabase);
 

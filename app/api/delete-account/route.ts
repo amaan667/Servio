@@ -24,21 +24,21 @@ export const POST = createUnifiedHandler(
     // Business logic
     const supabase = createAdminClient();
 
-      // Delete venue and related data if venueId provided
-      if (venueId) {
-        // Verify venue belongs to user
-        const { data: venue } = await supabase
-          .from("venues")
-          .select("venue_id, owner_user_id")
-          .eq("venue_id", venueId)
-          .eq("owner_user_id", user.id)
-          .single();
+    // Delete venue and related data if venueId provided
+    if (venueId) {
+      // Verify venue belongs to user
+      const { data: venue } = await supabase
+        .from("venues")
+        .select("venue_id, owner_user_id")
+        .eq("venue_id", venueId)
+        .eq("owner_user_id", user.id)
+        .single();
 
-        if (venue) {
-          await supabase.from("venues").delete().eq("venue_id", venueId);
-          // Optionally: delete related menu_items, orders, etc.
-        }
+      if (venue) {
+        await supabase.from("venues").delete().eq("venue_id", venueId);
+        // Optionally: delete related menu_items, orders, etc.
       }
+    }
 
     // Delete user from Auth
     const { error } = await supabase.auth.admin.deleteUser(userId);

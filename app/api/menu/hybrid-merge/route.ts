@@ -56,7 +56,6 @@ export const POST = withUnifiedAuth(async (req: NextRequest, context) => {
       .single();
 
     if (uploadError || !uploadData?.pdf_images) {
-
       return NextResponse.json(
         {
           ok: false,
@@ -76,7 +75,6 @@ export const POST = withUnifiedAuth(async (req: NextRequest, context) => {
       .eq("venue_id", normalizedVenueId);
 
     if (deleteItemsError) {
-
       throw new Error(`Failed to clear menu: ${deleteItemsError.message}`);
     }
 
@@ -124,14 +122,12 @@ export const POST = withUnifiedAuth(async (req: NextRequest, context) => {
 
     // Insert menu items
     if (menuItems.length > 0) {
-
       const { data: insertedData, error: insertError } = await supabase
         .from("menu_items")
         .insert(menuItems)
         .select();
 
       if (insertError) {
-
         throw new Error(`Failed to insert menu items: ${insertError.message}`);
       }
     }
@@ -144,8 +140,9 @@ export const POST = withUnifiedAuth(async (req: NextRequest, context) => {
       revalidatePath(`/dashboard/${normalizedVenueId}`, "page");
       revalidatePath(`/dashboard/${normalizedVenueId}/menu-management`, "page");
       revalidatePath(`/menu/${normalizedVenueId}`, "page");
-
-    } catch (revalidateError) { /* Error handled silently */ }
+    } catch (revalidateError) {
+      /* Error handled silently */
+    }
 
     return NextResponse.json({
       ok: true,

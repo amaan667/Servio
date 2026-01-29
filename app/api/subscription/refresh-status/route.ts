@@ -34,7 +34,6 @@ export async function POST(_request: NextRequest) {
       .single();
 
     if (orgError || !org) {
-
       return apiErrors.notFound("Organization not found");
     }
 
@@ -68,7 +67,6 @@ export async function POST(_request: NextRequest) {
       try {
         finalTier = await getTierFromStripeSubscription(stripeSubscription, stripeClient);
       } catch (error) {
-
         // Fallback to existing tier if Stripe fetch fails
         finalTier = org.subscription_tier || "starter";
       }
@@ -87,7 +85,6 @@ export async function POST(_request: NextRequest) {
         .eq("id", organizationId);
 
       if (updateError) {
-
         return NextResponse.json(
           { error: "Failed to update subscription status" },
           { status: 500 }
@@ -102,7 +99,6 @@ export async function POST(_request: NextRequest) {
         },
       });
     } catch (stripeError: unknown) {
-
       // If subscription doesn't exist in Stripe, reset to starter
       const { error: resetError } = await supabase
         .from("organizations")
@@ -116,7 +112,6 @@ export async function POST(_request: NextRequest) {
         .eq("id", organizationId);
 
       if (resetError) {
-
         return apiErrors.internal("Failed to reset subscription status");
       }
 
@@ -130,7 +125,6 @@ export async function POST(_request: NextRequest) {
       });
     }
   } catch (_error) {
-
     return NextResponse.json(
       { error: _error instanceof Error ? _error.message : "Failed to refresh subscription status" },
       { status: 500 }

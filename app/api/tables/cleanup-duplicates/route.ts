@@ -34,7 +34,6 @@ export const POST = withUnifiedAuth(async (req: NextRequest, context) => {
       .eq("is_active", true);
 
     if (fetchError) {
-
       return apiErrors.database(
         "Failed to fetch tables",
         isDevelopment() ? fetchError.message : undefined
@@ -89,7 +88,6 @@ export const POST = withUnifiedAuth(async (req: NextRequest, context) => {
       .in("order_status", ["PLACED", "ACCEPTED", "IN_PREP", "READY", "SERVING"]);
 
     if (ordersError) {
-
       return apiErrors.database(
         "Failed to check for active orders",
         isDevelopment() ? ordersError.message : undefined
@@ -104,7 +102,6 @@ export const POST = withUnifiedAuth(async (req: NextRequest, context) => {
       .eq("status", "BOOKED");
 
     if (reservationsError) {
-
       return apiErrors.database(
         "Failed to check for active reservations",
         isDevelopment() ? reservationsError.message : undefined
@@ -136,7 +133,6 @@ export const POST = withUnifiedAuth(async (req: NextRequest, context) => {
     const { error: deleteError } = await supabase.from("tables").delete().in("id", safeToRemove);
 
     if (deleteError) {
-
       return apiErrors.database(
         "Failed to remove duplicate tables",
         isDevelopment() ? deleteError.message : undefined
@@ -148,7 +144,6 @@ export const POST = withUnifiedAuth(async (req: NextRequest, context) => {
       duplicates_removed: safeToRemove.length,
     });
   } catch (error) {
-
     if (isZodError(error)) {
       return handleZodError(error);
     }

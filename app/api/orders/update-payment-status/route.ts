@@ -16,11 +16,11 @@ const updatePaymentSchema = z.object({
 export const POST = createUnifiedHandler(
   async (_req, context) => {
     const { body, venueId } = context;
-    
+
     const order = await orderService.updatePaymentStatus(
-      body.orderId, 
-      venueId, 
-      body.paymentStatus, 
+      body.orderId,
+      venueId,
+      body.paymentStatus,
       body.paymentMethod
     );
 

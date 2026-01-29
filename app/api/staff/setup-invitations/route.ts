@@ -9,10 +9,11 @@ import { success, apiErrors } from "@/lib/api/standard-response";
 
 export const runtime = "nodejs";
 
-export const POST = createUnifiedHandler(async (_req: NextRequest, context) => {
-  const user = context.user;
-  const { createAdminClient } = await import("@/lib/supabase");
-  const supabase = createAdminClient();
+export const POST = createUnifiedHandler(
+  async (_req: NextRequest, context) => {
+    const user = context.user;
+    const { createAdminClient } = await import("@/lib/supabase");
+    const supabase = createAdminClient();
 
     // Check if staff_invitations table already exists
     const { error: invitationsError } = await supabase
@@ -83,7 +84,9 @@ export const POST = createUnifiedHandler(async (_req: NextRequest, context) => {
           sql: createTableSQL,
         });
       }
-    } catch (_error) { /* Error handled silently */ }
+    } catch (_error) {
+      /* Error handled silently */
+    }
 
     // Indexes and RLS will be set up via migration scripts
 

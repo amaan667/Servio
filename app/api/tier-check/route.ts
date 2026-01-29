@@ -39,7 +39,8 @@ export const POST = createUnifiedHandler(
     if (action === "create" && resource) {
       const limit = tierLimits[resource as keyof TierLimits];
       // -1 means unlimited
-      const allowed = typeof limit === "number" ? limit === -1 || (currentCount || 0) < limit : false;
+      const allowed =
+        typeof limit === "number" ? limit === -1 || (currentCount || 0) < limit : false;
 
       if (!allowed) {
         return success({

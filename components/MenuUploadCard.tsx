@@ -10,6 +10,7 @@ import { FileText, Upload, Info } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { supabaseBrowser as createClient } from "@/lib/supabase";
+import { normalizeVenueId } from "@/lib/utils/venueId";
 
 interface MenuUploadCardProps {
   venueId: string;
@@ -32,7 +33,7 @@ export function MenuUploadCard({ venueId, onSuccess, menuItemCount = 0 }: MenuUp
     const checkExistingItems = async () => {
       try {
         // Normalize venueId format
-        const normalizedVenueId = venueId.startsWith("venue-") ? venueId : `venue-${venueId}`;
+        const normalizedVenueId = normalizeVenueId(venueId) ?? venueId;
 
         // Use a simple query to check if any items exist - avoid limit(1) with count to prevent 406 errors
         // Just get the count without fetching data
@@ -66,7 +67,7 @@ export function MenuUploadCard({ venueId, onSuccess, menuItemCount = 0 }: MenuUp
       const style = extractStyleFromPDF(extractedText);
 
       // Get venue name - normalize venueId first
-      const normalizedVenueId = venueId.startsWith("venue-") ? venueId : `venue-${venueId}`;
+      const normalizedVenueId = normalizeVenueId(venueId) ?? venueId;
 
       const { data: venue, error: venueError } = await supabase
         .from("venues")
@@ -119,7 +120,8 @@ export function MenuUploadCard({ venueId, onSuccess, menuItemCount = 0 }: MenuUp
     if (!validTypes.includes(fileExtension)) {
       toast({
         title: "Invalid file type",
-        description: "Please upload a .pdf, .png, .jpg, .jpeg, .webp, .heic, .txt, .md, or .json file",
+        description:
+          "Please upload a .pdf, .png, .jpg, .jpeg, .webp, .heic, .txt, .md, or .json file",
         variant: "destructive",
       });
       return;
@@ -144,7 +146,8 @@ export function MenuUploadCard({ venueId, onSuccess, menuItemCount = 0 }: MenuUp
 
     try {
       // Handle all visual formats (PDF, images) through catalog/replace for consistent OCR processing
-      const isVisualFormat = fileExtension === ".pdf" ||
+      const isVisualFormat =
+        fileExtension === ".pdf" ||
         [".png", ".jpg", ".jpeg", ".webp", ".heic"].includes(fileExtension);
 
       if (isVisualFormat) {
@@ -186,9 +189,13 @@ export function MenuUploadCard({ venueId, onSuccess, menuItemCount = 0 }: MenuUp
 
           // Provide helpful error messages for common issues
           if (response.status === 401) {
-            throw new Error("Authentication failed. Please refresh the page and try again. If the issue persists, try logging out and back in.");
+            throw new Error(
+              "Authentication failed. Please refresh the page and try again. If the issue persists, try logging out and back in."
+            );
           } else if (response.status === 403) {
-            throw new Error("Access denied. You don't have permission to upload menus for this venue.");
+            throw new Error(
+              "Access denied. You don't have permission to upload menus for this venue."
+            );
           } else if (response.status === 429) {
             throw new Error("Too many requests. Please wait a moment and try again.");
           }
@@ -316,7 +323,7 @@ export function MenuUploadCard({ venueId, onSuccess, menuItemCount = 0 }: MenuUp
 
     try {
       // Normalize venueId format
-      const normalizedVenueId = venueId.startsWith("venue-") ? venueId : `venue-${venueId}`;
+      const normalizedVenueId = normalizeVenueId(venueId) ?? venueId;
 
       // Check if PDF menu exists (check menu_uploads, not menu_items)
       const { data: uploadData, error: uploadError } = await supabase
@@ -348,9 +355,13 @@ export function MenuUploadCard({ venueId, onSuccess, menuItemCount = 0 }: MenuUp
 
         // Provide helpful error messages for common issues
         if (response.status === 401) {
-          throw new Error("Authentication failed. Please refresh the page and try again. If the issue persists, try logging out and back in.");
+          throw new Error(
+            "Authentication failed. Please refresh the page and try again. If the issue persists, try logging out and back in."
+          );
         } else if (response.status === 403) {
-          throw new Error("Access denied. You don't have permission to enhance menus for this venue.");
+          throw new Error(
+            "Access denied. You don't have permission to enhance menus for this venue."
+          );
         } else if (response.status === 429) {
           throw new Error("Too many requests. Please wait a moment and try again.");
         }
@@ -450,9 +461,13 @@ export function MenuUploadCard({ venueId, onSuccess, menuItemCount = 0 }: MenuUp
 
         // Provide helpful error messages for common issues
         if (response.status === 401) {
-          throw new Error("Authentication failed. Please refresh the page and try again. If the issue persists, try logging out and back in.");
+          throw new Error(
+            "Authentication failed. Please refresh the page and try again. If the issue persists, try logging out and back in."
+          );
         } else if (response.status === 403) {
-          throw new Error("Access denied. You don't have permission to import menus for this venue.");
+          throw new Error(
+            "Access denied. You don't have permission to import menus for this venue."
+          );
         } else if (response.status === 429) {
           throw new Error("Too many requests. Please wait a moment and try again.");
         }
@@ -479,7 +494,6 @@ export function MenuUploadCard({ venueId, onSuccess, menuItemCount = 0 }: MenuUp
         throw new Error(result.error || "URL import failed");
       }
     } catch (error) {
-
       toast({
         title: "URL import failed",
         description: error instanceof Error ? error.message : "Failed to import from URL",
@@ -498,8 +512,8 @@ export function MenuUploadCard({ venueId, onSuccess, menuItemCount = 0 }: MenuUp
           Upload Menu
         </CardTitle>
         <CardDescription className="text-gray-900">
-          Upload your menu by entering a website URL or uploading files (PDF, images, text).
-          All formats are supported with automatic processing.
+          Upload your menu by entering a website URL or uploading files (PDF, images, text). All
+          formats are supported with automatic processing.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -527,15 +541,18 @@ export function MenuUploadCard({ venueId, onSuccess, menuItemCount = 0 }: MenuUp
                 onClick={hasExistingUpload ? handleProcessWithUrl : handleUrlOnlyImport}
                 disabled={isProcessing}
                 size="sm"
-                className={hasExistingUpload ? "bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700" : ""}
+                className={
+                  hasExistingUpload
+                    ? "bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700"
+                    : ""
+                }
                 variant={hasExistingUpload ? "default" : "outline"}
               >
                 {isProcessing
                   ? "Processing..."
                   : hasExistingUpload
                     ? "🎯 Enhance with URL (Hybrid)"
-                    : "🌐 Import from URL"
-                }
+                    : "🌐 Import from URL"}
               </Button>
             )}
           </div>
@@ -596,14 +613,18 @@ export function MenuUploadCard({ venueId, onSuccess, menuItemCount = 0 }: MenuUp
           </div>
 
           <div className="text-sm text-gray-900">
-            Supported formats: PDF, Images (.png, .jpg, .jpeg, .webp, .heic), Text (.txt, .md, .json)
+            Supported formats: PDF, Images (.png, .jpg, .jpeg, .webp, .heic), Text (.txt, .md,
+            .json)
           </div>
         </div>
 
         <Alert>
           <Info className="h-4 w-4" />
           <AlertDescription className="text-gray-900">
-            <p>All menu formats are supported with automatic processing. PDFs are automatically converted to images for optimal OCR extraction.</p>
+            <p>
+              All menu formats are supported with automatic processing. PDFs are automatically
+              converted to images for optimal OCR extraction.
+            </p>
             <p>Combine URL and file uploads for the best results with hybrid AI processing.</p>
           </AlertDescription>
         </Alert>

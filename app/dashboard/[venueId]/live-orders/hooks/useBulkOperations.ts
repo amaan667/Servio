@@ -19,7 +19,11 @@ export function useBulkOperations(venueId: string) {
       log("clicked", {
         activeOrdersCount: activeOrders.length,
         orderIds,
-        orderStatuses: activeOrders.map((o) => ({ id: o.id, order_status: o.order_status, payment_status: o.payment_status })),
+        orderStatuses: activeOrders.map((o) => ({
+          id: o.id,
+          order_status: o.order_status,
+          payment_status: o.payment_status,
+        })),
       });
 
       const confirmed = confirm(
@@ -47,11 +51,12 @@ export function useBulkOperations(venueId: string) {
       });
 
       const data = result?.data ?? result;
-      const completedCount = typeof data?.completedCount === "number" ? data.completedCount : data?.completedCount;
+      const completedCount =
+        typeof data?.completedCount === "number" ? data.completedCount : data?.completedCount;
       const errorMessage =
         typeof result?.error === "string"
           ? result.error
-          : result?.error?.message ?? result?.message ?? "Unknown error";
+          : (result?.error?.message ?? result?.message ?? "Unknown error");
 
       if (response.ok && result?.success !== false) {
         log("success", { completedCount });

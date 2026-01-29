@@ -25,12 +25,10 @@ export async function POST(request: NextRequest) {
     });
 
     if (error) {
-
       return apiErrors.badRequest(error.message);
     }
 
     if (!data.session) {
-
       return apiErrors.internal("Failed to set session");
     }
 
@@ -40,7 +38,6 @@ export async function POST(request: NextRequest) {
 
     return response;
   } catch (err) {
-
     return apiErrors.internal("Internal server error");
   }
 }

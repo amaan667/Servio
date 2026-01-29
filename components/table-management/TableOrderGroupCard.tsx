@@ -94,7 +94,8 @@ export function TableOrderGroupCard({ tableLabel, orders, venueId }: TableOrderG
         `/dashboard/${venueId}/live-orders?search=${encodeURIComponent(firstOrderId.slice(-6).toUpperCase())}&tab=all`
       );
     } else {
-      const tableNumber = (tableLabel ?? "").replace(/^Table\s*/i, "").replace(/^Counter\s*/i, "") || "0";
+      const tableNumber =
+        (tableLabel ?? "").replace(/^Table\s*/i, "").replace(/^Counter\s*/i, "") || "0";
       router.push(
         `/dashboard/${venueId}/live-orders?table=${encodeURIComponent(tableNumber)}&tab=all`
       );

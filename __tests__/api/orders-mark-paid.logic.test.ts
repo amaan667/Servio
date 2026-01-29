@@ -3,17 +3,17 @@ import { createMockRequest, parseJsonResponse } from "../helpers/api-test-helper
 import { POST as markPaid } from "@/app/api/orders/mark-paid/route";
 
 vi.mock("@/lib/auth/unified-auth", () => ({
-  withUnifiedAuth:
-    (handler: unknown) =>
-    async (req: Request) =>
-      (handler as (req: Request, ctx: { venueId: string; user: { id: string }; role: string }) => Promise<Response>)(
-        req,
-        {
-          venueId: "venue-123",
-          user: { id: "user-123" },
-          role: "manager",
-        }
-      ),
+  withUnifiedAuth: (handler: unknown) => async (req: Request) =>
+    (
+      handler as (
+        req: Request,
+        ctx: { venueId: string; user: { id: string }; role: string }
+      ) => Promise<Response>
+    )(req, {
+      venueId: "venue-123",
+      user: { id: "user-123" },
+      role: "manager",
+    }),
 }));
 
 const createAdminClientMock = vi.fn();

@@ -362,7 +362,6 @@ export async function generateReceiptPDF(data: ReceiptData): Promise<Buffer> {
 
     return Buffer.from(pdfBuffer);
   } catch (error) {
-
     throw new Error(
       `Failed to generate PDF: ${error instanceof Error ? error.message : "Unknown error"}`
     );

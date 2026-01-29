@@ -486,14 +486,16 @@ export async function forecastDemand(venueId: string): Promise<DemandForecastRes
     })
     .sort((a, b) => b.avgOrders - a.avgOrders);
 
-  const busiestHour = hourly.length > 0 
-    ? hourly.reduce((max, h) => (h.avgOrders > max.avgOrders ? h : max), hourly[0]!)
-    : null;
+  const busiestHour =
+    hourly.length > 0
+      ? hourly.reduce((max, h) => (h.avgOrders > max.avgOrders ? h : max), hourly[0]!)
+      : null;
   const busiestDay = daily[0];
 
-  const summary = busiestDay && busiestHour
-    ? `Peak demand: ${busiestDay.dayOfWeek} during ${busiestHour.timeRange} (avg ${busiestHour.avgOrders} orders/hour). Plan inventory and staffing accordingly.`
-    : "Not enough data to determine peak demand patterns.";
+  const summary =
+    busiestDay && busiestHour
+      ? `Peak demand: ${busiestDay.dayOfWeek} during ${busiestHour.timeRange} (avg ${busiestHour.avgOrders} orders/hour). Plan inventory and staffing accordingly.`
+      : "Not enough data to determine peak demand patterns.";
 
   return {
     hourly,

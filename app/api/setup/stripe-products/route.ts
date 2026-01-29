@@ -87,9 +87,7 @@ export async function POST() {
                 ? "STRIPE_STANDARD_PRICE_ID"
                 : "STRIPE_PREMIUM_PRICE_ID",
         });
-
       } catch (_error) {
-
         results.push({
           tier: product.tier,
           status: "error",
@@ -114,7 +112,6 @@ export async function POST() {
         "Copy the price IDs above and set them as environment variables in Railway: STRIPE_BASIC_PRICE_ID, STRIPE_STANDARD_PRICE_ID, STRIPE_PREMIUM_PRICE_ID",
     });
   } catch (_error) {
-
     return NextResponse.json(
       {
         success: false,

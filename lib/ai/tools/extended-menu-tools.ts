@@ -48,7 +48,6 @@ export async function getMenuItemsWithoutImages(
     .order("name", { ascending: true });
 
   if (error) {
-
     throw new Error(`Failed to fetch menu items: ${error.message}`);
   }
 
@@ -103,7 +102,6 @@ export async function updateMenuItemImage(
     .maybeSingle();
 
   if (fetchError) {
-
     throw new Error(`Failed to fetch menu item: ${fetchError.message}`);
   }
 
@@ -121,7 +119,6 @@ export async function updateMenuItemImage(
     .eq("id", item.id);
 
   if (updateError) {
-
     throw new Error(`Failed to update image: ${updateError.message}`);
   }
 
@@ -159,7 +156,6 @@ export async function translateMenuItems(
   const { data: items, error: fetchError } = await query;
 
   if (fetchError) {
-
     throw new Error(`Failed to fetch menu items: ${fetchError.message}`);
   }
 
@@ -269,7 +265,6 @@ export async function bulkUpdateAvailability(
     .select("id");
 
   if (error) {
-
     throw new Error(`Failed to update availability: ${error.message}`);
   }
 

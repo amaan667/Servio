@@ -136,13 +136,11 @@ OTHER RULES:
 
     const jsonMatch = jsonText.match(/\[[\s\S]*\]/);
     if (!jsonMatch) {
-
       return [];
     }
     const json = JSON.parse(jsonMatch[0]);
 
     if (!Array.isArray(json)) {
-
       return [];
     }
 
@@ -177,24 +175,35 @@ OTHER RULES:
     const itemsWithoutPrice = json.filter((item) => !item.price && item.price !== 0);
     const itemsWithoutCategory = json.filter((item) => !item.category);
 
-    if (itemsWithoutName.length > 0) { /* Condition handled */ }
-    if (itemsWithoutPrice.length > 0) { /* Condition handled */ }
-    if (itemsWithoutCategory.length > 0) { /* Condition handled */ }
+    if (itemsWithoutName.length > 0) {
+      /* Condition handled */
+    }
+    if (itemsWithoutPrice.length > 0) {
+      /* Condition handled */
+    }
+    if (itemsWithoutCategory.length > 0) {
+      /* Condition handled */
+    }
 
     // Log allergen and dietary information extraction
     const itemsWithAllergens = json.filter((item) => item.allergens && item.allergens.length > 0);
     const itemsWithDietary = json.filter((item) => item.dietary && item.dietary.length > 0);
     const itemsWithSpiceLevel = json.filter((item) => item.spiceLevel);
 
-    if (itemsWithAllergens.length > 0) { /* Condition handled */ }
+    if (itemsWithAllergens.length > 0) {
+      /* Condition handled */
+    }
 
-    if (itemsWithDietary.length > 0) { /* Condition handled */ }
+    if (itemsWithDietary.length > 0) {
+      /* Condition handled */
+    }
 
-    if (itemsWithSpiceLevel.length > 0) { /* Condition handled */ }
+    if (itemsWithSpiceLevel.length > 0) {
+      /* Condition handled */
+    }
 
     return json as ExtractedMenuItem[];
   } catch (_err) {
-
     return [];
   }
 }

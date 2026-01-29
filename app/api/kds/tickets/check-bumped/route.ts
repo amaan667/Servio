@@ -31,7 +31,6 @@ export async function POST(req: NextRequest) {
 
       body = await validateBody(checkBumpedSchema, requestBody);
     } catch (validationError) {
-
       if (isZodError(validationError)) {
         return handleZodError(validationError);
       }
@@ -73,7 +72,6 @@ export async function POST(req: NextRequest) {
       .eq("venue_id", venueId);
 
     if (fetchError) {
-
       return apiErrors.database(
         "Failed to check ticket status",
         isDevelopment() ? fetchError.message : undefined
@@ -82,7 +80,6 @@ export async function POST(req: NextRequest) {
 
     // If no tickets exist, consider it as "all bumped" (order might not have KDS tickets)
     if (!tickets || tickets.length === 0) {
-
       return success({ all_bumped: true, ticket_count: 0 });
     }
 
@@ -97,7 +94,6 @@ export async function POST(req: NextRequest) {
       bumped_count: bumpedCount,
     });
   } catch (error) {
-
     if (isZodError(error)) {
       return handleZodError(error);
     }

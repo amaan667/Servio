@@ -37,10 +37,7 @@ export class StaffService extends BaseService {
       cacheKey,
       async () => {
         const supabase = await createSupabaseClient();
-        const { data, error } = await supabase
-          .from("staff")
-          .select("*")
-          .eq("venue_id", venueId);
+        const { data, error } = await supabase.from("staff").select("*").eq("venue_id", venueId);
 
         if (error) throw error;
         const rows = (data || []) as Array<Record<string, unknown>>;
@@ -84,15 +81,19 @@ export class StaffService extends BaseService {
     invitedBy: string
   ): Promise<Record<string, unknown>> {
     const supabase = createAdminClient();
-    const { data, error } = await supabase.from("staff_invitations").insert({
-      venue_id: venueId,
-      email: email.toLowerCase().trim(),
-      role,
-      invited_by: invitedBy,
-      status: "pending",
-      token: crypto.randomUUID(),
-      expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString() // 7 days
-    }).select().single();
+    const { data, error } = await supabase
+      .from("staff_invitations")
+      .insert({
+        venue_id: venueId,
+        email: email.toLowerCase().trim(),
+        role,
+        invited_by: invitedBy,
+        status: "pending",
+        token: crypto.randomUUID(),
+        expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(), // 7 days
+      })
+      .select()
+      .single();
 
     if (error) throw error;
     return data as Record<string, unknown>;
@@ -101,10 +102,7 @@ export class StaffService extends BaseService {
   /**
    * Add staff member (uses admin client to satisfy RLS; caller must enforce venue access)
    */
-  async addStaff(
-    venueId: string,
-    data: { name: string; role?: string }
-  ): Promise<StaffMember> {
+  async addStaff(venueId: string, data: { name: string; role?: string }): Promise<StaffMember> {
     const supabase = createAdminClient();
     const { data: staff, error } = await supabase
       .from("staff")

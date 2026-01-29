@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { supabaseBrowser } from "@/lib/supabase";
+import { normalizeVenueId } from "@/lib/utils/venueId";
 
 import type { UserRole } from "@/lib/permissions";
 import type { AccessContext, Tier, FeatureKey } from "@/lib/tier-limits";
@@ -34,12 +35,7 @@ export function useAccessContext(venueId?: string | null): UseAccessContextRetur
 
       const supabase = supabaseBrowser();
 
-      // Normalize venueId - database stores with venue- prefix
-      const normalizedVenueId = venueId
-        ? venueId.startsWith("venue-")
-          ? venueId
-          : `venue-${venueId}`
-        : null;
+      const normalizedVenueId = normalizeVenueId(venueId);
 
       // Call get_access_context RPC - single database call for all access context
       const { data, error: rpcError } = await supabase.rpc("get_access_context", {
@@ -47,7 +43,6 @@ export function useAccessContext(venueId?: string | null): UseAccessContextRetur
       });
 
       if (rpcError) {
-
         setError(rpcError.message);
         setContext(null);
         return;
@@ -65,7 +60,6 @@ export function useAccessContext(venueId?: string | null): UseAccessContextRetur
       const tier = (accessContext.tier?.toLowerCase().trim() || "starter") as Tier;
 
       if (!["starter", "pro", "enterprise"].includes(tier)) {
-
         setContext({
           ...accessContext,
           tier: "starter" as Tier,
@@ -95,7 +89,6 @@ export function useAccessContext(venueId?: string | null): UseAccessContextRetur
         );
       }
     } catch (err) {
-
       setError(err instanceof Error ? err.message : "Failed to fetch access context");
       setContext(null);
     } finally {
@@ -104,12 +97,7 @@ export function useAccessContext(venueId?: string | null): UseAccessContextRetur
   }, [venueId]);
 
   useEffect(() => {
-    // Normalize venueId for cache key lookup
-    const normalizedVenueId = venueId
-      ? venueId.startsWith("venue-")
-        ? venueId
-        : `venue-${venueId}`
-      : null;
+    const normalizedVenueId = normalizeVenueId(venueId);
 
     // Try cache first for instant response
     if (typeof window !== "undefined") {
@@ -166,4 +154,3 @@ export function useAccessContext(venueId?: string | null): UseAccessContextRetur
     refetch: fetchContext,
   };
 }
-

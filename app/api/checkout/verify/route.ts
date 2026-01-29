@@ -86,7 +86,6 @@ export const GET = withUnifiedAuth(
           }
 
           if (!orderFound) {
-
             return NextResponse.json(
               { paid: false, error: "Order not found or access denied - webhook may be delayed" },
               { status: 404 }
@@ -95,7 +94,6 @@ export const GET = withUnifiedAuth(
         }
 
         if (!order) {
-
           return NextResponse.json(
             { paid: false, error: "Order not found or access denied" },
             { status: 404 }

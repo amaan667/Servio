@@ -35,7 +35,6 @@ export async function POST(_request: NextRequest) {
         .select("*");
 
       if (error) {
-
         return NextResponse.json(
           {
             ok: false,
@@ -57,7 +56,6 @@ export async function POST(_request: NextRequest) {
       details: results,
     });
   } catch (_error) {
-
     return NextResponse.json(
       {
         ok: false,

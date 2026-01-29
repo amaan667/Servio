@@ -16,7 +16,6 @@ export async function POST(request: NextRequest) {
     try {
       supabase = await createServerSupabase();
     } catch (dbError) {
-
       return apiErrors.serviceUnavailable(
         "Database connection error. Please try again in a moment."
       );
@@ -32,7 +31,6 @@ export async function POST(request: NextRequest) {
       data = result.data;
       signInError = result.error;
     } catch (fetchError) {
-
       const errorMsg =
         fetchError instanceof Error ? fetchError.message : "Network connection failed";
       if (errorMsg.includes("timeout") || errorMsg.includes("ETIMEDOUT")) {
@@ -44,12 +42,10 @@ export async function POST(request: NextRequest) {
     }
 
     if (signInError) {
-
       return apiErrors.unauthorized(signInError.message);
     }
 
     if (!data.session) {
-
       return apiErrors.internal("Failed to create session");
     }
 
@@ -68,8 +64,12 @@ export async function POST(request: NextRequest) {
         .limit(1);
 
       hasOrganization = !!(orgs && orgs.length > 0);
-      if (hasOrganization) { /* Condition handled */ }
-    } catch (orgError) { /* Error handled silently */ }
+      if (hasOrganization) {
+        /* Condition handled */
+      }
+    } catch (orgError) {
+      /* Error handled silently */
+    }
 
     // Now try to get venues with timeout protection
     try {
@@ -87,10 +87,8 @@ export async function POST(request: NextRequest) {
       venues = (venueQuery as { data: unknown; error: unknown }).data;
       venueError = (venueQuery as { data: unknown; error: unknown }).error;
     } catch (timeoutError) {
-
       // If user has organization, they must have venues - use generic dashboard
       if (hasOrganization) {
-
         const response = NextResponse.json({
           success: true,
           user: {
@@ -151,7 +149,6 @@ export async function POST(request: NextRequest) {
 
     return response;
   } catch (err) {
-
     return apiErrors.internal("An unexpected error occurred");
   }
 }

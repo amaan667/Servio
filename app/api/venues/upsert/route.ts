@@ -18,10 +18,11 @@ const venueUpsertSchema = z.object({
   venueId: z.string().optional(),
 });
 
-export const POST = createUnifiedHandler(async (_req: NextRequest, context) => {
-  const { body, user } = context;
-  const { name, business_type, address, phone, email } = body;
-  const finalVenueId = context.venueId || body.venueId;
+export const POST = createUnifiedHandler(
+  async (_req: NextRequest, context) => {
+    const { body, user } = context;
+    const { name, business_type, address, phone, email } = body;
+    const finalVenueId = context.venueId || body.venueId;
 
     if (!finalVenueId || !name || !business_type) {
       return apiErrors.badRequest("finalVenueId, name, and business_type required");
@@ -55,7 +56,6 @@ export const POST = createUnifiedHandler(async (_req: NextRequest, context) => {
       // Check tier limit
       const limitCheck = await checkLimit(user.id, "maxVenues", venueCount);
       if (!limitCheck.allowed) {
-
         return apiErrors.forbidden(
           `Location limit reached. You have ${venueCount}/${limitCheck.limit} location${venueCount !== 1 ? "s" : ""}. Upgrade to ${limitCheck.currentTier === "starter" ? "Pro" : "Enterprise"} tier for more locations.`,
           {
@@ -71,7 +71,7 @@ export const POST = createUnifiedHandler(async (_req: NextRequest, context) => {
     // CRITICAL: Ensure organization exists and get organization_id
     // This ensures all venues are linked to an organization for tier lookup
     let organizationId: string | null = null;
-    
+
     // Get user's organization
     const { data: userOrg } = await admin
       .from("organizations")
@@ -96,7 +96,6 @@ export const POST = createUnifiedHandler(async (_req: NextRequest, context) => {
         .single();
 
       if (orgError || !newOrg) {
-
         return apiErrors.database("Failed to create organization");
       }
       organizationId = newOrg.id;
@@ -127,7 +126,6 @@ export const POST = createUnifiedHandler(async (_req: NextRequest, context) => {
       await cache.invalidate(`venue:${finalVenueId}`);
 
       if (error) {
-
         return apiErrors.database(error.message);
       }
       return success({ venue: data });
@@ -140,7 +138,6 @@ export const POST = createUnifiedHandler(async (_req: NextRequest, context) => {
       const { data, error } = await admin.from("venues").insert(newVenueData).select().single();
 
       if (error) {
-
         return apiErrors.database(error.message);
       }
       return success({ venue: data });

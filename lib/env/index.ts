@@ -137,7 +137,9 @@ function validateEnv(): Env {
         .map((e) => e.path.join("."))
         .join(", ");
 
-      if (missing) { /* Condition handled */ }
+      if (missing) {
+        /* Condition handled */
+      }
 
       // FAIL FAST: In production, throw on missing required environment variables
       // This prevents misconfigured deployments from starting

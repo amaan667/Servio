@@ -172,7 +172,6 @@ export async function GET() {
               result.match.tierMatches = normalizedDbTier === tierFromStripe;
               result.match.statusMatches = org.subscription_status === subscription.status;
             } catch (subError) {
-
               if (result.stripe) {
                 result.stripe.subscriptionError =
                   subError instanceof Error ? subError.message : String(subError);
@@ -260,7 +259,6 @@ export async function GET() {
                     metadata: sub.metadata || {},
                   }));
                 } catch (subError) {
-
                   if (result.stripe) {
                     result.stripe.subscriptionError =
                       subError instanceof Error ? subError.message : String(subError);
@@ -276,7 +274,6 @@ export async function GET() {
           }
         }
       } catch (customerError) {
-
         result.stripe = {
           customerError:
             customerError instanceof Error ? customerError.message : String(customerError),
@@ -298,7 +295,6 @@ export async function GET() {
       },
     });
   } catch (error) {
-
     return NextResponse.json(
       {
         error: error instanceof Error ? error.message : "Unknown error",

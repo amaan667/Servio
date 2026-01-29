@@ -43,7 +43,8 @@ export function useOrderDetails(orderId: string) {
   const playReadySound = useCallback(() => {
     try {
       // Create a simple notification sound using Web Audio API
-      const audioContext = new (window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext)();
+      const audioContext = new (window.AudioContext ||
+        (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext)();
       const oscillator = audioContext.createOscillator();
       const gainNode = audioContext.createGain();
 
@@ -155,8 +156,7 @@ export function useOrderDetails(orderId: string) {
 
             // Check if order just became READY (or needs collection notification)
             const requiresCollectionNotification =
-              newStatus === "READY" &&
-              previousStatusRef.current !== "READY";
+              newStatus === "READY" && previousStatusRef.current !== "READY";
 
             if (requiresCollectionNotification) {
               setJustBecameReady(true);

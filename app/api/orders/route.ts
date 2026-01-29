@@ -69,7 +69,7 @@ export const POST = createUnifiedHandler(
         createKDSTicketsWithAI(supabase, {
           id: result.id,
           venue_id: result.venue_id,
-          items: result.items.map(item => ({
+          items: result.items.map((item) => ({
             item_name: item.item_name,
             quantity: item.quantity,
             specialInstructions: (item.special_instructions || undefined) as string | undefined,
@@ -78,7 +78,7 @@ export const POST = createUnifiedHandler(
           customer_name: result.customer_name,
           table_number: result.table_number ? parseInt(String(result.table_number), 10) : null,
           table_id: result.table_id as string,
-        }).catch(_err => {
+        }).catch((_err) => {
           // Silent error in production
         });
 

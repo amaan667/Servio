@@ -22,7 +22,6 @@ export async function POST(req: NextRequest) {
   // CRITICAL: Rate limiting on public payment route to prevent spam/abuse
   const rateLimitResult = await rateLimit(req, RATE_LIMITS.STRICT);
   if (!rateLimitResult.success) {
-
     return NextResponse.json(
       {
         ok: false,
@@ -74,7 +73,6 @@ export async function POST(req: NextRequest) {
 
     const existing = await checkIdempotency(idempotencyKey);
     if (existing.exists) {
-
       return NextResponse.json(existing.response.response_data, {
         status: existing.response.status_code,
       });
@@ -106,7 +104,6 @@ export async function POST(req: NextRequest) {
       .maybeSingle();
 
     if (existingOrder) {
-
       // Store in idempotency cache
       await import("@/lib/db/idempotency").then(({ storeIdempotency }) => {
         storeIdempotency(
@@ -146,7 +143,6 @@ export async function POST(req: NextRequest) {
     const venueCheck = await verifyVenueExists(venue_id);
 
     if (!venueCheck.valid) {
-
       return NextResponse.json(
         {
           ok: false,
@@ -236,7 +232,6 @@ export async function POST(req: NextRequest) {
         const order = await orderService.createOrder(venue_id, serviceOrderData);
 
         if (!order) {
-
           throw new Error("Failed to create order: OrderService returned null");
         }
 
@@ -274,7 +269,6 @@ export async function POST(req: NextRequest) {
             },
           });
         } catch (realtimeError) {
-
           // Don't fail the order creation if realtime fails
         }
 
@@ -366,7 +360,6 @@ async function createDemoOrder(cartId: string) {
       .single();
 
     if (orderError) {
-
       return NextResponse.json(
         {
           ok: false,
@@ -390,7 +383,6 @@ async function createDemoOrder(cartId: string) {
         },
       });
     } catch (realtimeError) {
-
       // Don't fail the order creation if realtime fails
     }
 
@@ -402,7 +394,6 @@ async function createDemoOrder(cartId: string) {
       },
     });
   } catch (_error) {
-
     return NextResponse.json(
       {
         ok: false,

@@ -24,7 +24,13 @@ export async function POST(req: NextRequest) {
     // Railway logs capture stdout/stderr
     const logString = `[${logData.timestamp}] ${logMessage} ${JSON.stringify(logData, null, 2)}`;
 
-    if (level === "error") { /* Condition handled */ } else if (level === "warn") { /* Condition handled */ } else { /* Else case handled */ }
+    if (level === "error") {
+      /* Condition handled */
+    } else if (level === "warn") {
+      /* Condition handled */
+    } else {
+      /* Else case handled */
+    }
 
     return NextResponse.json({ ok: true });
   } catch (error) {

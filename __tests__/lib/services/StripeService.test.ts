@@ -35,7 +35,7 @@ describe("StripeService", () => {
       vi.mocked(stripe.checkout.sessions.create).mockResolvedValue(mockSession as never);
 
       const result = await stripeService.createOrderCheckoutSession({
-        amount: 25.50,
+        amount: 25.5,
         venueName: "Test Venue",
         venueId: "venue-1",
         tableNumber: "5",
@@ -65,7 +65,7 @@ describe("StripeService", () => {
       vi.mocked(stripe.checkout.sessions.create).mockResolvedValue(mockSession as never);
 
       await stripeService.createOrderCheckoutSession({
-        amount: 25.50,
+        amount: 25.5,
         venueName: "Test",
         venueId: "venue-1",
         tableNumber: "1",

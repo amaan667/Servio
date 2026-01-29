@@ -33,7 +33,9 @@ export async function GET(_request: NextRequest) {
       const supabase = await createServerSupabase();
       const { data, error } = await supabase.from("venues").select("count").limit(1);
       checks.database = !error;
-    } catch (error) { /* Error handled silently */ }
+    } catch (error) {
+      /* Error handled silently */
+    }
 
     // Test entitlements RPC
     try {
@@ -43,8 +45,11 @@ export async function GET(_request: NextRequest) {
         p_venue_id: "test-venue-id",
       });
       // We expect an error (venue not found), but if RPC doesn't exist, we'd get a different error
-      checks.entitlementsRpc = !!error && (error.message?.includes("forbidden") || error.message?.includes("not found"));
-    } catch (error) { /* Error handled silently */ }
+      checks.entitlementsRpc =
+        !!error && (error.message?.includes("forbidden") || error.message?.includes("not found"));
+    } catch (error) {
+      /* Error handled silently */
+    }
 
     // Test downgrade validation function
     try {
@@ -54,13 +59,17 @@ export async function GET(_request: NextRequest) {
         p_new_tier: "starter",
       });
       checks.downgradeValidation = !error && typeof data === "boolean";
-    } catch (error) { /* Error handled silently */ }
+    } catch (error) {
+      /* Error handled silently */
+    }
 
     // Check if order state machine is importable
     try {
       await import("@/lib/orders/state-machine");
       checks.orderStateMachine = true;
-    } catch (error) { /* Error handled silently */ }
+    } catch (error) {
+      /* Error handled silently */
+    }
 
     // Determine overall health
     const criticalChecks = [
@@ -76,27 +85,31 @@ export async function GET(_request: NextRequest) {
     const allCriticalPass = criticalChecks.every(Boolean);
     const allChecksPass = Object.values(checks).every(Boolean);
 
-    return NextResponse.json({
-      status: allCriticalPass ? "healthy" : "degraded",
-      timestamp: new Date().toISOString(),
-      checks,
-      summary: {
-        total: Object.keys(checks).length,
-        passing: Object.values(checks).filter(Boolean).length,
-        criticalPassing: criticalChecks.filter(Boolean).length,
-        allCriticalPass,
-        allPass: allChecksPass,
+    return NextResponse.json(
+      {
+        status: allCriticalPass ? "healthy" : "degraded",
+        timestamp: new Date().toISOString(),
+        checks,
+        summary: {
+          total: Object.keys(checks).length,
+          passing: Object.values(checks).filter(Boolean).length,
+          criticalPassing: criticalChecks.filter(Boolean).length,
+          allCriticalPass,
+          allPass: allChecksPass,
+        },
       },
-    }, {
-      status: allCriticalPass ? 200 : 503,
-    });
-
+      {
+        status: allCriticalPass ? 200 : 503,
+      }
+    );
   } catch (error) {
-
-    return NextResponse.json({
-      status: "error",
-      timestamp: new Date().toISOString(),
-      error: error instanceof Error ? error.message : "Unknown error",
-    }, { status: 500 });
+    return NextResponse.json(
+      {
+        status: "error",
+        timestamp: new Date().toISOString(),
+        error: error instanceof Error ? error.message : "Unknown error",
+      },
+      { status: 500 }
+    );
   }
 }

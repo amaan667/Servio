@@ -34,7 +34,6 @@ export async function GET(_request: NextRequest, context: RecipeMenuParams = {})
       .eq("menu_item_id", menu_item_id);
 
     if (error) {
-
       return apiErrors.internal(error.message || "Internal server error");
     }
 
@@ -50,7 +49,6 @@ export async function GET(_request: NextRequest, context: RecipeMenuParams = {})
       total_cost: totalCost,
     });
   } catch (_error) {
-
     return apiErrors.internal("Internal server error");
   }
 }
@@ -78,7 +76,6 @@ export async function POST(_request: NextRequest, context: RecipeMenuParams = {}
       .eq("menu_item_id", menu_item_id);
 
     if (deleteError) {
-
       return apiErrors.internal("Internal server error");
     }
 
@@ -97,7 +94,6 @@ export async function POST(_request: NextRequest, context: RecipeMenuParams = {}
         .select();
 
       if (insertError) {
-
         return apiErrors.internal("Internal server error");
       }
 
@@ -106,7 +102,6 @@ export async function POST(_request: NextRequest, context: RecipeMenuParams = {}
 
     return NextResponse.json({ data: [] }, { status: 200 });
   } catch (_error) {
-
     return apiErrors.internal("Internal server error");
   }
 }
@@ -128,13 +123,11 @@ export async function DELETE(_request: NextRequest, context: RecipeMenuParams = 
       .eq("menu_item_id", menu_item_id);
 
     if (error) {
-
       return apiErrors.internal(error.message || "Internal server error");
     }
 
     return NextResponse.json({ success: true });
   } catch (_error) {
-
     return apiErrors.internal("Internal server error");
   }
 }

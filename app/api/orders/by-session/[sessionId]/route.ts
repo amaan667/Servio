@@ -14,7 +14,6 @@ export async function GET(_req: Request, context: SessionParams = {}) {
     const sessionId = context.params?.sessionId;
 
     if (!sessionId) {
-
       return apiErrors.badRequest("Session ID is required");
     }
 
@@ -27,7 +26,6 @@ export async function GET(_req: Request, context: SessionParams = {}) {
       .single();
 
     if (orderError) {
-
       return NextResponse.json(
         {
           ok: false,
@@ -38,7 +36,6 @@ export async function GET(_req: Request, context: SessionParams = {}) {
     }
 
     if (!order) {
-
       return NextResponse.json(
         {
           ok: false,
@@ -61,7 +58,6 @@ export async function GET(_req: Request, context: SessionParams = {}) {
       order: transformedOrder,
     });
   } catch (_error) {
-
     return NextResponse.json(
       {
         ok: false,

@@ -44,7 +44,6 @@ export async function executeMenuUpdatePrices(
     );
 
   if (fetchError) {
-
     throw new AIAssistantError("Failed to fetch menu items", "EXECUTION_FAILED", {
       error: fetchError,
     });
@@ -138,10 +137,8 @@ export async function executeMenuUpdatePrices(
       .select("id, name, price");
 
     if (error) {
-
       failedUpdates.push({ id: item.id, name: itemName, error: error.message });
     } else if (!data || data.length === 0) {
-
       failedUpdates.push({ id: item.id, name: itemName, error: "Item not found or access denied" });
     } else {
       updatedCount++;
@@ -246,7 +243,7 @@ export async function executeMenuCreateItem(
 
   // If categoryId is not a valid UUID, try to find it by category name
   let categoryId = params.categoryId;
-  
+
   // Validate categoryId is provided
   if (!categoryId) {
     throw new AIAssistantError(
@@ -254,33 +251,36 @@ export async function executeMenuCreateItem(
       "INVALID_PARAMS"
     );
   }
-  
-  if (categoryId && !categoryId.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i)) {
+
+  if (
+    categoryId &&
+    !categoryId.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i)
+  ) {
     // It's a category name, not an ID - look it up (case-insensitive)
     const { data: categories, error: categoryError } = await supabase
       .from("menu_categories")
       .select("id, name")
       .eq("venue_id", venueId);
-    
-    if (categoryError) {
 
+    if (categoryError) {
       throw new AIAssistantError(
         `Failed to lookup category: ${categoryError.message}`,
         "EXECUTION_FAILED",
         { error: categoryError }
       );
     }
-    
+
     // Try exact match first (case-insensitive), then partial match
-    const category = categories?.find(
-      (c) => c.name.toLowerCase() === categoryId.toLowerCase()
-    ) || categories?.find(
-      (c) => c.name.toLowerCase().includes(categoryId.toLowerCase()) || categoryId.toLowerCase().includes(c.name.toLowerCase())
-    );
-    
+    const category =
+      categories?.find((c) => c.name.toLowerCase() === categoryId.toLowerCase()) ||
+      categories?.find(
+        (c) =>
+          c.name.toLowerCase().includes(categoryId.toLowerCase()) ||
+          categoryId.toLowerCase().includes(c.name.toLowerCase())
+      );
+
     if (category) {
       categoryId = category.id;
-
     } else {
       const availableCategories = categories?.map((c) => c.name).join(", ") || "none";
       throw new AIAssistantError(
@@ -290,16 +290,19 @@ export async function executeMenuCreateItem(
       );
     }
   }
-  
+
   // Validate categoryId exists if it's a UUID
-  if (categoryId && categoryId.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i)) {
+  if (
+    categoryId &&
+    categoryId.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i)
+  ) {
     const { data: categoryExists } = await supabase
       .from("menu_categories")
       .select("id")
       .eq("id", categoryId)
       .eq("venue_id", venueId)
       .single();
-    
+
     if (!categoryExists) {
       throw new AIAssistantError(
         `Category ID "${categoryId}" not found or doesn't belong to this venue.`,
@@ -347,11 +350,10 @@ export async function executeMenuCreateItem(
     .single();
 
   if (error) {
-    throw new AIAssistantError(
-      `Failed to create menu item: ${error.message}`,
-      "EXECUTION_FAILED",
-      { error: error.message, details: error }
-    );
+    throw new AIAssistantError(`Failed to create menu item: ${error.message}`, "EXECUTION_FAILED", {
+      error: error.message,
+      details: error,
+    });
   }
 
   return {

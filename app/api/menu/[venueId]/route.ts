@@ -4,6 +4,7 @@ import { RATE_LIMITS } from "@/lib/rate-limit";
 import { paginationSchema } from "@/lib/api/validation-schemas";
 import { z } from "zod";
 import { apiErrors, success } from "@/lib/api/standard-response";
+import { normalizeVenueId } from "@/lib/utils/venueId";
 
 const menuPaginationSchema = paginationSchema.extend({
   limit: z.coerce.number().int().min(1).max(500).default(200),
@@ -25,7 +26,7 @@ export const GET = createUnifiedHandler(
     }
 
     // Handle venue ID format - ensure it has 'venue-' prefix for database lookup
-    const venueId = rawVenueId.startsWith("venue-") ? rawVenueId : `venue-${rawVenueId}`;
+    const venueId = normalizeVenueId(rawVenueId) ?? rawVenueId;
 
     const { limit, offset } = menuPaginationSchema.parse({
       limit: searchParams.get("limit") || undefined,
@@ -52,19 +53,19 @@ export const GET = createUnifiedHandler(
     } catch (error) {
       // Enhanced error handling for private browsers and mobile
       const errorMessage = error instanceof Error ? error.message : "Unknown error";
-      
+
       // Log the actual error for debugging (will be captured by unified handler)
       // Return user-friendly error with retry suggestion
       // Include error details in development, but keep message generic in production
-      return apiErrors.internal(
-        "Failed to load menu. Please try again.",
-        {
-          message: errorMessage,
-          type: error instanceof Error ? error.name : "Unknown",
-          // Include timeout info if it's a timeout error
-          ...(errorMessage.includes("timeout") && { suggestion: "This may be due to a slow connection. The request will be retried automatically." }),
-        }
-      );
+      return apiErrors.internal("Failed to load menu. Please try again.", {
+        message: errorMessage,
+        type: error instanceof Error ? error.name : "Unknown",
+        // Include timeout info if it's a timeout error
+        ...(errorMessage.includes("timeout") && {
+          suggestion:
+            "This may be due to a slow connection. The request will be retried automatically.",
+        }),
+      });
     }
   },
   {

@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { supabaseBrowser as createClient } from "@/lib/supabase";
 import type { FeedbackQuestion, FeedbackAnswer } from "@/types/feedback";
+import { normalizeVenueId } from "@/lib/utils/venueId";
 
 interface OrderFeedbackFormProps {
   venueId: string;
@@ -98,8 +99,7 @@ export default function OrderFeedbackForm({ venueId, orderId }: OrderFeedbackFor
   const fetchQuestions = useCallback(async () => {
     try {
       setLoading(true);
-      // Normalize venueId - ensure it has venue- prefix
-      const normalizedVenueId = venueId.startsWith("venue-") ? venueId : `venue-${venueId}`;
+      const normalizedVenueId = normalizeVenueId(venueId) ?? venueId;
       const response = await fetch(`/api/feedback/questions/public?venueId=${normalizedVenueId}`);
 
       if (response.ok) {
@@ -140,7 +140,7 @@ export default function OrderFeedbackForm({ venueId, orderId }: OrderFeedbackFor
   useEffect(() => {
     const supabase = createClient();
 
-    const normalizedVenueId = venueId.startsWith("venue-") ? venueId : `venue-${venueId}`;
+    const normalizedVenueId = normalizeVenueId(venueId) ?? venueId;
     const channel = supabase
       .channel(`feedback-questions-${normalizedVenueId}`)
       .on(

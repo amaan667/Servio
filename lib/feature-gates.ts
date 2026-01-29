@@ -1,4 +1,3 @@
-
 /**
  * Feature Gating System
  *
@@ -58,7 +57,6 @@ export async function checkFeatureAccess(
         : `This feature requires ${requiredTier} tier. Your current tier is ${currentTier}.`,
     };
   } catch (_error) {
-
     // Fail secure - deny access if error
     return {
       hasAccess: false,
@@ -111,7 +109,6 @@ export async function clientCheckFeatureAccess(
     const response = await fetch(`/api/features/check?venue_id=${venueId}&feature=${feature}`);
     return await response.json();
   } catch (_error) {
-
     // Fail secure - deny access on error
     return {
       hasAccess: false,

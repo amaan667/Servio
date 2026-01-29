@@ -76,7 +76,6 @@ export function trackError(
  * Track handled errors (expected errors)
  */
 export function trackHandledError(message: string, context?: ErrorContext): void {
-
   Sentry.captureMessage(message, {
     level: "warning",
     tags: {
@@ -145,7 +144,9 @@ export function trackPerformance(threshold = 1000) {
         const result = await originalMethod.apply(this, args);
         const duration = Date.now() - startTime;
 
-        if (duration > threshold) { /* Condition handled */ }
+        if (duration > threshold) {
+          /* Condition handled */
+        }
 
         return result;
       } catch (_error) {

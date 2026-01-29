@@ -1,4 +1,3 @@
-
 import { supabaseBrowser as createClient } from "@/lib/supabase";
 import { useState, useEffect, useCallback } from "react";
 
@@ -59,7 +58,6 @@ export function useTabCounts(venueId: string, tz: string, liveWindowMins = 30) {
           .single();
 
         if (rpcError) {
-
           setError(rpcError.message);
           // Don't clear data on error - keep showing cached data
           return;
@@ -72,7 +70,6 @@ export function useTabCounts(venueId: string, tz: string, liveWindowMins = 30) {
           setCachedCounts(venueId, counts);
         }
       } catch (_err) {
-
         setError(_err instanceof Error ? _err.message : "Unknown error");
         // Don't clear data on error - keep showing cached data
       } finally {

@@ -75,7 +75,7 @@ function removeLoggerCalls(content: string): string {
     "aiResponse",
     "aiError",
   ];
-  
+
   for (const method of loggerMethods) {
     // Match logger.method( ... ) with balanced parentheses
     const regex = new RegExp(
@@ -83,12 +83,9 @@ function removeLoggerCalls(content: string): string {
       "gs"
     );
     content = content.replace(regex, "");
-    
+
     // Also handle simpler cases (single line)
-    content = content.replace(
-      new RegExp(`logger\\.${method}\\([^)]*\\);?`, "g"),
-      ""
-    );
+    content = content.replace(new RegExp(`logger\\.${method}\\([^)]*\\);?`, "g"), "");
   }
 
   // Remove apiLogger.* calls
@@ -122,10 +119,7 @@ function removeLoggerCalls(content: string): string {
   );
 
   // Remove structuredLogger.* calls
-  content = content.replace(
-    /structuredLogger\.(debug|info|warn|error|log)\([^)]*\);?/gs,
-    ""
-  );
+  content = content.replace(/structuredLogger\.(debug|info|warn|error|log)\([^)]*\);?/gs, "");
 
   // Remove logApiCall(...) calls
   content = content.replace(/logApiCall\([^)]*\);?/g, "");
@@ -142,7 +136,7 @@ function removeLoggerImports(content: string): string {
     /import\s+{\s*\w+Logger\s+as\s+logger\s*}\s+from\s+["']@\/lib\/logger["'];?\n/g,
     ""
   );
-  
+
   // Remove single-line logger imports
   content = content.replace(
     /import\s+{\s*logger(?:\s*,\s*\w+)*\s*}\s+from\s+["']@\/lib\/logger["'];?\n/g,
@@ -152,14 +146,8 @@ function removeLoggerImports(content: string): string {
     /import\s+{\s*\w+(?:\s*,\s*\w+)*\s*}\s+from\s+["']@\/lib\/logger["'];?\n/g,
     ""
   );
-  content = content.replace(
-    /import\s+logger\s+from\s+["']@\/lib\/logger["'];?\n/g,
-    ""
-  );
-  content = content.replace(
-    /import\s+\*\s+as\s+logger\s+from\s+["']@\/lib\/logger["'];?\n/g,
-    ""
-  );
+  content = content.replace(/import\s+logger\s+from\s+["']@\/lib\/logger["'];?\n/g, "");
+  content = content.replace(/import\s+\*\s+as\s+logger\s+from\s+["']@\/lib\/logger["'];?\n/g, "");
 
   // Remove logger from multi-import statements
   content = content.replace(

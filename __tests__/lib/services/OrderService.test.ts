@@ -53,7 +53,9 @@ describe("OrderService", () => {
       })),
       rpc: vi.fn(),
     };
-    vi.mocked(createSupabaseClient).mockResolvedValue(mockSupabase as unknown as ReturnType<typeof createSupabaseClient>);
+    vi.mocked(createSupabaseClient).mockResolvedValue(
+      mockSupabase as unknown as ReturnType<typeof createSupabaseClient>
+    );
   });
 
   describe("getOrders", () => {
@@ -103,7 +105,7 @@ describe("OrderService", () => {
         id: "order-1",
         venue_id: "venue-1",
         customer_name: "Test Customer",
-        total_amount: 25.50,
+        total_amount: 25.5,
       };
 
       mockSupabase.rpc.mockResolvedValue({
@@ -114,8 +116,8 @@ describe("OrderService", () => {
       const result = await orderService.createOrder("venue-1", {
         customer_name: "Test Customer",
         customer_phone: "+1234567890",
-        items: [{ item_name: "Burger", quantity: 1, price: 25.50 }],
-        total_amount: 25.50,
+        items: [{ item_name: "Burger", quantity: 1, price: 25.5 }],
+        total_amount: 25.5,
       });
 
       expect(result).toBeDefined();

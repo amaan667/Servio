@@ -1,10 +1,10 @@
 #!/usr/bin/env tsx
 /**
  * Script to migrate routes from withUnifiedAuth to createUnifiedHandler
- * 
+ *
  * This script helps migrate routes that manually do rate limiting to use
  * the unified handler which handles it automatically.
- * 
+ *
  * Usage: tsx scripts/migrate-routes-to-unified.ts
  */
 
@@ -53,10 +53,12 @@ for (const file of routeFiles) {
         /import\s*{\s*cache[^}]*}\s*from\s*["']@\/lib\/cache["'];?/g,
         (match) => {
           if (match.includes("cacheKeys")) return match;
-          return match.replace("}", ', cacheKeys, RECOMMENDED_TTL }').replace(
-            'from "@/lib/cache"',
-            'from "@/lib/cache";\nimport { cacheKeys, RECOMMENDED_TTL } from "@/lib/cache/constants"'
-          );
+          return match
+            .replace("}", ", cacheKeys, RECOMMENDED_TTL }")
+            .replace(
+              'from "@/lib/cache"',
+              'from "@/lib/cache";\nimport { cacheKeys, RECOMMENDED_TTL } from "@/lib/cache/constants"'
+            );
         }
       );
       modified = true;

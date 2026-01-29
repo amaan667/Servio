@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { MenuItem } from "../types";
 import { demoMenuItems } from "@/data/demoMenuItems";
 import { safeGetItem, safeSetItem, safeRemoveItem, safeParseJSON } from "../utils/safeStorage";
+import { normalizeVenueId } from "@/lib/utils/venueId";
 
 export function useOrderMenu(venueSlug: string, isDemo: boolean) {
   // Track loading state per venue to prevent duplicate fetches
@@ -41,12 +42,10 @@ export function useOrderMenu(venueSlug: string, isDemo: boolean) {
     return safeParseJSON<string[]>(cached, []);
   });
 
-  const normalizeVenueId = (id: string) => (id.startsWith("venue-") ? id : `venue-${id}`);
-
   const getApiErrorMessage = (body: unknown): string => {
     if (!body || typeof body !== "object") return "Failed to load menu";
     const obj = body as Record<string, unknown>;
-    
+
     // Check for standard API error format: { success: false, error: { message: "...", code: "..." } }
     const error = obj.error as unknown;
     if (error && typeof error === "object") {
@@ -54,14 +53,14 @@ export function useOrderMenu(venueSlug: string, isDemo: boolean) {
       const message = errorObj.message;
       if (typeof message === "string" && message.trim().length > 0) return message;
     }
-    
+
     // Fallback to direct error string
     if (typeof error === "string" && error.trim().length > 0) return error;
-    
+
     // Check for direct message property
     const message = obj.message;
     if (typeof message === "string" && message.trim().length > 0) return message;
-    
+
     return "Failed to load menu";
   };
 
@@ -70,7 +69,7 @@ export function useOrderMenu(venueSlug: string, isDemo: boolean) {
     loadingRef.current = null;
     retryCountRef.current = 0;
     setMenuError(null);
-    
+
     // Clear any potentially stale empty cache for this venue
     // This ensures fresh data is fetched when scanning a new QR code
     if (typeof window !== "undefined" && venueSlug) {
@@ -150,7 +149,11 @@ export function useOrderMenu(venueSlug: string, isDemo: boolean) {
 
       // Cache demo menu (best-effort, quota may be exceeded on mobile/private browsing)
       if (typeof window !== "undefined") {
-        const menuCached = safeSetItem(sessionStorage, `menu_${venueSlug}`, JSON.stringify(mappedItems));
+        const menuCached = safeSetItem(
+          sessionStorage,
+          `menu_${venueSlug}`,
+          JSON.stringify(mappedItems)
+        );
         const nameCached = safeSetItem(sessionStorage, `venue_name_${venueSlug}`, "Demo Café");
         if (!menuCached || !nameCached) {
           // Storage quota exceeded in private browsing mode - non-fatal, continue without cache
@@ -168,12 +171,12 @@ export function useOrderMenu(venueSlug: string, isDemo: boolean) {
       }
 
       const apiUrl = `${window.location.origin}/api/menu/${venueSlug}`;
-      
+
       // Add timeout and retry logic for reliability
       // 10 second client timeout - server has 8s, so client should be slightly longer
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 10000);
-      
+
       let response: Response;
       try {
         response = await fetch(apiUrl, {
@@ -186,18 +189,25 @@ export function useOrderMenu(venueSlug: string, isDemo: boolean) {
         clearTimeout(timeoutId);
       } catch (fetchError) {
         clearTimeout(timeoutId);
-        
+
         // Always retry on network errors - never show error to user
-        if (retryCountRef.current < maxRetries && (fetchError instanceof Error && (fetchError.name === "AbortError" || fetchError.message.includes("network") || fetchError.message.includes("timeout") || fetchError.message.includes("Failed to fetch")))) {
+        if (
+          retryCountRef.current < maxRetries &&
+          fetchError instanceof Error &&
+          (fetchError.name === "AbortError" ||
+            fetchError.message.includes("network") ||
+            fetchError.message.includes("timeout") ||
+            fetchError.message.includes("Failed to fetch"))
+        ) {
           retryCountRef.current += 1;
           // Exponential backoff: 1s, 2s, 4s
           const delay = Math.pow(2, retryCountRef.current - 1) * 1000;
-          await new Promise(resolve => setTimeout(resolve, delay));
+          await new Promise((resolve) => setTimeout(resolve, delay));
           // Reset loading state to allow retry
           loadingRef.current = null;
           return loadMenuItems();
         }
-        
+
         // If we have cached data, don't show error - just silently fail
         // Only show error if we have NO cached data AND all retries failed
         if (!hasCachedData) {
@@ -222,7 +232,6 @@ export function useOrderMenu(venueSlug: string, isDemo: boolean) {
           errorMessage = response.statusText || errorMessage;
         }
 
-        
         // Always retry on 5xx errors - never show error to user
         if (retryCountRef.current < maxRetries && response.status >= 500) {
           retryCountRef.current += 1;
@@ -232,11 +241,11 @@ export function useOrderMenu(venueSlug: string, isDemo: boolean) {
           }
           setMenuError(null); // Never show errors
           const delay = Math.pow(2, retryCountRef.current - 1) * 1000;
-          await new Promise(resolve => setTimeout(resolve, delay));
+          await new Promise((resolve) => setTimeout(resolve, delay));
           loadingRef.current = null;
           return loadMenuItems();
         }
-        
+
         // Never show error - if we have cached data, user won't notice
         // If no cached data, silently keep retrying
         setMenuError(null);
@@ -259,7 +268,6 @@ export function useOrderMenu(venueSlug: string, isDemo: boolean) {
       };
 
       if (!data.success || !data.data) {
-
         // Always retry on API errors - never show error to user
         // If we have cached data, user won't notice any issues
         if (retryCountRef.current < maxRetries) {
@@ -270,11 +278,11 @@ export function useOrderMenu(venueSlug: string, isDemo: boolean) {
           }
           setMenuError(null); // Never show errors
           const delay = Math.pow(2, retryCountRef.current - 1) * 1000;
-          await new Promise(resolve => setTimeout(resolve, delay));
+          await new Promise((resolve) => setTimeout(resolve, delay));
           loadingRef.current = null;
           return loadMenuItems();
         }
-        
+
         // Never show error - silently fail if we have cached data
         // If no cached data, keep retrying silently
         setMenuError(null);
@@ -310,11 +318,19 @@ export function useOrderMenu(venueSlug: string, isDemo: boolean) {
           safeSetItem(sessionStorage, `menu_${venueSlug}`, JSON.stringify(normalized));
           safeSetItem(sessionStorage, `venue_name_${venueSlug}`, venueNameValue);
           if (Array.isArray(payload.categoryOrder)) {
-            safeSetItem(sessionStorage, `categories_${venueSlug}`, JSON.stringify(payload.categoryOrder));
+            safeSetItem(
+              sessionStorage,
+              `categories_${venueSlug}`,
+              JSON.stringify(payload.categoryOrder)
+            );
           }
           // Cache PDF images for instant display
           if (Array.isArray(payload.pdfImages) && payload.pdfImages.length > 0) {
-            safeSetItem(sessionStorage, `pdf_images_${venueSlug}`, JSON.stringify(payload.pdfImages));
+            safeSetItem(
+              sessionStorage,
+              `pdf_images_${venueSlug}`,
+              JSON.stringify(payload.pdfImages)
+            );
           }
         }
         // If storage fails, continue without caching - app still works
@@ -323,7 +339,7 @@ export function useOrderMenu(venueSlug: string, isDemo: boolean) {
       // Backward compatibility: if API didn't include categoryOrder, fetch it.
       if (!Array.isArray(payload.categoryOrder)) {
         try {
-          const normalizedVenueId = normalizeVenueId(venueSlug);
+          const normalizedVenueId = normalizeVenueId(venueSlug) ?? venueSlug;
           const categoryOrderResponse = await fetch(
             `${window.location.origin}/api/menu/categories?venueId=${normalizedVenueId}`
           );
@@ -334,7 +350,11 @@ export function useOrderMenu(venueSlug: string, isDemo: boolean) {
             if (Array.isArray(categoryOrderData.categories)) {
               setCategoryOrder(categoryOrderData.categories);
               if (typeof window !== "undefined" && itemCount > 0) {
-                const categoriesCached = safeSetItem(sessionStorage, `categories_${venueSlug}`, JSON.stringify(categoryOrderData.categories));
+                const categoriesCached = safeSetItem(
+                  sessionStorage,
+                  `categories_${venueSlug}`,
+                  JSON.stringify(categoryOrderData.categories)
+                );
                 if (!categoriesCached) {
                   // Storage quota exceeded in private browsing mode - non-fatal, continue without cache
                 }
@@ -345,7 +365,6 @@ export function useOrderMenu(venueSlug: string, isDemo: boolean) {
           // Non-fatal
         }
       }
-
 
       // Never show error for empty menu - just show empty state
       setMenuError(null);
@@ -359,11 +378,11 @@ export function useOrderMenu(venueSlug: string, isDemo: boolean) {
       if (retryCountRef.current < maxRetries) {
         retryCountRef.current += 1;
         const delay = Math.pow(2, retryCountRef.current - 1) * 1000;
-        await new Promise(resolve => setTimeout(resolve, delay));
+        await new Promise((resolve) => setTimeout(resolve, delay));
         loadingRef.current = null;
         return loadMenuItems();
       }
-      
+
       // Never show error - if we have cached data, user won't notice
       // Silently fail and keep cached data visible
       setMenuError(null);
@@ -377,7 +396,6 @@ export function useOrderMenu(venueSlug: string, isDemo: boolean) {
     if (venueSlug) {
       loadMenuItems();
     }
-     
   }, [venueSlug, isDemo]);
 
   return {

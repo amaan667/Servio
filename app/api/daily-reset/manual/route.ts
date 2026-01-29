@@ -37,7 +37,6 @@ export const POST = withUnifiedAuth(
         .single();
 
       if (venueError) {
-
         return apiErrors.database(
           "Failed to fetch venue",
           isDevelopment() ? venueError.message : undefined
@@ -58,7 +57,6 @@ export const POST = withUnifiedAuth(
         .limit(1);
 
       if (recentOrdersError) {
-
         // Continue with reset if we can't check
       }
 
@@ -70,7 +68,6 @@ export const POST = withUnifiedAuth(
         .in("order_status", ["PLACED", "ACCEPTED", "IN_PREP", "READY", "SERVING"]);
 
       if (activeOrdersError) {
-
         return apiErrors.internal("Failed to fetch active orders");
       }
 
@@ -85,7 +82,6 @@ export const POST = withUnifiedAuth(
           .in("order_status", ["PLACED", "ACCEPTED", "IN_PREP", "READY", "SERVING"]);
 
         if (completeOrdersError) {
-
           return apiErrors.internal("Failed to complete active orders");
         }
       }
@@ -98,7 +94,6 @@ export const POST = withUnifiedAuth(
         .eq("status", "BOOKED");
 
       if (activeReservationsError) {
-
         return apiErrors.internal("Failed to fetch active reservations");
       }
 
@@ -113,7 +108,6 @@ export const POST = withUnifiedAuth(
           .eq("status", "BOOKED");
 
         if (cancelReservationsError) {
-
           return apiErrors.internal("Failed to cancel active reservations");
         }
       }
@@ -125,7 +119,6 @@ export const POST = withUnifiedAuth(
         .eq("venue_id", finalVenueId);
 
       if (tablesError) {
-
         return apiErrors.internal("Failed to fetch tables");
       }
 
@@ -137,7 +130,6 @@ export const POST = withUnifiedAuth(
           .eq("venue_id", finalVenueId);
 
         if (deleteSessionsError) {
-
           // Don't fail for this, continue
         }
 
@@ -148,7 +140,6 @@ export const POST = withUnifiedAuth(
           .eq("venue_id", finalVenueId);
 
         if (deleteTablesError) {
-
           return apiErrors.internal("Failed to delete tables");
         }
       }
@@ -160,9 +151,7 @@ export const POST = withUnifiedAuth(
         .eq("venue_id", finalVenueId);
 
       if (clearRuntimeError) {
-
         // Don't fail the entire operation for this
-
       }
 
       // Step 5: Record the manual reset in the log (but don't prevent future resets)
@@ -184,9 +173,7 @@ export const POST = withUnifiedAuth(
       );
 
       if (logError) {
-
         // Don't fail the operation for this
-
       }
 
       // STEP 7: Return success response

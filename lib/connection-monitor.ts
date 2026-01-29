@@ -1,4 +1,3 @@
-
 /**
  * Connection monitoring and offline handling utilities
  */
@@ -37,7 +36,6 @@ class ConnectionMonitor {
   }
 
   private handleOffline() {
-
     this.updateState({ isOnline: false, isSlowConnection: false });
   }
 
@@ -81,7 +79,6 @@ class ConnectionMonitor {
         });
       }
     } catch (_error) {
-
       // Fallback to navigator.onLine
       this.updateState({
         isOnline: navigator.onLine,

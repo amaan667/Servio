@@ -94,7 +94,9 @@ export const TIER_LIMITS: Record<string, TierLimits> = {
  * Use this when you already have the tier from auth context
  */
 export function hasAdvancedAnalyticsByTier(tier: string): boolean {
-  const tierKey = String(tier || "starter").toLowerCase().trim();
+  const tierKey = String(tier || "starter")
+    .toLowerCase()
+    .trim();
   const limits = TIER_LIMITS[tierKey] ?? TIER_LIMITS.starter!;
   return (
     limits.features.analytics === "advanced" || limits.features.analytics === "advanced+exports"
@@ -106,13 +108,18 @@ export function hasAdvancedAnalyticsByTier(tier: string): boolean {
  * Returns: "basic" | "advanced" | "enterprise"
  */
 export function getAnalyticsTierLabel(tier: string): "basic" | "advanced" | "enterprise" {
-  const tierKey = String(tier || "starter").toLowerCase().trim();
+  const tierKey = String(tier || "starter")
+    .toLowerCase()
+    .trim();
   const limits = TIER_LIMITS[tierKey] ?? TIER_LIMITS.starter!;
 
   if (tierKey === "enterprise") {
     return "enterprise";
   }
-  if (limits.features.analytics === "advanced+exports" || limits.features.analytics === "advanced") {
+  if (
+    limits.features.analytics === "advanced+exports" ||
+    limits.features.analytics === "advanced"
+  ) {
     return "advanced";
   }
   return "basic";
@@ -122,7 +129,9 @@ export function getAnalyticsTierLabel(tier: string): "basic" | "advanced" | "ent
  * Check if tier has access to KDS (synchronous - for client components)
  */
 export function hasKDSAccessByTier(tier: string): boolean {
-  const tierKey = String(tier || "starter").toLowerCase().trim();
+  const tierKey = String(tier || "starter")
+    .toLowerCase()
+    .trim();
   const limits = TIER_LIMITS[tierKey] ?? TIER_LIMITS.starter!;
   return limits.features.kds !== false;
 }
@@ -131,7 +140,9 @@ export function hasKDSAccessByTier(tier: string): boolean {
  * Get KDS tier for a given tier (synchronous - for client components)
  */
 export function getKDSTierByTier(tier: string): KDSTier | false {
-  const tierKey = String(tier || "starter").toLowerCase().trim();
+  const tierKey = String(tier || "starter")
+    .toLowerCase()
+    .trim();
   const limits = TIER_LIMITS[tierKey] ?? TIER_LIMITS.starter!;
   return limits.features.kds || false;
 }
@@ -163,10 +174,7 @@ export interface AccessContext {
   permissions: Record<string, unknown>;
 }
 
-export function hasFeatureAccess(
-  context: AccessContext | null,
-  feature: FeatureKey
-): boolean {
+export function hasFeatureAccess(context: AccessContext | null, feature: FeatureKey): boolean {
   if (!context) return false;
 
   const tierLimits = TIER_LIMITS[context.tier] ?? TIER_LIMITS.starter!;
@@ -193,7 +201,9 @@ export function hasFeatureAccessByTier(
   tier: string,
   feature: keyof TierLimits["features"]
 ): boolean {
-  const tierKey = String(tier || "starter").toLowerCase().trim();
+  const tierKey = String(tier || "starter")
+    .toLowerCase()
+    .trim();
   const limits = TIER_LIMITS[tierKey] ?? TIER_LIMITS.starter!;
 
   // Special handling for analytics tier

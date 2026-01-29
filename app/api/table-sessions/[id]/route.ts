@@ -40,7 +40,6 @@ export async function PUT(req: NextRequest, context: { params: Promise<{ id: str
       .single();
 
     if (error) {
-
       return apiErrors.database("Failed to update table session");
     }
 
@@ -61,7 +60,6 @@ export async function DELETE(_req: NextRequest, context: { params: Promise<{ id:
     const { error } = await supabase.from("table_sessions").delete().eq("id", id);
 
     if (error) {
-
       return apiErrors.database("Failed to delete table session");
     }
 

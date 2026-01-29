@@ -19,7 +19,11 @@ export const STRIPE_PRICE_IDS = {
  * Complete entitlement sync for a subscription update with downgrade safety
  */
 export async function syncEntitlementsFromSubscription(
-  subscription: { id: string; status: string; items: { data: Array<{ price: { id: string }; id: string }> } },
+  subscription: {
+    id: string;
+    status: string;
+    items: { data: Array<{ price: { id: string }; id: string }> };
+  },
   organizationId: string
 ): Promise<void> {
   const supabase = createAdminClient();
@@ -34,7 +38,6 @@ export async function syncEntitlementsFromSubscription(
   });
 
   if (!downgradeValid) {
-
     // BLOCK the downgrade by not updating entitlements
     // Log this as a critical business event
     await supabase.from("subscription_history").insert({
@@ -61,7 +64,6 @@ export async function syncEntitlementsFromSubscription(
     .eq("organization_id", organizationId);
 
   if (venueError) {
-
     throw venueError;
   }
 
@@ -73,7 +75,6 @@ export async function syncEntitlementsFromSubscription(
     await syncVenueTier(venue.venue_id);
     await syncVenueAddons(venue.venue_id, subscription.items.data);
   }
-
 }
 
 /**
@@ -120,10 +121,8 @@ async function syncOrganizationTier(
     .eq("id", organizationId);
 
   if (error) {
-
     throw error;
   }
-
 }
 
 /**
@@ -135,18 +134,19 @@ async function syncVenueTier(venueId: string): Promise<void> {
   // Get organization's subscription tier
   const { data: venueData, error: fetchError } = await supabase
     .from("venues")
-    .select(`
+    .select(
+      `
       organization_id,
       tier,
       organizations!inner (
         subscription_tier
       )
-    `)
+    `
+    )
     .eq("venue_id", venueId)
     .single();
 
   if (fetchError) {
-
     throw fetchError;
   }
 
@@ -166,10 +166,8 @@ async function syncVenueTier(venueId: string): Promise<void> {
       .eq("venue_id", venueId);
 
     if (updateError) {
-
       throw updateError;
     }
-
   }
 }
 
@@ -189,7 +187,6 @@ async function syncVenueAddons(
     .eq("venue_id", venueId);
 
   if (fetchError) {
-
     throw fetchError;
   }
 
@@ -228,27 +225,23 @@ async function syncVenueAddons(
   // Activate new add-ons
   for (const [addonKey, itemId] of activeAddons) {
     if (!currentAddonMap.has(itemId)) {
-
-      await supabase
-        .from("venue_addons")
-        .upsert(
-          {
-            venue_id: venueId,
-            addon_key: addonKey,
-            status: "active",
-            stripe_subscription_item_id: itemId,
-            stripe_price_id: subscriptionItems.find(item => item.id === itemId)?.price.id,
-            updated_at: new Date().toISOString(),
-          },
-          { onConflict: "venue_id,addon_key,status" }
-        );
+      await supabase.from("venue_addons").upsert(
+        {
+          venue_id: venueId,
+          addon_key: addonKey,
+          status: "active",
+          stripe_subscription_item_id: itemId,
+          stripe_price_id: subscriptionItems.find((item) => item.id === itemId)?.price.id,
+          updated_at: new Date().toISOString(),
+        },
+        { onConflict: "venue_id,addon_key,status" }
+      );
     }
   }
 
   // Deactivate removed add-ons
   for (const [itemId, addonKey] of currentAddonMap) {
     if (!activeAddons.has(addonKey)) {
-
       await supabase
         .from("venue_addons")
         .update({
@@ -260,5 +253,4 @@ async function syncVenueAddons(
         .eq("stripe_subscription_item_id", itemId);
     }
   }
-
 }

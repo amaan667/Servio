@@ -91,7 +91,6 @@ export async function POST(req: NextRequest) {
       .single();
 
     if (checkError || !orderCheck) {
-
       return NextResponse.json(
         {
           success: false,
@@ -115,7 +114,6 @@ export async function POST(req: NextRequest) {
       .single();
 
     if (updateError || !order) {
-
       return NextResponse.json(
         {
           success: false,

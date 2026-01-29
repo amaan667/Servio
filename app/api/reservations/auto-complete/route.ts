@@ -48,7 +48,6 @@ export const POST = withUnifiedAuth(async (req: NextRequest, context) => {
       .in("status", ["BOOKED", "CHECKED_IN"]);
 
     if (fetchError) {
-
       return NextResponse.json(
         {
           ok: false,
@@ -134,7 +133,6 @@ export const POST = withUnifiedAuth(async (req: NextRequest, context) => {
       .select();
 
     if (updateError) {
-
       return NextResponse.json(
         {
           ok: false,
@@ -183,7 +181,6 @@ export const POST = withUnifiedAuth(async (req: NextRequest, context) => {
       })),
     });
   } catch (_error) {
-
     return NextResponse.json(
       {
         ok: false,

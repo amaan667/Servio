@@ -124,8 +124,7 @@ export function useVenueSettings(venue: Venue) {
 
   // Track unsaved changes
   useEffect(() => {
-    const defaultNotify =
-      venue.service_type === "counter_pickup" || venue.service_type === "both";
+    const defaultNotify = venue.service_type === "counter_pickup" || venue.service_type === "both";
     const changed =
       venueName !== venue.venue_name ||
       venueEmail !== (venue.email || "") ||
@@ -140,7 +139,8 @@ export function useVenueSettings(venue: Venue) {
         ((venue as { show_vat_breakdown?: boolean }).show_vat_breakdown ?? true) ||
       allowEmailInput !== ((venue as { allow_email_input?: boolean }).allow_email_input ?? true) ||
       receiptLogoUrl !== ((venue as { receipt_logo_url?: string }).receipt_logo_url || "") ||
-      receiptFooterText !== ((venue as { receipt_footer_text?: string }).receipt_footer_text || "") ||
+      receiptFooterText !==
+        ((venue as { receipt_footer_text?: string }).receipt_footer_text || "") ||
       notifyCustomerOnReady !== (venue.notify_customer_on_ready ?? defaultNotify);
 
     setHasUnsavedChanges(changed);

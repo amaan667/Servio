@@ -519,9 +519,7 @@ describe("Order Creation Flow", () => {
 
     // Verify order structure is valid
     expect(orderData.items.length).toBeGreaterThan(0);
-    expect(orderData.items.every((item) => item.menu_item_id && item.quantity > 0)).toBe(
-      true
-    );
+    expect(orderData.items.every((item) => item.menu_item_id && item.quantity > 0)).toBe(true);
   });
 
   it("calculates order total correctly", () => {
@@ -584,10 +582,7 @@ describe("End-to-End Customer Journey", () => {
     expect(cart.length).toBe(2);
 
     // Step 4: Calculate cart total
-    const cartTotal = cart.reduce(
-      (sum, item) => sum + item.price * item.quantity,
-      0
-    );
+    const cartTotal = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
     expect(cartTotal).toBeCloseTo(30.97, 2); // 2*12.99 + 1*4.99
 
     // Step 5: Prepare order data

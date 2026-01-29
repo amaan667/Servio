@@ -17,9 +17,10 @@ const createReservationSchema = z.object({
   phone: z.string().optional().nullable(),
 });
 
-export const POST = createUnifiedHandler(async (_req: NextRequest, context) => {
-  const { body, venueId } = context;
-  const { tableId, startAt, endAt, partySize, name, phone } = body;
+export const POST = createUnifiedHandler(
+  async (_req: NextRequest, context) => {
+    const { body, venueId } = context;
+    const { tableId, startAt, endAt, partySize, name, phone } = body;
 
     // Validation already done by unified handler schema
     if (new Date(startAt) >= new Date(endAt)) {

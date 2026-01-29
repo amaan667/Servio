@@ -36,7 +36,6 @@ export async function createJob(
   });
 
   if (error) {
-
     throw new Error(`Failed to create job: ${error.message}`);
   }
 
@@ -61,7 +60,6 @@ export async function getJobStatus(jobId: string): Promise<JobStatus | null> {
     .maybeSingle();
 
   if (error || !data) {
-
     return null;
   }
 
@@ -121,7 +119,6 @@ export async function completeJob(jobId: string, result: unknown): Promise<void>
       updated_at: new Date().toISOString(),
     })
     .eq("job_id", jobId);
-
 }
 
 /**
@@ -139,7 +136,6 @@ export async function failJob(jobId: string, error: string): Promise<void> {
       updated_at: new Date().toISOString(),
     })
     .eq("job_id", jobId);
-
 }
 
 /**
@@ -152,7 +148,6 @@ async function processJobAsync(
   jobType: string,
   params: Record<string, unknown>
 ): Promise<void> {
-
   try {
     await updateJobProgress(jobId, 0, 100, "running");
 
@@ -239,7 +234,9 @@ async function processMenuTranslation(
           .eq("id", item.id);
 
         translatedCount++;
-      } catch (error) { /* Error handled silently */ }
+      } catch (error) {
+        /* Error handled silently */
+      }
     }
 
     // Update progress
@@ -289,7 +286,9 @@ async function processBulkMenuUpdate(
         .eq("venue_id", venueId);
 
       updatedCount++;
-    } catch (error) { /* Error handled silently */ }
+    } catch (error) {
+      /* Error handled silently */
+    }
 
     await updateJobProgress(jobId, i + 1, itemIds.length, "running");
   }
@@ -355,5 +354,4 @@ export async function cancelJob(jobId: string): Promise<void> {
       updated_at: new Date().toISOString(),
     })
     .eq("job_id", jobId);
-
 }

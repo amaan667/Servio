@@ -121,7 +121,9 @@ export async function extractMenuFromWebsite(url: string): Promise<WebMenuItem[]
         .catch(() => null),
       // Fallback: just wait 3 seconds
       new Promise((resolve) => setTimeout(resolve, 3000)),
-    ]).catch(() => { /* Intentionally empty */ });
+    ]).catch(() => {
+      /* Intentionally empty */
+    });
 
     // Additional wait for dynamic content
     await new Promise((resolve) => setTimeout(resolve, 2000));
@@ -175,7 +177,9 @@ export async function extractMenuFromWebsite(url: string): Promise<WebMenuItem[]
 
     // Warnings for issues
     const menuItemsCount = visionItems.filter((item) => item.category === "Menu Items").length;
-    if (menuItemsCount > 0) { /* Condition handled */ }
+    if (menuItemsCount > 0) {
+      /* Condition handled */
+    }
 
     // Strategy 3: Intelligent merge
     const mergedItems = mergeExtractedData(domItems, visionItems);
@@ -192,20 +196,22 @@ export async function extractMenuFromWebsite(url: string): Promise<WebMenuItem[]
 
     // Final warning if still have Menu Items
     const finalMenuItemsCount = mergedItems.filter((item) => item.category === "Menu Items").length;
-    if (finalMenuItemsCount > 0) { /* Condition handled */ }
+    if (finalMenuItemsCount > 0) {
+      /* Condition handled */
+    }
 
     return mergedItems;
   } catch (error) {
-
     throw new Error(
       `Failed to scrape menu from URL: ${error instanceof Error ? error.message : "Unknown error"}. ` +
         `Check Railway logs for details. Common issues: site requires auth, blocks bots, or unusual structure.`
     );
   } finally {
     try {
-
       await browser.close();
-    } catch (closeError) { /* Error handled silently */ }
+    } catch (closeError) {
+      /* Error handled silently */
+    }
   }
 }
 
@@ -392,7 +398,6 @@ async function extractFromDOM(page: import("puppeteer-core").Page): Promise<WebM
             try {
               imageUrl = new URL(imageUrl, window.location.origin).href;
             } catch {
-
               imageUrl = undefined;
             }
           }
@@ -445,7 +450,6 @@ function mergeExtractedData(
   domItems: WebMenuItem[],
   visionItems: import("./gptVisionMenuParser").ExtractedMenuItem[]
 ): WebMenuItem[] {
-
   // Start with Vision AI data (more accurate text extraction)
   const merged: WebMenuItem[] = visionItems.map((visionItem) => {
     // Find matching DOM item by name similarity
@@ -460,7 +464,6 @@ function mergeExtractedData(
     });
 
     if (domMatch) {
-
       return {
         name: visionItem.name, // Prefer Vision AI for text accuracy
         name_normalized: visionItem.name.toLowerCase().trim(),
@@ -551,11 +554,7 @@ function levenshteinDistance(str1: string, str2: string): number {
       if (c2 === c1) {
         row[j] = prevRow[j - 1]!;
       } else {
-        row[j] = Math.min(
-          prevRow[j - 1]! + 1,
-          row[j - 1]! + 1,
-          prevRow[j]! + 1
-        );
+        row[j] = Math.min(prevRow[j - 1]! + 1, row[j - 1]! + 1, prevRow[j]! + 1);
       }
     }
   }

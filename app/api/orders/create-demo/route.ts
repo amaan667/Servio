@@ -56,7 +56,7 @@ export async function POST(req: NextRequest) {
     // Determine fulfillment type
     const isCounterOrder = !!body.counterNumber || body.orderType === "counter";
     const fulfillmentType = isCounterOrder ? "counter" : "table";
-    const tableNumber = isCounterOrder ? null : (body.tableNumber || 1);
+    const tableNumber = isCounterOrder ? null : body.tableNumber || 1;
     const counterLabel = isCounterOrder
       ? body.counterNumber || `Counter ${body.tableNumber || "A"}`
       : null;

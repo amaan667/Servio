@@ -83,6 +83,8 @@ if (typeof window === "undefined") {
     getEnv();
   } catch (error) {
     // Only log in development
-    if (process.env.NODE_ENV === "development") { /* Condition handled */ }
+    if (process.env.NODE_ENV === "development") {
+      /* Condition handled */
+    }
   }
 }

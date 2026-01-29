@@ -40,7 +40,6 @@ export const GET = withUnifiedAuth(async (req: NextRequest, context) => {
       .order("on_hand", { ascending: true });
 
     if (error) {
-
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
@@ -74,7 +73,6 @@ export const GET = withUnifiedAuth(async (req: NextRequest, context) => {
 
     return NextResponse.json({ data: alerts });
   } catch (_error) {
-
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 });

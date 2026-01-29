@@ -97,9 +97,10 @@ export async function PUT(req: NextRequest, context: { params: Promise<{ tableId
       extractVenueId: async (req, routeContext) => {
         // Try to get venueId from table record
         if (routeContext?.params) {
-          const params = routeContext.params instanceof Promise 
-            ? await routeContext.params 
-            : routeContext.params;
+          const params =
+            routeContext.params instanceof Promise
+              ? await routeContext.params
+              : routeContext.params;
           const tableId = params?.tableId;
           if (tableId) {
             const { createAdminClient } = await import("@/lib/supabase");
@@ -128,7 +129,11 @@ type TableParams = { params?: Promise<{ tableId?: string }> };
 
 export async function DELETE(req: NextRequest, context: TableParams = {}) {
   const handler = withUnifiedAuth(
-    async (req: NextRequest, authContext: { venueId: string; user: { id: string } }, routeParams?: { params?: Promise<{ tableId?: string }> }) => {
+    async (
+      req: NextRequest,
+      authContext: { venueId: string; user: { id: string } },
+      routeParams?: { params?: Promise<{ tableId?: string }> }
+    ) => {
       try {
         const params = await routeParams?.params;
         const tableId = params?.tableId;
@@ -155,7 +160,6 @@ export async function DELETE(req: NextRequest, context: TableParams = {}) {
           .single();
 
         if (checkError || !existingTable) {
-
           return apiErrors.notFound("Table not found");
         }
 
@@ -178,12 +182,10 @@ export async function DELETE(req: NextRequest, context: TableParams = {}) {
           activeOrders = ordersResult.data || [];
           ordersError = ordersResult.error;
         } catch (_error) {
-
           ordersError = _error;
         }
 
         if (ordersError) {
-
           // Try a simpler fallback query
           // SECURITY NOTE: Using admin client for fallback query only
           // This is safe because venue access is already verified above
@@ -196,8 +198,12 @@ export async function DELETE(req: NextRequest, context: TableParams = {}) {
               .eq("venue_id", table.venue_id) // Explicit venue check
               .limit(1);
 
-            if (fallbackResult.data && fallbackResult.data.length > 0) { /* Condition handled */ }
-          } catch (fallbackError) { /* Error handled silently */ }
+            if (fallbackResult.data && fallbackResult.data.length > 0) {
+              /* Condition handled */
+            }
+          } catch (fallbackError) {
+            /* Error handled silently */
+          }
         }
 
         // Check if the table has unknown active reservations
@@ -216,11 +222,12 @@ export async function DELETE(req: NextRequest, context: TableParams = {}) {
           activeReservations = reservationsResult.data || [];
           reservationsError = reservationsResult.error;
         } catch (_error) {
-
           reservationsError = _error;
         }
 
-        if (reservationsError) { /* Condition handled */ }
+        if (reservationsError) {
+          /* Condition handled */
+        }
 
         // If there are active orders or reservations, handle based on forceRemove flag
         if (forceRemove) {
@@ -238,11 +245,14 @@ export async function DELETE(req: NextRequest, context: TableParams = {}) {
               .eq("venue_id", table.venue_id) // Explicit venue check (RLS also enforces this)
               .in("order_status", ["PLACED", "ACCEPTED", "IN_PREP", "READY", "SERVING"]);
 
-            if (completeOrdersError) { /* Condition handled */ } else { /* Else case handled */ }
+            if (completeOrdersError) {
+              /* Condition handled */
+            } else {
+              /* Else case handled */
+            }
           }
 
           if (!reservationsError && activeReservations && activeReservations.length > 0) {
-
             // RLS ensures user can only update reservations for venues they have access to
             const { error: cancelReservationsError } = await supabase
               .from("reservations")
@@ -254,7 +264,11 @@ export async function DELETE(req: NextRequest, context: TableParams = {}) {
               .eq("venue_id", table.venue_id) // Explicit venue check (RLS also enforces this)
               .eq("status", "BOOKED");
 
-            if (cancelReservationsError) { /* Condition handled */ } else { /* Else case handled */ }
+            if (cancelReservationsError) {
+              /* Condition handled */
+            } else {
+              /* Else case handled */
+            }
           }
         } else {
           // NORMAL REMOVE: Prevent deletion if there are active orders/reservations
@@ -274,7 +288,9 @@ export async function DELETE(req: NextRequest, context: TableParams = {}) {
         }
 
         // If both checks failed, we'll proceed with a warning
-        if (ordersError && reservationsError) { /* Condition handled */ }
+        if (ordersError && reservationsError) {
+          /* Condition handled */
+        }
 
         // Clear table_id references in orders to avoid foreign key constraint issues
         // RLS ensures user can only update orders for venues they have access to
@@ -284,7 +300,9 @@ export async function DELETE(req: NextRequest, context: TableParams = {}) {
           .eq("table_id", tableId)
           .eq("venue_id", table.venue_id); // Explicit venue check (RLS also enforces this)
 
-        if (clearTableRefsError) { /* Condition handled */ }
+        if (clearTableRefsError) {
+          /* Condition handled */
+        }
 
         // Delete table sessions first (if they exist)
         // RLS ensures user can only delete sessions for venues they have access to
@@ -294,7 +312,9 @@ export async function DELETE(req: NextRequest, context: TableParams = {}) {
           .eq("table_id", tableId)
           .eq("venue_id", table.venue_id); // Explicit venue check (RLS also enforces this)
 
-        if (deleteSessionsError) { /* Condition handled */ }
+        if (deleteSessionsError) {
+          /* Condition handled */
+        }
 
         // Delete group sessions for this table
         // RLS ensures user can only delete group sessions for venues they have access to
@@ -304,7 +324,9 @@ export async function DELETE(req: NextRequest, context: TableParams = {}) {
           .eq("table_number", table.label)
           .eq("venue_id", table.venue_id); // Explicit venue check (RLS also enforces this)
 
-        if (deleteGroupSessionError) { /* Condition handled */ }
+        if (deleteGroupSessionError) {
+          /* Condition handled */
+        }
 
         // Finally, delete the table itself
         // RLS ensures user can only delete tables for venues they have access to
@@ -315,18 +337,19 @@ export async function DELETE(req: NextRequest, context: TableParams = {}) {
           .eq("venue_id", table.venue_id); // Explicit venue check (RLS also enforces this)
 
         if (error) {
-
           return apiErrors.internal("Failed to delete table");
         }
 
         return success({ success: true, deletedTable: table });
       } catch (error) {
-
         return apiErrors.internal("Internal server error");
       }
     },
     {
-      extractVenueId: async (req: NextRequest, routeParams?: { params?: Promise<{ tableId?: string }> }) => {
+      extractVenueId: async (
+        req: NextRequest,
+        routeParams?: { params?: Promise<{ tableId?: string }> }
+      ) => {
         // Try to get venueId from table record
         if (routeParams?.params) {
           const params = await routeParams.params;

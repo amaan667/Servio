@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { supabaseBrowser as createClient } from "@/lib/supabase";
-
 import { useToast } from "@/hooks/use-toast";
+import { normalizeVenueId } from "@/lib/utils/venueId";
 import { MenuItem } from "../types";
 
 export function useMenuItems(venueId: string, initialData?: MenuItem[]) {
@@ -12,7 +12,7 @@ export function useMenuItems(venueId: string, initialData?: MenuItem[]) {
 
   const loadMenuItems = async () => {
     // Normalize venueId format - database stores with venue- prefix
-    const normalizedVenueId = venueId.startsWith("venue-") ? venueId : `venue-${venueId}`;
+    const normalizedVenueId = normalizeVenueId(venueId) ?? venueId;
 
     try {
       setLoading(true);
@@ -59,7 +59,6 @@ export function useMenuItems(venueId: string, initialData?: MenuItem[]) {
       const actualItemCount = items?.length || 0;
 
       if (error) {
-
         toast({
           title: "Error",
           description: `Failed to load menu items: ${error.message}`,
@@ -91,7 +90,7 @@ export function useMenuItems(venueId: string, initialData?: MenuItem[]) {
       setMenuItems(items || []);
 
       if (items && items.length > 0) {
-        const normalizedVenueId = venueId.startsWith("venue-") ? venueId : `venue-${venueId}`;
+        const normalizedVenueId = normalizeVenueId(venueId) ?? venueId;
         const { data: uploadData } = await supabase
           .from("menu_uploads")
           .select("category_order")

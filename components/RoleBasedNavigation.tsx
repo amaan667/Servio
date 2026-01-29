@@ -8,7 +8,6 @@ import {
   BarChart,
   ChefHat,
   Table,
-  CreditCard,
   Package,
   Receipt,
 } from "lucide-react";
@@ -38,7 +37,6 @@ export default function RoleBasedNavigation({
     if (path.includes("/staff")) return "Staff";
     if (path.includes("/kds")) return "KDS";
     if (path.includes("/tables")) return "Tables";
-    if (path.includes("/pos")) return "POS";
     if (path.includes("/settings")) return "Settings";
     if (path.includes("/qr-codes")) return "QR Codes";
     if (path.includes("/feedback")) return "Feedback";
@@ -103,13 +101,6 @@ export default function RoleBasedNavigation({
       icon: Table,
       feature: "tables",
       show: canAccess(userRole, "tables"),
-    },
-    {
-      label: "POS",
-      href: `/dashboard/${venueId}/pos`,
-      icon: CreditCard,
-      feature: "payments",
-      show: canAccess(userRole, "payments"),
     },
     {
       label: "Payments",

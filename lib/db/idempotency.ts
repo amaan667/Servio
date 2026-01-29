@@ -56,13 +56,11 @@ export async function checkIdempotency(
     }
 
     if (data) {
-
       return { exists: true, response: data as IdempotencyRecord };
     }
 
     return { exists: false };
   } catch (error) {
-
     return { exists: false };
   }
 }
@@ -93,16 +91,13 @@ export async function storeIdempotency(
     if (error) {
       // If it's a unique constraint violation, that's okay - key already exists
       if (error.code === "23505") {
-
         return;
       }
 
       throw error;
     }
-
   } catch (error) {
     // Don't fail the request if idempotency storage fails
-
   }
 }
 
@@ -137,4 +132,3 @@ export async function withIdempotency<T>(
     cached: false,
   };
 }
-

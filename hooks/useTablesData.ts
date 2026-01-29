@@ -80,7 +80,6 @@ export function useTablesData(venueId: string) {
 
       setTables(data.tables || []);
     } catch (_err) {
-
       setError(_err instanceof Error ? _err.message : "Failed to fetch tables");
     } finally {
       setLoading(false);
@@ -147,7 +146,9 @@ export function useTablesData(venueId: string) {
   }, [venueId, fetchTables]);
 
   // Add debugging to track table data changes
-  useEffect(() => { /* Intentionally empty */ }, [tables, venueId]);
+  useEffect(() => {
+    /* Intentionally empty */
+  }, [tables, venueId]);
 
   return {
     tables,

@@ -55,7 +55,9 @@ describe("Inventory Ingredients Id API", () => {
       expect([200, 400, 401, 403, 404, 500]).toContain(response.status);
     });
 
-    it("should validate request parameters", async () => { /* Intentionally empty */ });
+    it("should validate request parameters", async () => {
+      /* Intentionally empty */
+    });
   });
 
   describe("PATCH inventory/ingredients/[id]", () => {
@@ -69,6 +71,8 @@ describe("Inventory Ingredients Id API", () => {
       expect([200, 400, 401, 403, 404, 500]).toContain(response.status);
     });
 
-    it("should validate request parameters", async () => { /* Intentionally empty */ });
+    it("should validate request parameters", async () => {
+      /* Intentionally empty */
+    });
   });
 });

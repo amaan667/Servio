@@ -43,14 +43,14 @@ export const POST = createUnifiedHandler(
       .eq("venue_id", venue_id);
 
     if (fetchError || !orders || orders.length === 0) {
-
       return apiErrors.notFound("Orders not found");
     }
 
     // Validate all orders are unpaid
-    const alreadyPaid = orders.filter((o) => String(o.payment_status || "").toUpperCase() === "PAID");
+    const alreadyPaid = orders.filter(
+      (o) => String(o.payment_status || "").toUpperCase() === "PAID"
+    );
     if (alreadyPaid.length > 0) {
-
       return NextResponse.json(
         {
           error: `Some orders are already paid: ${alreadyPaid.map((o) => o.id.slice(-6)).join(", ")}`,
@@ -63,7 +63,6 @@ export const POST = createUnifiedHandler(
     // Validate all orders are from same table (optional but recommended)
     const tableNumbers = [...new Set(orders.map((o) => o.table_number).filter(Boolean))];
     if (tableNumbers.length > 1) {
-
       // Allow it but log warning
     }
 
@@ -119,7 +118,6 @@ export const POST = createUnifiedHandler(
       .select("*");
 
     if (updateError) {
-
       return apiErrors.internal("Failed to mark orders as paid");
     }
 

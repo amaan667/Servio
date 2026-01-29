@@ -41,7 +41,6 @@ export async function GET(req: Request) {
       .in("payment_status", ["UNPAID", "IN_PROGRESS"]);
 
     if (error) {
-
       return apiErrors.database(error.message);
     }
 
@@ -49,7 +48,6 @@ export async function GET(req: Request) {
       orders: activeOrders || [],
     });
   } catch (_error) {
-
     return apiErrors.internal("Internal server error");
   }
 }

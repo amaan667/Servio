@@ -37,7 +37,6 @@ export const GET = withUnifiedAuth(
 
         if (error) {
           if (error.message.includes("does not exist")) {
-
             return success({
               groupSessions: [],
               count: 0,
@@ -57,7 +56,6 @@ export const GET = withUnifiedAuth(
           count: groupSessions?.length || 0,
         });
       } catch (tableError) {
-
         return success({
           groupSessions: [],
           count: 0,
@@ -65,7 +63,6 @@ export const GET = withUnifiedAuth(
         });
       }
     } catch (error) {
-
       if (isZodError(error)) {
         return handleZodError(error);
       }

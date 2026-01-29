@@ -6,39 +6,37 @@
 import { createAdminClient } from "@/lib/supabase";
 
 import { z } from "zod";
-import type {
-  VenueEntitlements,
-  MaxCountCheckResult,
-  Tier
-} from "@/types/entitlements";
+import type { VenueEntitlements, MaxCountCheckResult, Tier } from "@/types/entitlements";
 
 // Zod schema for strict entitlement contract validation
-const VenueEntitlementsSchema = z.object({
-  tier: z.enum(["starter", "pro", "enterprise"]),
-  maxStaff: z.number().nullable(),
-  maxTables: z.number().nullable(),
-  maxLocations: z.number().nullable(),
-  kds: z.object({
-    enabled: z.boolean(),
-    mode: z.enum(["single", "multi", "enterprise"]).nullable(),
-  }),
-  analytics: z.object({
-    level: z.enum(["basic", "advanced", "enterprise"]),
-    csvExport: z.boolean(),
-    financeExport: z.boolean(),
-  }),
-  branding: z.object({
-    level: z.enum(["basic", "full", "white_label"]),
-    customDomain: z.boolean(),
-  }),
-  api: z.object({
-    enabled: z.boolean(),
-    level: z.enum(["light", "full"]).nullable(),
-  }),
-  support: z.object({
-    level: z.enum(["email", "priority", "sla"]),
-  }),
-}).strict(); // No extra properties allowed
+const VenueEntitlementsSchema = z
+  .object({
+    tier: z.enum(["starter", "pro", "enterprise"]),
+    maxStaff: z.number().nullable(),
+    maxTables: z.number().nullable(),
+    maxLocations: z.number().nullable(),
+    kds: z.object({
+      enabled: z.boolean(),
+      mode: z.enum(["single", "multi", "enterprise"]).nullable(),
+    }),
+    analytics: z.object({
+      level: z.enum(["basic", "advanced", "enterprise"]),
+      csvExport: z.boolean(),
+      financeExport: z.boolean(),
+    }),
+    branding: z.object({
+      level: z.enum(["basic", "full", "white_label"]),
+      customDomain: z.boolean(),
+    }),
+    api: z.object({
+      enabled: z.boolean(),
+      level: z.enum(["light", "full"]).nullable(),
+    }),
+    support: z.object({
+      level: z.enum(["email", "priority", "sla"]),
+    }),
+  })
+  .strict(); // No extra properties allowed
 
 /**
  * Get venue entitlements from database with strict validation
@@ -51,14 +49,12 @@ export async function getVenueEntitlements(venueId: string): Promise<VenueEntitl
     });
 
     if (error) {
-
       return null;
     }
 
     // STRICT CONTRACT VALIDATION: Fail closed if schema doesn't match exactly
     const validationResult = VenueEntitlementsSchema.safeParse(data);
     if (!validationResult.success) {
-
       // FAIL CLOSED: Return null to deny all entitlements
       return null;
     }
@@ -72,7 +68,6 @@ export async function getVenueEntitlements(venueId: string): Promise<VenueEntitl
       maxLocations: entitlements.maxLocations ?? -1,
     };
   } catch (error) {
-
     return null;
   }
 }
@@ -82,7 +77,12 @@ export async function getVenueEntitlements(venueId: string): Promise<VenueEntitl
  */
 export async function requireEntitlement(
   venueId: string,
-  feature: keyof VenueEntitlements | 'analytics.csvExport' | 'analytics.financeExport' | 'branding.customDomain' | 'api.enabled',
+  feature:
+    | keyof VenueEntitlements
+    | "analytics.csvExport"
+    | "analytics.financeExport"
+    | "branding.customDomain"
+    | "api.enabled",
   _userId?: string // Optional for logging
 ): Promise<{ allowed: boolean; message?: string; requiredTier?: string; currentTier?: string }> {
   try {
@@ -97,7 +97,9 @@ export async function requireEntitlement(
 
     const result = checkEntitlement(entitlements, feature);
 
-    if (!result.allowed) { /* Condition handled */ }
+    if (!result.allowed) {
+      /* Condition handled */
+    }
 
     return {
       allowed: result.allowed,
@@ -106,7 +108,6 @@ export async function requireEntitlement(
       currentTier: entitlements.tier,
     };
   } catch (error) {
-
     return {
       allowed: false,
       message: "Error verifying entitlements - access denied for security",
@@ -181,7 +182,9 @@ export async function requireMaxCount(
 
     const allowed = limit === null || currentCount <= limit;
 
-    if (!allowed) { /* Condition handled */ }
+    if (!allowed) {
+      /* Condition handled */
+    }
 
     return {
       allowed,
@@ -189,10 +192,9 @@ export async function requireMaxCount(
       currentTier: tierLabel,
       message: allowed
         ? undefined
-        : `Cannot create more than ${limit} ${resourceName}${limit === 1 ? '' : 's'} on ${tierLabel} plan`,
+        : `Cannot create more than ${limit} ${resourceName}${limit === 1 ? "" : "s"} on ${tierLabel} plan`,
     };
   } catch (error) {
-
     return {
       allowed: false,
       limit: 0,
@@ -230,7 +232,9 @@ export async function requireTierAtLeast(
 
     const allowed = currentLevel >= requiredLevel;
 
-    if (!allowed) { /* Condition handled */ }
+    if (!allowed) {
+      /* Condition handled */
+    }
 
     return {
       allowed,
@@ -240,7 +244,6 @@ export async function requireTierAtLeast(
       currentTier: entitlements.tier,
     };
   } catch (error) {
-
     return {
       allowed: false,
       message: "Error verifying tier - access denied for security",
@@ -251,7 +254,10 @@ export async function requireTierAtLeast(
 /**
  * Internal helper to check specific entitlements
  */
-function checkEntitlement(entitlements: VenueEntitlements, feature: string): { allowed: boolean; message?: string; requiredTier?: string } {
+function checkEntitlement(
+  entitlements: VenueEntitlements,
+  feature: string
+): { allowed: boolean; message?: string; requiredTier?: string } {
   switch (feature) {
     case "kds.enabled":
       return {
@@ -263,28 +269,36 @@ function checkEntitlement(entitlements: VenueEntitlements, feature: string): { a
     case "analytics.csvExport":
       return {
         allowed: entitlements.analytics.csvExport,
-        message: entitlements.analytics.csvExport ? undefined : "CSV exports require Pro plan or higher",
+        message: entitlements.analytics.csvExport
+          ? undefined
+          : "CSV exports require Pro plan or higher",
         requiredTier: "pro",
       };
 
     case "analytics.financeExport":
       return {
         allowed: entitlements.analytics.financeExport,
-        message: entitlements.analytics.financeExport ? undefined : "Financial exports require Enterprise plan",
+        message: entitlements.analytics.financeExport
+          ? undefined
+          : "Financial exports require Enterprise plan",
         requiredTier: "enterprise",
       };
 
     case "branding.customDomain":
       return {
         allowed: entitlements.branding.customDomain,
-        message: entitlements.branding.customDomain ? undefined : "Custom domains require Enterprise plan",
+        message: entitlements.branding.customDomain
+          ? undefined
+          : "Custom domains require Enterprise plan",
         requiredTier: "enterprise",
       };
 
     case "api.enabled":
       return {
         allowed: entitlements.api.enabled,
-        message: entitlements.api.enabled ? undefined : "API access requires Pro plan with add-on or Enterprise plan",
+        message: entitlements.api.enabled
+          ? undefined
+          : "API access requires Pro plan with add-on or Enterprise plan",
         requiredTier: "pro",
       };
 
@@ -294,7 +308,9 @@ function checkEntitlement(entitlements: VenueEntitlements, feature: string): { a
       if (typeof entitlementValue === "boolean") {
         return {
           allowed: entitlementValue,
-          message: entitlementValue ? undefined : `Feature not available on ${entitlements.tier} plan`,
+          message: entitlementValue
+            ? undefined
+            : `Feature not available on ${entitlements.tier} plan`,
         };
       }
       return {

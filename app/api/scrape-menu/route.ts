@@ -32,7 +32,6 @@ async function getBrowser() {
         });
       } catch (installError) {
         // Installation failed or already installed - continue
-
       }
 
       browserInstance = await playwright.chromium.launch({
@@ -412,7 +411,6 @@ Return ONLY valid JSON:
 
     return NextResponse.json(successResponse);
   } catch (_error) {
-
     const errorResponse = {
       ok: false,
       error: _error instanceof Error ? _error.message : "Failed to scrape menu",

@@ -59,9 +59,10 @@ export async function POST(req: NextRequest, context: TableParams = {}) {
       extractVenueId: async (req, routeContext) => {
         // Get venueId from table record
         if (routeContext?.params) {
-          const params = routeContext.params instanceof Promise 
-            ? await routeContext.params 
-            : routeContext.params;
+          const params =
+            routeContext.params instanceof Promise
+              ? await routeContext.params
+              : routeContext.params;
           const tableId = params?.tableId;
           if (tableId) {
             const adminSupabase = createAdminClient();

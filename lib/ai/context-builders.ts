@@ -42,7 +42,6 @@ export async function getAssistantContext(
       }
     } catch (_error) {
       // Table doesn't exist or other error - use default
-
     }
   }
 
@@ -260,7 +259,6 @@ export async function getMenuSummary(venueId: string, useCache = true): Promise<
     });
 
     optimizedItems = Array.from(combined.values());
-
   }
 
   const summary: MenuSummary = {
@@ -706,13 +704,10 @@ export async function getAnalyticsSummary(
     };
   });
 
-  const busiestDayIndex = byDayOfWeek.reduce(
-    (maxIdx, day, idx, arr) => {
-      const el = arr[maxIdx];
-      return el && day.orders > el.orders ? idx : maxIdx;
-    },
-    0
-  );
+  const busiestDayIndex = byDayOfWeek.reduce((maxIdx, day, idx, arr) => {
+    const el = arr[maxIdx];
+    return el && day.orders > el.orders ? idx : maxIdx;
+  }, 0);
   const busiestDay = dayNames[busiestDayIndex] ?? "";
 
   // By hour

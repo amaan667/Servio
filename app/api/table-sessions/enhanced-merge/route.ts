@@ -136,7 +136,6 @@ export const POST = withUnifiedAuth(
       }
 
       if (result.error) {
-
         return NextResponse.json(
           {
             error: "Merge operation failed",
@@ -250,7 +249,6 @@ async function mergeFreeTables(
       },
     };
   } catch (_error) {
-
     return { error: "Failed to merge free tables" };
   }
 }
@@ -318,7 +316,6 @@ async function expandOccupiedTable(
       },
     };
   } catch (_error) {
-
     return { error: "Failed to expand occupied table" };
   }
 }
@@ -373,7 +370,6 @@ async function expandReservedTable(
       },
     };
   } catch (_error) {
-
     return { error: "Failed to expand reserved table" };
   }
 }
@@ -488,7 +484,6 @@ async function mergeOccupiedTables(
       },
     };
   } catch (_error) {
-
     return { error: "Failed to merge occupied tables" };
   }
 }
@@ -539,7 +534,6 @@ async function mergeReservedTables(
       },
     };
   } catch (_error) {
-
     return { error: "Failed to merge reserved tables" };
   }
 }

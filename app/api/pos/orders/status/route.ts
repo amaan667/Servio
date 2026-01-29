@@ -26,7 +26,9 @@ export async function PATCH(req: NextRequest) {
     // Get the order
     const { data: order, error: orderError } = await supabase
       .from("orders")
-      .select("venue_id, payment_status, order_status, qr_type, fulfillment_type, source, requires_collection")
+      .select(
+        "venue_id, payment_status, order_status, qr_type, fulfillment_type, source, requires_collection"
+      )
       .eq("id", order_id)
       .single();
 
@@ -67,13 +69,11 @@ export async function PATCH(req: NextRequest) {
       .single();
 
     if (updateError) {
-
       return apiErrors.internal("Internal server error");
     }
 
     return NextResponse.json({ order: updatedOrder });
   } catch (_error) {
-
     return apiErrors.internal("Internal server error");
   }
 }

@@ -25,18 +25,23 @@ export class KDSService extends BaseService {
   /**
    * Get KDS tickets with their associated station and order info
    */
-  async getTickets(venueId: string, filters?: { station_id?: string; status?: string }): Promise<Record<string, unknown>[]> {
+  async getTickets(
+    venueId: string,
+    filters?: { station_id?: string; status?: string }
+  ): Promise<Record<string, unknown>[]> {
     const supabase = await createSupabaseClient();
-    
+
     // CRITICAL: Don't filter by completion_status - tickets should show regardless of order completion status
     // Only filter by bumped status (handled in client-side filtering)
     let query = supabase
       .from("kds_tickets")
-      .select(`
+      .select(
+        `
         *,
         kds_stations (id, station_name, station_type, color_code),
         orders (id, customer_name, order_status, kitchen_status, service_status, completion_status, payment_method, payment_status)
-      `)
+      `
+      )
       .eq("venue_id", venueId)
       .neq("status", "bumped") // Exclude bumped tickets - they move to Live Orders
       .order("created_at", { ascending: false });
@@ -105,7 +110,7 @@ export class KDSService extends BaseService {
    */
   async autoBackfill(venueId: string): Promise<number> {
     const adminSupabase = createAdminClient();
-    
+
     // 1. Get open orders
     const { data: openOrders } = await adminSupabase
       .from("orders")
@@ -120,8 +125,8 @@ export class KDSService extends BaseService {
       .from("kds_tickets")
       .select("order_id")
       .eq("venue_id", venueId);
-    
-    const existingOrderIds = new Set(existingTickets?.map(t => t.order_id));
+
+    const existingOrderIds = new Set(existingTickets?.map((t) => t.order_id));
 
     // 3. Create missing tickets
     let createdCount = 0;

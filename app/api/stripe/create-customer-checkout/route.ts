@@ -1,4 +1,3 @@
-
 import Stripe from "stripe";
 import { env } from "@/lib/env";
 import { success, apiErrors, isZodError, handleZodError } from "@/lib/api/standard-response";
@@ -40,12 +39,10 @@ export async function POST(req: Request) {
       .single();
 
     if (orderError || !order) {
-
       return apiErrors.notFound("Order not found");
     }
 
     if (order.payment_status === "PAID") {
-
       return apiErrors.badRequest("Order is already paid");
     }
 
@@ -59,7 +56,6 @@ export async function POST(req: Request) {
       try {
         const existingSession = await stripe.checkout.sessions.retrieve(order.stripe_session_id);
         if (existingSession.status === "open") {
-
           return success({
             sessionId: existingSession.id,
             url: existingSession.url,
@@ -67,7 +63,6 @@ export async function POST(req: Request) {
         }
       } catch (e) {
         // Ignore error (session might be expired/invalid/deleted), create new one
-
       }
     }
 
@@ -111,16 +106,16 @@ export async function POST(req: Request) {
       .eq("id", body.orderId);
 
     if (updateError) {
-
       // Don't fail the request - webhook can still find order by orderId in metadata
-    } else { /* Else case handled */ }
+    } else {
+      /* Else case handled */
+    }
 
     return success({
       sessionId: session.id,
       url: session.url,
     });
   } catch (error) {
-
     if (isZodError(error)) {
       return handleZodError(error);
     }

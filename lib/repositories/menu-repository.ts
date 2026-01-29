@@ -59,13 +59,11 @@ export class MenuRepository extends BaseRepository<MenuItem> {
       const { data, error } = await query;
 
       if (error) {
-
         throw error;
       }
 
       return (data as MenuItem[]) || [];
     } catch (_error) {
-
       throw _error;
     }
   }
@@ -96,13 +94,11 @@ export class MenuRepository extends BaseRepository<MenuItem> {
         .limit(50);
 
       if (error) {
-
         throw error;
       }
 
       return (data as MenuItem[]) || [];
     } catch (_error) {
-
       throw _error;
     }
   }
@@ -120,13 +116,11 @@ export class MenuRepository extends BaseRepository<MenuItem> {
         .order("display_order");
 
       if (error) {
-
         throw error;
       }
 
       return (data as MenuCategory[]) || [];
     } catch (_error) {
-
       throw _error;
     }
   }
@@ -143,13 +137,11 @@ export class MenuRepository extends BaseRepository<MenuItem> {
         .select();
 
       if (error) {
-
         throw error;
       }
 
       return (data as MenuItem[]) || [];
     } catch (_error) {
-
       throw _error;
     }
   }

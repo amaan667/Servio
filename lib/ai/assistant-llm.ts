@@ -616,7 +616,10 @@ function tryDirectPatternMatch(
     if (dataSummaries.menu) {
       const cats = dataSummaries.menu.categories;
       if (cats.length === 0) {
-        return { matched: true, answer: "You don't have any menu categories yet. Would you like to create one?" };
+        return {
+          matched: true,
+          answer: "You don't have any menu categories yet. Would you like to create one?",
+        };
       }
       const catList = cats.map((c) => `• ${c.name} (${c.itemCount} items)`).join("\n");
       return {
@@ -628,7 +631,8 @@ function tryDirectPatternMatch(
 
   // Total menu items
   if (
-    (prompt.includes("how many") && (prompt.includes("menu item") || prompt.includes("item") || prompt.includes("product"))) ||
+    (prompt.includes("how many") &&
+      (prompt.includes("menu item") || prompt.includes("item") || prompt.includes("product"))) ||
     (prompt.includes("total") && prompt.includes("item"))
   ) {
     // Make sure we're not asking about a specific category
@@ -653,7 +657,10 @@ function tryDirectPatternMatch(
     if (dataSummaries.menu?.topSellers && dataSummaries.menu.topSellers.length > 0) {
       const topItems = dataSummaries.menu.topSellers.slice(0, 5);
       const itemList = topItems
-        .map((item, i) => `${i + 1}. ${item.name} - ${item.sales7d} sold (£${item.revenue7d.toFixed(2)})`)
+        .map(
+          (item, i) =>
+            `${i + 1}. ${item.name} - ${item.sales7d} sold (£${item.revenue7d.toFixed(2)})`
+        )
         .join("\n");
       return {
         matched: true,
@@ -663,7 +670,11 @@ function tryDirectPatternMatch(
   }
 
   // Average price
-  if (prompt.includes("average price") || prompt.includes("avg price") || prompt.includes("mean price")) {
+  if (
+    prompt.includes("average price") ||
+    prompt.includes("avg price") ||
+    prompt.includes("mean price")
+  ) {
     if (dataSummaries.menu) {
       return {
         matched: true,
@@ -717,7 +728,11 @@ function tryDirectPatternMatch(
   }
 
   // Peak hours
-  if (prompt.includes("peak hour") || prompt.includes("busiest hour") || prompt.includes("busy time")) {
+  if (
+    prompt.includes("peak hour") ||
+    prompt.includes("busiest hour") ||
+    prompt.includes("busy time")
+  ) {
     if (dataSummaries.analytics?.timeAnalysis.peakHours) {
       const peaks = dataSummaries.analytics.timeAnalysis.peakHours.slice(0, 3);
       const peakList = peaks.map((p) => `${p.hour}:00 (${p.orderCount} orders)`).join(", ");
@@ -759,11 +774,18 @@ function tryDirectPatternMatch(
   // ========== INVENTORY QUERIES ==========
 
   // Low stock
-  if (prompt.includes("low stock") || prompt.includes("running low") || prompt.includes("need to reorder")) {
+  if (
+    prompt.includes("low stock") ||
+    prompt.includes("running low") ||
+    prompt.includes("need to reorder")
+  ) {
     if (dataSummaries.inventory) {
       const lowStock = dataSummaries.inventory.lowStock;
       if (lowStock.length === 0) {
-        return { matched: true, answer: "All inventory items are well-stocked! No items below reorder level." };
+        return {
+          matched: true,
+          answer: "All inventory items are well-stocked! No items below reorder level.",
+        };
       }
       const itemList = lowStock
         .slice(0, 5)
@@ -826,7 +848,11 @@ function tryDirectPatternMatch(
   }
 
   // Average prep time
-  if (prompt.includes("prep time") || prompt.includes("preparation time") || prompt.includes("cooking time")) {
+  if (
+    prompt.includes("prep time") ||
+    prompt.includes("preparation time") ||
+    prompt.includes("cooking time")
+  ) {
     if (dataSummaries.orders) {
       return {
         matched: true,
@@ -836,7 +862,11 @@ function tryDirectPatternMatch(
   }
 
   // Kitchen bottlenecks
-  if (prompt.includes("bottleneck") || prompt.includes("slowest station") || prompt.includes("kitchen issue")) {
+  if (
+    prompt.includes("bottleneck") ||
+    prompt.includes("slowest station") ||
+    prompt.includes("kitchen issue")
+  ) {
     if (dataSummaries.orders?.bottlenecks && dataSummaries.orders.bottlenecks.length > 0) {
       const bottlenecks = dataSummaries.orders.bottlenecks.slice(0, 3);
       const bottleneckList = bottlenecks
@@ -852,7 +882,11 @@ function tryDirectPatternMatch(
   // ========== ADDITIONAL ANALYTICS QUERIES ==========
 
   // Average order value
-  if (prompt.includes("average order") || prompt.includes("avg order") || prompt.includes("order value")) {
+  if (
+    prompt.includes("average order") ||
+    prompt.includes("avg order") ||
+    prompt.includes("order value")
+  ) {
     if (dataSummaries.analytics) {
       return {
         matched: true,
@@ -862,7 +896,11 @@ function tryDirectPatternMatch(
   }
 
   // Payment methods
-  if (prompt.includes("payment method") || prompt.includes("how do customer") || prompt.includes("card vs cash")) {
+  if (
+    prompt.includes("payment method") ||
+    prompt.includes("how do customer") ||
+    prompt.includes("card vs cash")
+  ) {
     if (dataSummaries.analytics?.paymentMethods) {
       const methods = Object.entries(dataSummaries.analytics.paymentMethods)
         .map(([method, data]) => `• ${method}: ${data.count} orders (£${data.revenue.toFixed(2)})`)
@@ -885,7 +923,7 @@ function tryDirectPatternMatch(
     if (dataSummaries.analytics?.itemPerformance) {
       const neverOrdered = dataSummaries.analytics.itemPerformance.neverOrdered.slice(0, 5);
       const rarelyOrdered = dataSummaries.analytics.itemPerformance.rarelyOrdered.slice(0, 5);
-      
+
       let answer = "";
       if (neverOrdered.length > 0) {
         answer += `Never ordered (last 7 days): ${neverOrdered.join(", ")}`;
@@ -926,8 +964,10 @@ function tryDirectPatternMatch(
     if (dataSummaries.analytics?.orderPatterns) {
       const patterns = dataSummaries.analytics.orderPatterns;
       const total = patterns.takeawayVsDineIn.takeaway + patterns.takeawayVsDineIn.dineIn;
-      const takeawayPct = total > 0 ? ((patterns.takeawayVsDineIn.takeaway / total) * 100).toFixed(1) : 0;
-      const dineInPct = total > 0 ? ((patterns.takeawayVsDineIn.dineIn / total) * 100).toFixed(1) : 0;
+      const takeawayPct =
+        total > 0 ? ((patterns.takeawayVsDineIn.takeaway / total) * 100).toFixed(1) : 0;
+      const dineInPct =
+        total > 0 ? ((patterns.takeawayVsDineIn.dineIn / total) * 100).toFixed(1) : 0;
       return {
         matched: true,
         answer: `Order breakdown: ${patterns.takeawayVsDineIn.dineIn} dine-in (${dineInPct}%) vs ${patterns.takeawayVsDineIn.takeaway} takeaway (${takeawayPct}%). Average items per order: ${patterns.avgItemsPerOrder.toFixed(1)}.`,
@@ -936,10 +976,15 @@ function tryDirectPatternMatch(
   }
 
   // Table metrics / turnover
-  if (prompt.includes("table turnover") || prompt.includes("table metric") || prompt.includes("table performance")) {
+  if (
+    prompt.includes("table turnover") ||
+    prompt.includes("table metric") ||
+    prompt.includes("table performance")
+  ) {
     if (dataSummaries.analytics?.tableMetrics) {
       const metrics = dataSummaries.analytics.tableMetrics;
-      const topTables = metrics.revenueByTable.slice(0, 3)
+      const topTables = metrics.revenueByTable
+        .slice(0, 3)
         .map((t) => `Table ${t.tableNumber}: £${t.revenue.toFixed(2)} (${t.sessions} sessions)`)
         .join(", ");
       return {
@@ -950,7 +995,11 @@ function tryDirectPatternMatch(
   }
 
   // Category performance
-  if (prompt.includes("category performance") || prompt.includes("best category") || prompt.includes("top category")) {
+  if (
+    prompt.includes("category performance") ||
+    prompt.includes("best category") ||
+    prompt.includes("top category")
+  ) {
     if (dataSummaries.analytics?.trending?.categoryPerformance) {
       const catPerf = Object.entries(dataSummaries.analytics.trending.categoryPerformance)
         .sort((a, b) => b[1].revenue - a[1].revenue)
@@ -977,10 +1026,11 @@ function tryDirectPatternMatch(
       const growth = dataSummaries.analytics.growth;
       const revTrend = growth.revenueGrowth >= 0 ? "📈" : "📉";
       const menu = dataSummaries.menu;
-      
+
       return {
         matched: true,
-        answer: `📊 Business Overview:\n\n` +
+        answer:
+          `📊 Business Overview:\n\n` +
           `💰 Today: £${today.revenue.toFixed(2)} from ${today.orders} orders\n` +
           `${revTrend} Week trend: Revenue ${growth.revenueGrowth >= 0 ? "+" : ""}${growth.revenueGrowth.toFixed(1)}%, Orders ${growth.ordersGrowth >= 0 ? "+" : ""}${growth.ordersGrowth.toFixed(1)}%\n` +
           `🍽️ Menu: ${menu.totalItems} items across ${menu.categories.length} categories\n` +
@@ -999,7 +1049,8 @@ function tryDirectPatternMatch(
   ) {
     return {
       matched: true,
-      answer: `I'm your Servio AI Assistant! Here's what I can help you with:\n\n` +
+      answer:
+        `I'm your Servio AI Assistant! Here's what I can help you with:\n\n` +
         `📋 **Menu Management**\n` +
         `• Create, update, or delete menu items\n` +
         `• Update prices (e.g., "increase coffee prices by 10%")\n` +
@@ -1207,9 +1258,10 @@ async function tryFastPath(
 
   // "show" is context-dependent - if followed by "me" or asking to display data, it's not an action
   const hasAction = actionWords.some((word) => prompt.includes(word));
-  
+
   // Check for "show" specifically - only treat as action if it's "show/hide" toggle context
-  const hasShowAction = prompt.includes("show") && 
+  const hasShowAction =
+    prompt.includes("show") &&
     (prompt.includes("hide") || prompt.includes("toggle") || prompt.includes("availability"));
 
   if (hasAction || hasShowAction) {
@@ -1299,21 +1351,23 @@ Respond with JSON only:
 
     return { canAnswer: false, confidence: result.confidence };
   } catch (error) {
-
     // Graceful degradation - proceed to full planner
     return { canAnswer: false, confidence: 0 };
   }
 }
 
 // Check for conversational inputs that should return direct responses
-function checkConversationalInput(userPrompt: string): { isConversational: boolean; response?: string } {
+function checkConversationalInput(userPrompt: string): {
+  isConversational: boolean;
+  response?: string;
+} {
   const prompt = userPrompt.toLowerCase().trim();
 
   // Greetings
   if (prompt.match(/^(hi|hello|hey|good\s+(morning|afternoon|evening)|greetings?|howdy|yo)/)) {
     return {
       isConversational: true,
-      response: "Hello! How can I help you with your hospitality business today?"
+      response: "Hello! How can I help you with your hospitality business today?",
     };
   }
 
@@ -1321,7 +1375,7 @@ function checkConversationalInput(userPrompt: string): { isConversational: boole
   if (prompt.match(/^(thanks?|thank\s+you|thx|ty)/)) {
     return {
       isConversational: true,
-      response: "You're welcome! Is there anything else I can help you with?"
+      response: "You're welcome! Is there anything else I can help you with?",
     };
   }
 
@@ -1329,7 +1383,8 @@ function checkConversationalInput(userPrompt: string): { isConversational: boole
   if (prompt.match(/^(how\s+(are|r)\s+you|how'?s\s+it\s+going|what'?s\s+up)/)) {
     return {
       isConversational: true,
-      response: "I'm doing well, thank you! I'm here and ready to help you with your hospitality operations. What would you like to work on?"
+      response:
+        "I'm doing well, thank you! I'm here and ready to help you with your hospitality operations. What would you like to work on?",
     };
   }
 
@@ -1337,7 +1392,8 @@ function checkConversationalInput(userPrompt: string): { isConversational: boole
   if (prompt.match(/^(what\s+(are|r)\s+you|who\s+are\s+you|what\s+(do|can)\s+you\s+do)/)) {
     return {
       isConversational: true,
-      response: "I'm Servio Assistant, your AI helper for hospitality operations. I can help you manage menus, track orders, handle inventory, generate QR codes, manage staff, and analyze your business data. What would you like to work on?"
+      response:
+        "I'm Servio Assistant, your AI helper for hospitality operations. I can help you manage menus, track orders, handle inventory, generate QR codes, manage staff, and analyze your business data. What would you like to work on?",
     };
   }
 
@@ -1369,7 +1425,6 @@ export async function planAssistantAction(
   // Try intelligent fast-path (LLM-based classification for read-only queries)
   const fastPath = await tryFastPath(userPrompt, dataSummaries);
   if (fastPath.canAnswer && fastPath.confidence >= 0.85) {
-
     return {
       intent: userPrompt,
       tools: [],
@@ -1437,7 +1492,6 @@ export async function planAssistantAction(
 
     throw new Error("Failed to parse AI response: no parsed or content available");
   } catch (_error) {
-
     // If we used mini and got an error, try falling back to full model
     if (selectedModel === MODEL_MINI && !usedFallback) {
       usedFallback = true;
@@ -1485,15 +1539,18 @@ export async function planAssistantAction(
           };
         }
       } catch (fallbackError) {
-
         // Re-throw the fallback error
-        if (fallbackError instanceof z.ZodError) { /* Condition handled */ }
+        if (fallbackError instanceof z.ZodError) {
+          /* Condition handled */
+        }
         throw fallbackError;
       }
     }
 
     // If original error wasn't from mini, or fallback also failed
-    if (_error instanceof z.ZodError) { /* Condition handled */ }
+    if (_error instanceof z.ZodError) {
+      /* Condition handled */
+    }
     throw _error;
   }
 }
@@ -1533,7 +1590,6 @@ User Role: ${context.userRole}`;
     }
     return firstChoice.message.content || "Action explanation unavailable.";
   } catch (_error) {
-
     return "Unable to generate explanation.";
   }
 }
@@ -1572,7 +1628,6 @@ Focus on common tasks, optimizations, or insights based on the data.`;
     const response = JSON.parse(firstChoice.message.content || "{ /* Empty */ }");
     return response.suggestions || [];
   } catch (_error) {
-
     return [];
   }
 }
@@ -1633,7 +1688,6 @@ export async function generateConversationTitle(firstUserMessage: string): Promi
     const title = firstChoice.message.content?.trim() || "New Chat";
     return title.substring(0, 60); // Limit length
   } catch (error) {
-
     return firstUserMessage.substring(0, 60);
   }
 }

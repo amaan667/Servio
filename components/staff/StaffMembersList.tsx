@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { normalizeVenueId } from "@/lib/utils/venueId";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -47,7 +48,9 @@ const StaffMembersList: React.FC<StaffMembersListProps> = ({
   onStaffToggle,
 }) => {
   // Log when component renders
-  useEffect(() => { /* Intentionally empty */ }, []);
+  useEffect(() => {
+    /* Intentionally empty */
+  }, []);
 
   const [name, setName] = useState("");
   const [role, setRole] = useState("Server");
@@ -80,7 +83,7 @@ const StaffMembersList: React.FC<StaffMembersListProps> = ({
     try {
       // Add venueId to query string for withUnifiedAuth
       // Normalize venueId - ensure it has venue- prefix
-      const normalizedVenueId = venueId.startsWith("venue-") ? venueId : `venue-${venueId}`;
+      const normalizedVenueId = normalizeVenueId(venueId) ?? venueId;
 
       const url = new URL("/api/staff/add", window.location.origin);
       url.searchParams.set("venueId", normalizedVenueId);
@@ -128,7 +131,7 @@ const StaffMembersList: React.FC<StaffMembersListProps> = ({
 
     setDeletingStaffId(staffToDelete.id);
     try {
-      const normalizedVenueId = venueId.startsWith("venue-") ? venueId : `venue-${venueId}`;
+      const normalizedVenueId = normalizeVenueId(venueId) ?? venueId;
       const url = new URL("/api/staff/delete", window.location.origin);
       url.searchParams.set("venueId", normalizedVenueId);
 
@@ -143,7 +146,7 @@ const StaffMembersList: React.FC<StaffMembersListProps> = ({
 
       if (!res.ok) {
         // Log full response in browser console for debugging staff delete
-         
+
         console.log("[STAFF-DELETE] Error response", {
           status: res.status,
           error: data.error,

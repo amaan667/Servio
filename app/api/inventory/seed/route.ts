@@ -39,7 +39,6 @@ export const POST = withUnifiedAuth(
       // STEP 4: Return success response
       return success(result);
     } catch (error) {
-
       if (isZodError(error)) {
         return handleZodError(error);
       }

@@ -6,11 +6,28 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Receipt, Download, CheckCircle, Split, Clock, User, MapPin, Undo2, TrendingDown, AlertTriangle } from "lucide-react";
+import {
+  Receipt,
+  Download,
+  CheckCircle,
+  Split,
+  Clock,
+  User,
+  MapPin,
+  Undo2,
+  TrendingDown,
+  AlertTriangle,
+} from "lucide-react";
 import { supabaseBrowser as createClient } from "@/lib/supabase";
 import { todayWindowForTZ } from "@/lib/time";
 import { ReceiptModal } from "@/components/receipt/ReceiptModal";
@@ -98,10 +115,11 @@ function RefundDialog({
     }
   }, [isOpen]);
 
-  const filteredOrders = orders.filter(order =>
-    order.order_number?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    order.customer_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    order.id.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredOrders = orders.filter(
+    (order) =>
+      order.order_number?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      order.customer_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      order.id.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const processRefund = async () => {
@@ -177,7 +195,8 @@ function RefundDialog({
                           Order #{order.order_number || order.id.slice(-6).toUpperCase()}
                         </p>
                         <p className="text-sm text-gray-600">
-                          {order.customer_name || "Customer"} • {new Date(order.created_at).toLocaleDateString()}
+                          {order.customer_name || "Customer"} •{" "}
+                          {new Date(order.created_at).toLocaleDateString()}
                         </p>
                       </div>
                       <p className="font-semibold">£{order.total_amount?.toFixed(2)}</p>
@@ -196,7 +215,9 @@ function RefundDialog({
                 <div className="grid grid-cols-2 gap-4 text-sm">
                   <div>
                     <span className="text-gray-600">Order Total:</span>
-                    <span className="ml-2 font-medium">£{selectedOrder.total_amount?.toFixed(2)}</span>
+                    <span className="ml-2 font-medium">
+                      £{selectedOrder.total_amount?.toFixed(2)}
+                    </span>
                   </div>
                   <div>
                     <span className="text-gray-600">Payment Method:</span>
@@ -255,7 +276,9 @@ function RefundDialog({
                 </Button>
                 <Button
                   onClick={processRefund}
-                  disabled={isProcessing || !refundReason || (refundReason === "Other" && !customReason)}
+                  disabled={
+                    isProcessing || !refundReason || (refundReason === "Other" && !customReason)
+                  }
                   className="bg-red-600 hover:bg-red-700"
                 >
                   {isProcessing ? (
@@ -411,7 +434,9 @@ const PaymentsClient: React.FC<PaymentsClientProps> = ({ venueId }) => {
       const todayEnd = new Date(todayWindow.endUtcISO);
 
       // Debug: Log the date range being used (non-production only)
-      if (process.env.NODE_ENV !== "production") { /* Condition handled */ }
+      if (process.env.NODE_ENV !== "production") {
+        /* Condition handled */
+      }
 
       const { data: unpaidData, error: unpaidError } = await supabase
         .from("orders")
@@ -431,7 +456,9 @@ const PaymentsClient: React.FC<PaymentsClientProps> = ({ venueId }) => {
         .lt("created_at", todayEnd.toISOString())
         .order("created_at", { ascending: false });
 
-      if (unpaidError) { /* Condition handled */ }
+      if (unpaidError) {
+        /* Condition handled */
+      }
 
       setUnpaidOrders((unpaidData || []) as PaymentOrder[]);
 
@@ -444,7 +471,6 @@ const PaymentsClient: React.FC<PaymentsClientProps> = ({ venueId }) => {
         .order("created_at", { ascending: false });
 
       if (fetchError) {
-
         return;
       }
 
@@ -457,12 +483,16 @@ const PaymentsClient: React.FC<PaymentsClientProps> = ({ venueId }) => {
         const todayEnd = new Date(todayWindow.endUtcISO);
         const isToday = receiptDate >= todayStart && receiptDate < todayEnd;
 
-        if (isToday && process.env.NODE_ENV !== "production") { /* Condition handled */ }
+        if (isToday && process.env.NODE_ENV !== "production") {
+          /* Condition handled */
+        }
 
         return isToday;
       });
 
-      if (process.env.NODE_ENV !== "production") { /* Condition handled */ }
+      if (process.env.NODE_ENV !== "production") {
+        /* Condition handled */
+      }
 
       const historyReceiptsList = allReceipts.filter(
         (receipt) => new Date(receipt.created_at) < new Date(todayWindow.startUtcISO)
@@ -535,7 +565,7 @@ const PaymentsClient: React.FC<PaymentsClientProps> = ({ venueId }) => {
 
       if (!allOrdersError && allOrders) {
         const totalOrders = allOrders.length;
-        const todayRefunds = refundedOrdersList.filter(order => {
+        const todayRefunds = refundedOrdersList.filter((order) => {
           if (!order.refunded_at) return false;
           const refundDate = new Date(order.refunded_at);
           return refundDate >= todayStart && refundDate < todayEnd;
@@ -545,7 +575,7 @@ const PaymentsClient: React.FC<PaymentsClientProps> = ({ venueId }) => {
 
         // Calculate common refund reasons
         const reasonCounts: { [key: string]: number } = {};
-        refundedOrdersList.forEach(order => {
+        refundedOrdersList.forEach((order) => {
           const reason = order.refund_reason || "Not specified";
           reasonCounts[reason] = (reasonCounts[reason] || 0) + 1;
         });
@@ -702,8 +732,7 @@ const PaymentsClient: React.FC<PaymentsClientProps> = ({ venueId }) => {
       const data = await response.json().catch(() => ({}));
 
       if (!response.ok) {
-        const errorMessage =
-          data?.error?.message || data?.error || "Failed to mark order as paid";
+        const errorMessage = data?.error?.message || data?.error || "Failed to mark order as paid";
         alert(`Failed to mark order as paid: ${errorMessage}`);
         return;
       }
@@ -771,7 +800,10 @@ const PaymentsClient: React.FC<PaymentsClientProps> = ({ venueId }) => {
                   {isPayLater ? "Pay Later" : "Pay at Till"}
                 </Badge>
                 {isServed && (
-                  <Badge variant="outline" className="text-xs bg-green-50 text-green-700 border-green-200">
+                  <Badge
+                    variant="outline"
+                    className="text-xs bg-green-50 text-green-700 border-green-200"
+                  >
                     Served
                   </Badge>
                 )}
@@ -940,10 +972,12 @@ const PaymentsClient: React.FC<PaymentsClientProps> = ({ venueId }) => {
                     }
                   `}
                 >
-                  {unpaidOrders.filter((order) => {
-                    const method = String(order.payment_method || "").toUpperCase();
-                    return method === "PAY_AT_TILL";
-                  }).length}
+                  {
+                    unpaidOrders.filter((order) => {
+                      const method = String(order.payment_method || "").toUpperCase();
+                      return method === "PAY_AT_TILL";
+                    }).length
+                  }
                 </span>
               </TabsTrigger>
               <TabsTrigger value="pay-later" className="flex items-center gap-2 relative">
@@ -958,10 +992,12 @@ const PaymentsClient: React.FC<PaymentsClientProps> = ({ venueId }) => {
                     }
                   `}
                 >
-                  {unpaidOrders.filter((order) => {
-                    const method = String(order.payment_method || "").toUpperCase();
-                    return method === "PAY_LATER";
-                  }).length}
+                  {
+                    unpaidOrders.filter((order) => {
+                      const method = String(order.payment_method || "").toUpperCase();
+                      return method === "PAY_LATER";
+                    }).length
+                  }
                 </span>
               </TabsTrigger>
               <TabsTrigger value="today" className="flex items-center gap-2 relative">
@@ -1116,7 +1152,9 @@ const PaymentsClient: React.FC<PaymentsClientProps> = ({ venueId }) => {
                     <div className="flex items-center justify-between">
                       <div>
                         <p className="text-sm text-gray-600">Total Refunds</p>
-                        <p className="text-2xl font-bold text-gray-900">{refundStats.totalRefunds}</p>
+                        <p className="text-2xl font-bold text-gray-900">
+                          {refundStats.totalRefunds}
+                        </p>
                       </div>
                       <Undo2 className="h-8 w-8 text-red-500" />
                     </div>
@@ -1127,7 +1165,9 @@ const PaymentsClient: React.FC<PaymentsClientProps> = ({ venueId }) => {
                     <div className="flex items-center justify-between">
                       <div>
                         <p className="text-sm text-gray-600">Refund Amount</p>
-                        <p className="text-2xl font-bold text-gray-900">£{refundStats.totalRefundAmount.toFixed(2)}</p>
+                        <p className="text-2xl font-bold text-gray-900">
+                          £{refundStats.totalRefundAmount.toFixed(2)}
+                        </p>
                       </div>
                       <TrendingDown className="h-8 w-8 text-orange-500" />
                     </div>
@@ -1138,9 +1178,13 @@ const PaymentsClient: React.FC<PaymentsClientProps> = ({ venueId }) => {
                     <div className="flex items-center justify-between">
                       <div>
                         <p className="text-sm text-gray-600">Today's Rate</p>
-                        <p className="text-2xl font-bold text-gray-900">{refundStats.refundRate.toFixed(1)}%</p>
+                        <p className="text-2xl font-bold text-gray-900">
+                          {refundStats.refundRate.toFixed(1)}%
+                        </p>
                       </div>
-                      <AlertTriangle className={`h-8 w-8 ${refundStats.refundRate > 5 ? 'text-red-500' : 'text-green-500'}`} />
+                      <AlertTriangle
+                        className={`h-8 w-8 ${refundStats.refundRate > 5 ? "text-red-500" : "text-green-500"}`}
+                      />
                     </div>
                   </CardContent>
                 </Card>
@@ -1188,7 +1232,9 @@ const PaymentsClient: React.FC<PaymentsClientProps> = ({ venueId }) => {
                               -£{(order.refund_amount || order.total_amount || 0).toFixed(2)}
                             </p>
                             <p className="text-xs text-gray-500">
-                              {order.refunded_at ? new Date(order.refunded_at).toLocaleDateString() : 'Unknown'}
+                              {order.refunded_at
+                                ? new Date(order.refunded_at).toLocaleDateString()
+                                : "Unknown"}
                             </p>
                           </div>
                         </div>
@@ -1196,22 +1242,28 @@ const PaymentsClient: React.FC<PaymentsClientProps> = ({ venueId }) => {
                         <div className="space-y-2">
                           <div className="flex justify-between text-sm">
                             <span className="text-gray-600">Reason:</span>
-                            <span className="text-gray-900">{order.refund_reason || "Not specified"}</span>
+                            <span className="text-gray-900">
+                              {order.refund_reason || "Not specified"}
+                            </span>
                           </div>
                           <div className="flex justify-between text-sm">
                             <span className="text-gray-600">Status:</span>
-                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                              order.payment_status === 'REFUNDED'
-                                ? 'bg-red-100 text-red-800'
-                                : 'bg-orange-100 text-orange-800'
-                            }`}>
+                            <span
+                              className={`px-2 py-1 rounded-full text-xs font-medium ${
+                                order.payment_status === "REFUNDED"
+                                  ? "bg-red-100 text-red-800"
+                                  : "bg-orange-100 text-orange-800"
+                              }`}
+                            >
                               {order.payment_status}
                             </span>
                           </div>
                           {order.refund_id && (
                             <div className="flex justify-between text-sm">
                               <span className="text-gray-600">ID:</span>
-                              <span className="text-gray-900 font-mono text-xs">{order.refund_id.slice(-8)}</span>
+                              <span className="text-gray-900 font-mono text-xs">
+                                {order.refund_id.slice(-8)}
+                              </span>
                             </div>
                           )}
                         </div>

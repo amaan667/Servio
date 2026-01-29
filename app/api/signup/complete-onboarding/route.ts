@@ -95,7 +95,6 @@ export const POST = withUnifiedAuth(
         .single();
 
       if (orgError || !org) {
-
         return NextResponse.json(
           {
             error: "Failed to create organization",
@@ -121,11 +120,12 @@ export const POST = withUnifiedAuth(
         .single();
 
       if (venueError) {
-
         // Clean up organization
         try {
           await supabase.from("organizations").delete().eq("id", org.id);
-        } catch (cleanupError) { /* Error handled silently */ }
+        } catch (cleanupError) {
+          /* Error handled silently */
+        }
 
         return NextResponse.json(
           {

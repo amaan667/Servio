@@ -3,10 +3,7 @@
 import { useSearchParams, useRouter } from "next/navigation";
 import { useEffect } from "react";
 import { Loader2 } from "lucide-react";
-import {
-  getScopedCartKey,
-  safeRemoveItem,
-} from "@/app/order/utils/safeStorage";
+import { getScopedCartKey, safeRemoveItem } from "@/app/order/utils/safeStorage";
 
 export default function PaymentSuccessPage() {
   const searchParams = useSearchParams();
@@ -41,8 +38,7 @@ export default function PaymentSuccessPage() {
           if (order?.id) {
             safeRemoveItem(localStorage, "servio-checkout-data");
             if (order.venue_id) {
-              const tableOrCounter =
-                order.table_number ?? order.counter_number ?? "";
+              const tableOrCounter = order.table_number ?? order.counter_number ?? "";
               safeRemoveItem(
                 localStorage,
                 getScopedCartKey(order.venue_id, String(tableOrCounter))
@@ -72,8 +68,7 @@ export default function PaymentSuccessPage() {
           if (retryOrder?.id) {
             safeRemoveItem(localStorage, "servio-checkout-data");
             if (retryOrder.venue_id) {
-              const tableOrCounter =
-                retryOrder.table_number ?? retryOrder.counter_number ?? "";
+              const tableOrCounter = retryOrder.table_number ?? retryOrder.counter_number ?? "";
               safeRemoveItem(
                 localStorage,
                 getScopedCartKey(retryOrder.venue_id, String(tableOrCounter))
@@ -102,8 +97,7 @@ export default function PaymentSuccessPage() {
         if (createRes.ok && createdOrder?.id) {
           safeRemoveItem(localStorage, "servio-checkout-data");
           if (createdOrder.venue_id) {
-            const tableOrCounter =
-              createdOrder.table_number ?? createdOrder.counter_number ?? "";
+            const tableOrCounter = createdOrder.table_number ?? createdOrder.counter_number ?? "";
             safeRemoveItem(
               localStorage,
               getScopedCartKey(createdOrder.venue_id, String(tableOrCounter))

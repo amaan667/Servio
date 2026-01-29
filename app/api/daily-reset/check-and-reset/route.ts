@@ -189,10 +189,7 @@ export const POST = createUnifiedHandler(
       }
 
       // Step 3b: Delete all table sessions first (if they exist)
-      await supabase
-        .from("table_sessions")
-        .delete()
-        .eq("venue_id", finalVenueId);
+      await supabase.from("table_sessions").delete().eq("venue_id", finalVenueId);
 
       // Step 3c: Delete all tables for the venue
       const { error: deleteTablesError } = await supabase
@@ -208,10 +205,7 @@ export const POST = createUnifiedHandler(
     }
 
     // Step 4: Clear unknown table runtime state
-    await supabase
-      .from("table_runtime_state")
-      .delete()
-      .eq("venue_id", finalVenueId);
+    await supabase.from("table_runtime_state").delete().eq("venue_id", finalVenueId);
 
     // Step 5: Record the reset in the log
     await supabase.from("daily_reset_log").insert({
@@ -243,7 +237,10 @@ export const POST = createUnifiedHandler(
     rateLimit: RATE_LIMITS.GENERAL,
     extractVenueId: async (req) => {
       try {
-        const body = await req.clone().json().catch(() => ({}));
+        const body = await req
+          .clone()
+          .json()
+          .catch(() => ({}));
         return (
           (body as { venue_id?: string; venueId?: string })?.venue_id ||
           (body as { venue_id?: string; venueId?: string })?.venueId ||

@@ -85,7 +85,6 @@ export const GET = createUnifiedHandler(
       const { data: orders, error } = await query;
 
       if (error) {
-
         return apiErrors.internal(error instanceof Error ? error.message : "Unknown error");
       }
 

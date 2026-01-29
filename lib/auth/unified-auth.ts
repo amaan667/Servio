@@ -31,7 +31,10 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { verifyVenueAccess as verifyVenueAccessMiddleware, type AuthorizedContext } from "@/lib/middleware/authorization";
+import {
+  verifyVenueAccess as verifyVenueAccessMiddleware,
+  type AuthorizedContext,
+} from "@/lib/middleware/authorization";
 export const verifyVenueAccess = verifyVenueAccessMiddleware;
 import { checkFeatureAccess, checkLimit, TIER_LIMITS } from "@/lib/tier-restrictions";
 
@@ -334,7 +337,6 @@ export async function getPageAuthContext(
       venueAccess: true,
     };
   } catch (error) {
-
     return null;
   }
 }
@@ -410,7 +412,9 @@ export function withUnifiedAuth(
 ) {
   return async (req: NextRequest, routeParams?: { params?: Promise<Record<string, string>> }) => {
     // Log auth wrapper entry (only in development)
-    if (process.env.NODE_ENV === "development") { /* Condition handled */ }
+    if (process.env.NODE_ENV === "development") {
+      /* Condition handled */
+    }
 
     try {
       // Extract venueId from params, query, or body
@@ -424,33 +428,26 @@ export function withUnifiedAuth(
 
       // Use custom extractor if provided
       if (options?.extractVenueId) {
-
         // IMPORTANT: Some extractors read `req.json()`. If they do so on the original request,
         // the handler will later fail with "Body is unusable" when it tries to read the body.
         // Always pass a clone to custom extractors so the original request remains readable.
         venueId = await options.extractVenueId(req.clone() as NextRequest, routeParams);
-
       } else {
         // Try params first (await if it's a Promise)
         if (routeParams?.params) {
-
           const params = await routeParams.params;
           venueId = params?.venueId || null;
-
         }
 
         // Try query string
         if (!venueId) {
-
           const url = new URL(req.url);
           venueId = url.searchParams.get("venueId") || url.searchParams.get("venue_id");
-
         }
 
         // Try body - read it ONCE and parse it
         // This is the permanent solution: read body once, parse once, use everywhere
         if (!venueId && req.method !== "GET") {
-
           const contentType = req.headers.get("content-type");
 
           if (contentType && contentType.includes("application/json")) {
@@ -463,20 +460,27 @@ export function withUnifiedAuth(
               if (parsedBody && typeof parsedBody === "object" && parsedBody !== null) {
                 const bodyObj = parsedBody as Record<string, unknown>;
                 venueId = (bodyObj.venueId as string) || (bodyObj.venue_id as string) || null;
-                if (venueId) { /* Condition handled */ } else { /* Else case handled */ }
-              } else { /* Else case handled */ }
+                if (venueId) {
+                  /* Condition handled */
+                } else {
+                  /* Else case handled */
+                }
+              } else {
+                /* Else case handled */
+              }
             } catch (parseError) {
               // Body parsing failed - log but continue
 
               parsedBody = null;
             }
-          } else { /* Else case handled */ }
+          } else {
+            /* Else case handled */
+          }
         }
       }
 
       // If custom extractor returned null, this route doesn't need venueId - skip venue check
       if (!venueId && usedCustomExtractor) {
-
         // Just check auth, no venue access needed
         const authResult = await requireAuth(req);
         if (!authResult.success) {
@@ -507,7 +511,6 @@ export function withUnifiedAuth(
 
       // Auth + venue access (venueId is required)
       if (!venueId) {
-
         return NextResponse.json(
           {
             error: "Bad Request",
@@ -522,7 +525,6 @@ export function withUnifiedAuth(
       const authResult = await requireAuthAndVenueAccess(req, venueId);
 
       if (!authResult.success) {
-
         return authResult.response;
       }
 
@@ -532,7 +534,6 @@ export function withUnifiedAuth(
 
       // Feature check
       if (options?.requireFeature) {
-
         // IMPORTANT: Feature access is based on the venue owner's subscription tier.
         // Staff users should inherit the venue's plan.
         const featureCheck = await enforceFeatureAccess(
@@ -540,17 +541,13 @@ export function withUnifiedAuth(
           options.requireFeature
         );
         if (!featureCheck.allowed) {
-
           return featureCheck.response;
         }
-
       }
 
       // Role check
       if (options?.requireRole) {
-
         if (!hasRole(context, options.requireRole)) {
-
           return NextResponse.json(
             {
               error: "Forbidden",
@@ -560,14 +557,11 @@ export function withUnifiedAuth(
             { status: 403 }
           );
         }
-
       }
 
       // Owner check
       if (options?.requireOwner) {
-
         if (!isOwner(context)) {
-
           return NextResponse.json(
             {
               error: "Forbidden",
@@ -577,7 +571,6 @@ export function withUnifiedAuth(
             { status: 403 }
           );
         }
-
       }
 
       // Reconstruct request with body if it was consumed

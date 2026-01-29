@@ -35,19 +35,15 @@ export function trackError(
   // Log based on severity
   switch (severity) {
     case "critical":
-
       captureException(error, { ...context, severity });
       break;
     case "high":
-
       captureException(error, { ...context, severity });
       break;
     case "medium":
-
       captureMessage(errorMessage, "warning", { ...context, severity });
       break;
     case "low":
-
       break;
   }
 }

@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { LegacyShift } from "./useStaffManagement";
 import { supabaseBrowser } from "@/lib/supabase";
+import { normalizeVenueId } from "@/lib/utils/venueId";
 
 interface ShiftWithStaff {
   id: string;
@@ -14,59 +15,58 @@ interface ShiftWithStaff {
   } | null;
 }
 
+interface ApiShiftRow {
+  id: string;
+  staff_id: string;
+  start_time: string;
+  end_time: string;
+  area?: string | null;
+  staff_name?: string;
+  staff_role?: string;
+}
+
+function toLegacyShift(row: ApiShiftRow): LegacyShift {
+  return {
+    id: row.id,
+    staff_id: row.staff_id,
+    start_time: row.start_time,
+    end_time: row.end_time,
+    area: row.area ?? undefined,
+    staff_name: row.staff_name ?? "Unknown",
+    staff_role: row.staff_role ?? "Unknown",
+  };
+}
+
 export function useShiftManagement(venueId: string, _staff: unknown[]) {
   const [allShifts, setAllShifts] = useState<LegacyShift[]>([]);
   const [shiftsLoaded, setShiftsLoaded] = useState(false);
   const [editingShiftFor, setEditingShiftFor] = useState<string | null>(null);
 
-  // Load shifts on component mount - Direct Supabase query
+  // Load shifts via API (single server path)
   useEffect(() => {
+    if (shiftsLoaded) return;
+
     const loadShifts = async () => {
       try {
-        const supabase = supabaseBrowser();
-        // Use staff_shifts table (not shifts)
-        const { data: shiftsData, error } = await supabase
-          .from("staff_shifts")
-          .select(
-            `
-            *,
-            staff:staff_id (
-              name,
-              role
-            )
-          `
-          )
-          .eq("venue_id", venueId)
-          .order("start_time", { ascending: false });
+        const normalized = normalizeVenueId(venueId);
+        if (!normalized) return;
 
-        if (error) {
-          // Silently handle 404 - table might not exist yet
-          if (error.code !== "PGRST116") {
-            // Error handled silently
-          }
-        } else if (shiftsData) {
-          // Transform to match LegacyShift format
-          const shifts = shiftsData.map((shift: ShiftWithStaff) => ({
-            id: shift.id,
-            staff_id: shift.staff_id,
-            start_time: shift.start_time,
-            end_time: shift.end_time,
-            area: shift.area || undefined,
-            staff_name: shift.staff?.name || "",
-            staff_role: shift.staff?.role || "",
-          }));
-          setAllShifts(shifts);
+        const res = await fetch(
+          `/api/staff/shifts/list?venue_id=${encodeURIComponent(normalized)}`,
+          { credentials: "include" }
+        );
+        const json = await res.json();
+
+        if (json.success && Array.isArray(json.data?.shifts)) {
+          setAllShifts(json.data.shifts.map((s: ApiShiftRow) => toLegacyShift(s)));
           setShiftsLoaded(true);
         }
-      } catch (e) {
-        // Silently handle errors - shifts are optional
-        // Error handled silently
+      } catch (_e) {
+        // Shifts are optional; silently skip
       }
     };
 
-    if (!shiftsLoaded) {
-      loadShifts();
-    }
+    loadShifts();
   }, [venueId, shiftsLoaded]);
 
   const addShift = async (staffId: string, startTime: string, endTime: string, area?: string) => {

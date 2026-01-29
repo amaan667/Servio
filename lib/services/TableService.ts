@@ -145,9 +145,9 @@ export class TableService extends BaseService {
    * Seat a party at a table (atomic via RPC)
    */
   async seatTable(
-    tableId: string, 
-    venueId: string, 
-    partySize: number, 
+    tableId: string,
+    venueId: string,
+    partySize: number,
     customerName?: string
   ): Promise<void> {
     const supabase = await createSupabaseClient();
@@ -165,14 +165,16 @@ export class TableService extends BaseService {
   /**
    * Get tables with their current active sessions and order status
    */
-  async getTablesWithState(venueId: string): Promise<(Table & {
-    table_id: string;
-    session_id: string | null;
-    order_id: string | null;
-    order_status: string | null;
-    completion_status: string | null;
-    opened_at: string | null;
-  })[]> {
+  async getTablesWithState(venueId: string): Promise<
+    (Table & {
+      table_id: string;
+      session_id: string | null;
+      order_id: string | null;
+      order_status: string | null;
+      completion_status: string | null;
+      opened_at: string | null;
+    })[]
+  > {
     const supabase = await createSupabaseClient();
 
     // 1. Fetch all active tables
@@ -191,7 +193,10 @@ export class TableService extends BaseService {
       .from("table_sessions")
       .select("*")
       .eq("venue_id", venueId)
-      .in("table_id", tables.map((t) => t.id))
+      .in(
+        "table_id",
+        tables.map((t) => t.id)
+      )
       .is("closed_at", null);
 
     if (sessionsError) throw sessionsError;
@@ -210,10 +215,13 @@ export class TableService extends BaseService {
         .eq("venue_id", venueId);
 
       if (orders) {
-        orderMap = orders.reduce((acc, order) => {
-          acc[order.id] = order as Record<string, unknown>;
-          return acc;
-        }, {} as Record<string, Record<string, unknown>>);
+        orderMap = orders.reduce(
+          (acc, order) => {
+            acc[order.id] = order as Record<string, unknown>;
+            return acc;
+          },
+          {} as Record<string, Record<string, unknown>>
+        );
       }
     }
 
@@ -221,26 +229,28 @@ export class TableService extends BaseService {
     const result = tables.map((table) => {
       const session = sessions?.find((s) => s.table_id === table.id);
       const order = session?.order_id ? orderMap[session.order_id] : null;
-      
+
       const completionStatus = (order?.completion_status as string) || null;
       const orderStatus = (order?.order_status as string) || null;
 
-      const isOrderCompleted = 
+      const isOrderCompleted =
         completionStatus?.toUpperCase() === "COMPLETED" ||
-        ["COMPLETED", "CANCELLED", "REFUNDED", "EXPIRED"].includes(orderStatus?.toUpperCase() || "");
+        ["COMPLETED", "CANCELLED", "REFUNDED", "EXPIRED"].includes(
+          orderStatus?.toUpperCase() || ""
+        );
 
       // If order is completed, table is effectively FREE
-      const status = isOrderCompleted ? "FREE" : (session?.status || "FREE");
+      const status = isOrderCompleted ? "FREE" : session?.status || "FREE";
 
       return {
         ...table,
         table_id: table.id,
-        session_id: isOrderCompleted ? null : (session?.id || null),
+        session_id: isOrderCompleted ? null : session?.id || null,
         status,
-        order_id: isOrderCompleted ? null : (session?.order_id || null),
+        order_id: isOrderCompleted ? null : session?.order_id || null,
         order_status: isOrderCompleted ? null : orderStatus,
         completion_status: completionStatus,
-        opened_at: isOrderCompleted ? null : (session?.opened_at || null),
+        opened_at: isOrderCompleted ? null : session?.opened_at || null,
       };
     });
 

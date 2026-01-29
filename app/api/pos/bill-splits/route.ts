@@ -86,7 +86,6 @@ export const POST = withUnifiedAuth(
             .single();
 
           if (splitError || !billSplit) {
-
             return apiErrors.database(
               "Failed to create bill split",
               isDevelopment() ? splitError?.message : undefined
@@ -107,7 +106,6 @@ export const POST = withUnifiedAuth(
               .insert(orderSplitLinks);
 
             if (linksError) {
-
               return apiErrors.database(
                 "Failed to link orders to split",
                 isDevelopment() ? linksError.message : undefined
@@ -133,7 +131,6 @@ export const POST = withUnifiedAuth(
           .single();
 
         if (payError || !paidSplit) {
-
           return apiErrors.database(
             "Failed to mark split as paid",
             isDevelopment() ? payError?.message : undefined
@@ -148,7 +145,6 @@ export const POST = withUnifiedAuth(
       // STEP 5: Return success response
       return success(result);
     } catch (error) {
-
       if (isZodError(error)) {
         return handleZodError(error);
       }
@@ -225,7 +221,6 @@ export const GET = withUnifiedAuth(
       const { data: splits, error } = await dbQuery.order("split_number");
 
       if (error) {
-
         return apiErrors.database(
           "Failed to fetch bill splits",
           isDevelopment() ? error.message : undefined
@@ -235,7 +230,6 @@ export const GET = withUnifiedAuth(
       // STEP 5: Return success response
       return success({ splits: splits || [] });
     } catch (error) {
-
       if (isZodError(error)) {
         return handleZodError(error);
       }

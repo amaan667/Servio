@@ -40,7 +40,9 @@ interface FeatureSectionsProps {
 
 export function FeatureSections({ venueId, userRole }: FeatureSectionsProps) {
   // Track role changes
-  useEffect(() => { /* Intentionally empty */ }, [userRole]);
+  useEffect(() => {
+    /* Intentionally empty */
+  }, [userRole]);
 
   const handleFeatureClick = (_feature: Feature, _section: string) => {
     // Feature click logging removed for cleaner logs

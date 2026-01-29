@@ -88,7 +88,6 @@ export function useQRCodeManagement(venueId: string) {
 
   const generateQRForName = useCallback(
     (name: string, type: "table" | "counter" | "table_pickup" = "table") => {
-
       const baseUrl = typeof window !== "undefined" ? window.location.origin : "";
 
       // For table_pickup, use table parameter but add collection=true
@@ -108,7 +107,6 @@ export function useQRCodeManagement(venueId: string) {
       setGeneratedQRs((prev) => {
         const exists = prev.find((qr) => qr.name === name && qr.type === type);
         if (exists) {
-
           // Silently ignore duplicates
           return prev;
         }
@@ -117,7 +115,11 @@ export function useQRCodeManagement(venueId: string) {
       });
 
       const typeLabel =
-        type === "table_pickup" ? "table with collection" : type === "counter" ? "counter" : "table";
+        type === "table_pickup"
+          ? "table with collection"
+          : type === "counter"
+            ? "counter"
+            : "table";
       toast({
         title: "QR Code Generated",
         description: `Created QR code for ${name} (${typeLabel})`,
@@ -195,7 +197,7 @@ export function useQRCodeManagement(venueId: string) {
         }
       };
 
-      const filename = `qr-${qr.name.replace(/[^a-zA-Z0-9]/g, '-')}-${getTypeLabel(qr.type)}.png`;
+      const filename = `qr-${qr.name.replace(/[^a-zA-Z0-9]/g, "-")}-${getTypeLabel(qr.type)}.png`;
 
       const link = document.createElement("a");
       link.download = filename;

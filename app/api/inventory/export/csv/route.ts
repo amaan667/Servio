@@ -44,7 +44,6 @@ export const GET = withUnifiedAuth(
         .order("name", { ascending: true });
 
       if (error) {
-
         return apiErrors.database(
           "Failed to fetch inventory data",
           isDevelopment() ? error.message : undefined
@@ -89,7 +88,6 @@ export const GET = withUnifiedAuth(
         },
       });
     } catch (error) {
-
       if (isZodError(error)) {
         return handleZodError(error);
       }

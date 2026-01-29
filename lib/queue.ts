@@ -52,7 +52,6 @@ export const pdfWorker =
               imageCount: images.length,
             };
           } catch (_error) {
-
             throw _error;
           }
         },
@@ -84,7 +83,6 @@ export const jobHelpers = {
    */
   async addPdfJob(pdfBytes: ArrayBuffer, venueId: string, uploadId?: string) {
     if (!pdfQueue) {
-
       return null;
     }
 

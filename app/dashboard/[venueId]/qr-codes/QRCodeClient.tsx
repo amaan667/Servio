@@ -120,7 +120,7 @@ export default function QRCodeClient({
       const prefix = decodeURIComponent(bulkPrefixParam).trim();
       const count = parseInt(bulkCountParam, 10);
       const type = (bulkTypeParam || "table") as "table" | "counter";
-      
+
       if (count > 0 && count <= 100) {
         setQrType(type);
         setBulkPrefix(prefix);
@@ -131,7 +131,6 @@ export default function QRCodeClient({
         }
       }
     }
-
   }, [searchParams, venueId]);
 
   // Generate single QR code
@@ -346,7 +345,8 @@ export default function QRCodeClient({
             </Select>
             {qrType === "table" && (
               <p className="text-xs text-blue-600 mt-2">
-                🍽️ Traditional table service. Customers sit at tables and servers deliver orders directly.
+                🍽️ Traditional table service. Customers sit at tables and servers deliver orders
+                directly.
               </p>
             )}
             {qrType === "table_pickup" && (
@@ -357,16 +357,15 @@ export default function QRCodeClient({
             )}
             {qrType === "counter" && (
               <p className="text-xs text-green-600 mt-2">
-                🏪 Quick service counter. Customers order and pay at the counter, then collect their orders when ready.
+                🏪 Quick service counter. Customers order and pay at the counter, then collect their
+                orders when ready.
               </p>
             )}
           </div>
 
           {/* Single QR Code Generation */}
           <div>
-            <Label>
-              Enter {qrType === "counter" ? "Counter" : "Table"} Name
-            </Label>
+            <Label>Enter {qrType === "counter" ? "Counter" : "Table"} Name</Label>
             <div className="flex gap-2 mt-1">
               <Input
                 placeholder={`e.g., ${qrType === "counter" ? "Counter 1" : "Table 1"}`}
@@ -475,7 +474,9 @@ export default function QRCodeClient({
                 className="shadow-lg rounded-xl print:shadow-none print:border print:border-black"
               >
                 <CardHeader>
-                  <CardTitle className="text-lg">{qr.name} ({getTypeLabel(qr.type)})</CardTitle>
+                  <CardTitle className="text-lg">
+                    {qr.name} ({getTypeLabel(qr.type)})
+                  </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   {/* QR Code Canvas */}

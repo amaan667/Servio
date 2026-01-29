@@ -90,7 +90,6 @@ export abstract class BaseRepository<T> {
       const { data, error } = await query;
 
       if (error) {
-
         throw error;
       }
 
@@ -125,7 +124,6 @@ export abstract class BaseRepository<T> {
       const { count, error: countError } = await countQuery;
 
       if (countError) {
-
         throw countError;
       }
 
@@ -158,7 +156,6 @@ export abstract class BaseRepository<T> {
         .single();
 
       if (error) {
-
         throw error;
       }
 
@@ -177,7 +174,6 @@ export abstract class BaseRepository<T> {
         .select();
 
       if (error) {
-
         throw error;
       }
 
@@ -223,7 +219,6 @@ export abstract class BaseRepository<T> {
       const { data: updated, error } = await query.select();
 
       if (error) {
-
         throw error;
       }
 
@@ -239,7 +234,6 @@ export abstract class BaseRepository<T> {
       const { error } = await this.supabase.from(this.tableName).delete().eq("id", id);
 
       if (error) {
-
         throw error;
       }
 
@@ -263,7 +257,6 @@ export abstract class BaseRepository<T> {
       const { data, error } = await query.select();
 
       if (error) {
-
         throw error;
       }
 
@@ -289,7 +282,6 @@ export abstract class BaseRepository<T> {
       const { count, error } = await query;
 
       if (error) {
-
         throw error;
       }
 

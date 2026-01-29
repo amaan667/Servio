@@ -53,7 +53,6 @@ export async function GET(
           .single();
 
         if (orderError || !order) {
-
           return NextResponse.json({ error: "Order not found or access denied" }, { status: 404 });
         }
 

@@ -20,17 +20,16 @@ export const POST = createUnifiedHandler(
     // Business logic
     const admin = await createClient();
 
-      // Verify order exists
-      const { data: order, error: orderError } = await admin
-        .from("orders")
-        .select("id, venue_id")
-        .eq("id", body.orderId)
-        .maybeSingle();
+    // Verify order exists
+    const { data: order, error: orderError } = await admin
+      .from("orders")
+      .select("id, venue_id")
+      .eq("id", body.orderId)
+      .maybeSingle();
 
-      if (orderError || !order) {
-
-        return apiErrors.notFound("Order not found");
-      }
+    if (orderError || !order) {
+      return apiErrors.notFound("Order not found");
+    }
 
     // Insert review
     const { error: insErr } = await admin.from("reviews").insert({

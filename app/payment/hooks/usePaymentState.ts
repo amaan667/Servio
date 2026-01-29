@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { safeGetItem } from "@/app/order/utils/safeStorage";
@@ -102,12 +101,10 @@ export function usePaymentState() {
         }
       } catch (_error) {
         // Don't redirect - payment processing will handle redirect to order summary
-
       }
     } else {
       // Don't redirect if no checkout data - payment flow will handle it
       // This prevents race condition where redirect to order summary is interrupted
-
     }
   }, [router, isDemoFromUrl]);
 

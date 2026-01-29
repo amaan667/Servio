@@ -3,7 +3,7 @@
  *
  * Provides consistent error handling, logging, and correlation ID tracking
  * for all API routes.
- * 
+ *
  * @deprecated Use createUnifiedHandler from './unified-handler' instead.
  * This handler is kept for backward compatibility but will be removed in a future version.
  */
@@ -35,7 +35,6 @@ export function withApiHandler<T extends unknown[]>(
     const startTime = Date.now();
 
     try {
-
       const result = await handler(req, correlationId, ...args);
 
       const duration = Date.now() - startTime;
@@ -164,6 +163,5 @@ export function handleAuthError(error: unknown, correlationId?: string) {
  * Rate limiting error handler with retry information
  */
 export function handleRateLimitError(retryAfter: number, correlationId?: string) {
-
   return apiErrors.rateLimit(retryAfter, correlationId);
 }

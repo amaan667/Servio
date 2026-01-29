@@ -102,7 +102,7 @@ export async function runStripeReconcile({
 
       if (event.type === "checkout.session.completed") {
         const session = event.data.object as Stripe.Checkout.Session;
-        if (session.mode === 'payment') {
+        if (session.mode === "payment") {
           await stripeService.handleOrderPaymentSucceeded(session);
         } else {
           await stripeService.processSubscriptionEvent(event);
@@ -113,11 +113,14 @@ export async function runStripeReconcile({
 
       await stripeService.finalizeWebhookEvent(ev.event_id, "succeeded");
       replayed.push(ev.event_id);
-
     } catch (err) {
       const message = err instanceof Error ? err.message : "Unknown error";
       const stack = err instanceof Error ? err.stack : undefined;
-      await stripeService.finalizeWebhookEvent(ev.event_id, "failed", err instanceof Error ? err : new Error(message));
+      await stripeService.finalizeWebhookEvent(
+        ev.event_id,
+        "failed",
+        err instanceof Error ? err : new Error(message)
+      );
       failed.push({ eventId: ev.event_id, message });
 
       trackError(err, {

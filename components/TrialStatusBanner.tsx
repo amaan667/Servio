@@ -146,7 +146,6 @@ export default function TrialStatusBanner({ userRole }: TrialStatusBannerProps) 
       }
 
       if (organization) {
-
         // Organization exists - use its actual trial_ends_at from database
         processTrialStatus({
           subscription_status: organization.subscription_status,

@@ -6,7 +6,6 @@ import { createKDSTicketsWithAI } from "@/lib/orders/kds-tickets-unified";
 export default async function KDSPage({ params }: { params: { venueId: string } }) {
   const { venueId } = params;
 
-   
   console.log("[KDS-PAGE] KDS page loading", {
     venueId,
     timestamp: new Date().toISOString(),
@@ -15,7 +14,6 @@ export default async function KDSPage({ params }: { params: { venueId: string } 
   // Auth from middleware only (no per-page RPC) - consistent with all other pages
   const auth = await requirePageAuth(venueId).catch(() => null);
 
-   
   console.log("[KDS-PAGE] Auth context from headers", {
     hasAuth: !!auth,
     userId: auth?.user?.id,
@@ -65,8 +63,9 @@ export default async function KDSPage({ params }: { params: { venueId: string } 
         .eq("completion_status", "OPEN") // Only backfill OPEN orders - completed orders don't need tickets
         .order("created_at", { ascending: false });
 
-      if (ordersError) { /* Condition handled */ } else if (allOrders && allOrders.length > 0) {
-
+      if (ordersError) {
+        /* Condition handled */
+      } else if (allOrders && allOrders.length > 0) {
         // Step 2: Get all existing ticket order IDs for this venue
         const { data: existingTicketOrders } = await supabase
           .from("kds_tickets")
@@ -81,14 +80,12 @@ export default async function KDSPage({ params }: { params: { venueId: string } 
         const ordersWithoutTickets = allOrders.filter((order) => !existingOrderIds.has(order.id));
 
         if (ordersWithoutTickets.length > 0) {
-
           // Create tickets for each order
           let successCount = 0;
           let failCount = 0;
 
           for (const order of ordersWithoutTickets) {
             if (!order || !Array.isArray(order.items) || order.items.length === 0) {
-
               continue;
             }
 
@@ -102,17 +99,17 @@ export default async function KDSPage({ params }: { params: { venueId: string } 
                 table_id: order.table_id,
               });
               successCount++;
-
             } catch (error) {
               failCount++;
-
             }
           }
-
-        } else { /* Else case handled */ }
-      } else { /* Else case handled */ }
+        } else {
+          /* Else case handled */
+        }
+      } else {
+        /* Else case handled */
+      }
     } catch (backfillError) {
-
       // Continue - backfill is non-critical, client-side will handle it
     }
 
@@ -141,10 +138,13 @@ export default async function KDSPage({ params }: { params: { venueId: string } 
       .neq("status", "bumped") // Exclude bumped tickets - they move to Live Orders
       .order("created_at", { ascending: true });
 
-    if (ticketsError) { /* Condition handled */ } else if (tickets) {
+    if (ticketsError) {
+      /* Condition handled */
+    } else if (tickets) {
       initialTickets = tickets;
-
-    } else { /* Else case handled */ }
+    } else {
+      /* Else case handled */
+    }
   } catch {
     // Continue without initial data - client will load it
   }

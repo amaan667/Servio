@@ -54,7 +54,6 @@ export const POST = withUnifiedAuth(async (req: NextRequest, context) => {
       .single();
 
     if (checkError || !orderCheck) {
-
       return apiErrors.notFound("Order not found");
     }
 
@@ -83,7 +82,6 @@ export const POST = withUnifiedAuth(async (req: NextRequest, context) => {
       .single();
 
     if (updateError || !updatedOrder) {
-
       return apiErrors.database(
         "Failed to update payment status",
         isDevelopment() ? updateError?.message : undefined
@@ -93,7 +91,6 @@ export const POST = withUnifiedAuth(async (req: NextRequest, context) => {
     // STEP 5: Return success response
     return success({ order: updatedOrder });
   } catch (error) {
-
     if (isZodError(error)) {
       return handleZodError(error);
     }
@@ -166,13 +163,11 @@ export const GET = withUnifiedAuth(async (req: NextRequest, context) => {
     const { data: orders, error } = await query;
 
     if (error) {
-
       return apiErrors.database(error.message || "Internal server error");
     }
 
     return success({ orders: orders || [] });
   } catch (error) {
-
     if (isZodError(error)) {
       return handleZodError(error);
     }

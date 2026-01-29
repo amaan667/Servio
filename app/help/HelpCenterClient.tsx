@@ -323,7 +323,9 @@ export function HelpCenterClient() {
         }
 
         setVenueId(foundVenueId);
-      } catch (error) { /* Error handled silently */ } finally {
+      } catch (error) {
+        /* Error handled silently */
+      } finally {
         setIsLoading(false);
       }
     };

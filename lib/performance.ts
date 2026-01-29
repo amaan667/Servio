@@ -93,10 +93,14 @@ function recordMetric(operation: string, duration: number, metadata?: Record<str
     SLOW_THRESHOLDS[operationType as keyof typeof SLOW_THRESHOLDS] || SLOW_THRESHOLDS.default;
 
   // Alert if slow
-  if (duration > threshold) { /* Condition handled */ }
+  if (duration > threshold) {
+    /* Condition handled */
+  }
 
   // Log all operations in development for debugging
-  if (process.env.NODE_ENV === "development") { /* Condition handled */ }
+  if (process.env.NODE_ENV === "development") {
+    /* Condition handled */
+  }
 }
 
 /**
@@ -173,5 +177,4 @@ export async function exportMetrics(serviceName: string = "sentry") {
   }
 
   // Could also send to DataDog, New Relic, etc.
-
 }

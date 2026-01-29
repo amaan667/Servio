@@ -75,7 +75,6 @@ export async function POST(req: NextRequest) {
         .single();
 
       if (tableError || !newTable) {
-
         return apiErrors.internal("Failed to create table");
       }
       tableId = newTable.id;
@@ -128,7 +127,6 @@ export async function POST(req: NextRequest) {
         .single();
 
       if (orderError || !order) {
-
         return apiErrors.internal("Failed to create order");
       }
 

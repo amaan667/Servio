@@ -51,21 +51,22 @@ import { revalidatePath } from "next/cache";
 import { withUnifiedAuth } from "@/lib/auth/unified-auth";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import { isDevelopment } from "@/lib/env";
+import { normalizeVenueId } from "@/lib/utils/venueId";
 
 /**
  * Get MIME type from file extension
  */
 function getMimeTypeFromExtension(filename: string): string {
-  const ext = filename.toLowerCase().split('.').pop();
+  const ext = filename.toLowerCase().split(".").pop();
   const mimeTypes: Record<string, string> = {
-    'pdf': 'application/pdf',
-    'png': 'image/png',
-    'jpg': 'image/jpeg',
-    'jpeg': 'image/jpeg',
-    'webp': 'image/webp',
-    'heic': 'image/heic'
+    pdf: "application/pdf",
+    png: "image/png",
+    jpg: "image/jpeg",
+    jpeg: "image/jpeg",
+    webp: "image/webp",
+    heic: "image/heic",
   };
-  return mimeTypes[ext || ''] || 'application/octet-stream';
+  return mimeTypes[ext || ""] || "application/octet-stream";
 }
 
 /**
@@ -87,8 +88,8 @@ async function mergeItemsIntelligently(
   for (const newItem of newItems) {
     // Check if this new item matches any existing item
     const existingFormatted = existingItems
-      .filter(item => !processedExistingNames.has(item.name))
-      .map(item => ({
+      .filter((item) => !processedExistingNames.has(item.name))
+      .map((item) => ({
         name: item.name,
         description: item.description,
         price: item.price,
@@ -96,14 +97,21 @@ async function mergeItemsIntelligently(
         image_url: item.image_url,
         allergens: item.allergens || [],
         dietary: item.dietary || [],
-        spiceLevel: item.spice_level === 1 ? "mild" : item.spice_level === 2 ? "medium" : item.spice_level === 3 ? "hot" : null,
+        spiceLevel:
+          item.spice_level === 1
+            ? "mild"
+            : item.spice_level === 2
+              ? "medium"
+              : item.spice_level === 3
+                ? "hot"
+                : null,
       }));
 
     const matchResult = findBestMatch(newItem, existingFormatted as ExtractedMenuItem[]);
 
     if (matchResult && matchResult.confidence >= 0.7) {
       // Found a match - enhance the existing item with better data from new item
-      const existingIndex = resultItems.findIndex(item => item.name === matchResult.item.name);
+      const existingIndex = resultItems.findIndex((item) => item.name === matchResult.item.name);
       if (existingIndex !== -1) {
         const existingItem = resultItems[existingIndex]!;
         processedExistingNames.add(existingItem.name);
@@ -112,18 +120,34 @@ async function mergeItemsIntelligently(
         resultItems[existingIndex] = {
           ...existingItem,
           // Prefer new data if it's better/more complete
-          description: newItem.description && (!existingItem.description || existingItem.description.length < newItem.description.length)
-            ? newItem.description
-            : existingItem.description,
-          price: newItem.price !== undefined && newItem.price > 0 ? newItem.price : existingItem.price,
-          category: newItem.category && newItem.category !== "Menu Items" ? newItem.category : existingItem.category,
+          description:
+            newItem.description &&
+            (!existingItem.description ||
+              existingItem.description.length < newItem.description.length)
+              ? newItem.description
+              : existingItem.description,
+          price:
+            newItem.price !== undefined && newItem.price > 0 ? newItem.price : existingItem.price,
+          category:
+            newItem.category && newItem.category !== "Menu Items"
+              ? newItem.category
+              : existingItem.category,
           // Always prefer new images (they're usually better quality)
           image_url: newItem.image_url || existingItem.image_url,
           // Merge arrays intelligently
-          allergens: [...new Set([...(existingItem.allergens || []), ...(newItem.allergens || [])])],
+          allergens: [
+            ...new Set([...(existingItem.allergens || []), ...(newItem.allergens || [])]),
+          ],
           dietary: [...new Set([...(existingItem.dietary || []), ...(newItem.dietary || [])])],
           // Prefer spice level if new item has it
-          spice_level: newItem.spiceLevel === "mild" ? 1 : newItem.spiceLevel === "medium" ? 2 : newItem.spiceLevel === "hot" ? 3 : existingItem.spice_level,
+          spice_level:
+            newItem.spiceLevel === "mild"
+              ? 1
+              : newItem.spiceLevel === "medium"
+                ? 2
+                : newItem.spiceLevel === "hot"
+                  ? 3
+                  : existingItem.spice_level,
           spiceLevel: newItem.spiceLevel || existingItem.spiceLevel,
           // Mark as enhanced
           source: "enhanced_existing",
@@ -142,7 +166,14 @@ async function mergeItemsIntelligently(
         image_url: newItem.image_url || null,
         allergens: newItem.allergens || [],
         dietary: newItem.dietary || [],
-        spice_level: newItem.spiceLevel === "mild" ? 1 : newItem.spiceLevel === "medium" ? 2 : newItem.spiceLevel === "hot" ? 3 : null,
+        spice_level:
+          newItem.spiceLevel === "mild"
+            ? 1
+            : newItem.spiceLevel === "medium"
+              ? 2
+              : newItem.spiceLevel === "hot"
+                ? 3
+                : null,
         is_available: true,
         position: 0, // Will be sorted later
         created_at: new Date().toISOString(),
@@ -198,8 +229,7 @@ export const POST = withUnifiedAuth(
       const venueId = context.venueId;
       const user = context.user;
 
-      // Normalize venueId format immediately
-      normalizedVenueId = venueId.startsWith("venue-") ? venueId : `venue-${venueId}`;
+      normalizedVenueId = normalizeVenueId(venueId) ?? venueId;
 
       const formData = await req.formData();
       const file = formData.get("file") as File | null;
@@ -218,7 +248,6 @@ export const POST = withUnifiedAuth(
       }
 
       if (!venueId || !normalizedVenueId) {
-
         return apiErrors.badRequest("venue_id required");
       }
 
@@ -236,21 +265,20 @@ export const POST = withUnifiedAuth(
         const mimeType = file.type || getMimeTypeFromExtension(file.name);
 
         try {
-          if (mimeType === 'application/pdf') {
+          if (mimeType === "application/pdf") {
             // Convert PDF to images
             const { convertPDFToImages } = await import("@/lib/pdf-to-images-serverless");
             pdfImages = await convertPDFToImages(fileBuffer);
-          } else if (mimeType.startsWith('image/')) {
+          } else if (mimeType.startsWith("image/")) {
             // Convert image to base64 data URL for processing
-            const base64 = fileBuffer.toString('base64');
+            const base64 = fileBuffer.toString("base64");
             const dataUrl = `data:${mimeType};base64,${base64}`;
             pdfImages = [dataUrl];
           } else {
             throw new Error(`Unsupported file type: ${mimeType}`);
           }
-
         } catch (conversionError) {
-          const fileType = mimeType === 'application/pdf' ? 'PDF' : 'image';
+          const fileType = mimeType === "application/pdf" ? "PDF" : "image";
           throw new Error(`${fileType} processing failed. Please check file format and try again.`);
         }
 
@@ -264,23 +292,24 @@ export const POST = withUnifiedAuth(
             created_at: new Date().toISOString(),
           });
 
-          if (uploadError) { /* Condition handled */ }
-        } catch { /* Error handled silently */ }
+          if (uploadError) {
+            /* Condition handled */
+          }
+        } catch {
+          /* Error handled silently */
+        }
       }
 
       // Step 2: Hybrid Extraction (handles all 3 modes automatically)
 
       let extractionResult;
       try {
-
         extractionResult = await extractMenuHybrid({
           pdfImages,
           websiteUrl: menuUrl || undefined,
           venueId: normalizedVenueId,
         });
-
       } catch (extractionError) {
-
         throw extractionError;
       }
 
@@ -374,14 +403,15 @@ export const POST = withUnifiedAuth(
           }
 
           if (newCategory) {
-
             item.category = newCategory;
             recategorizedCount++;
           }
         }
       }
 
-      if (recategorizedCount > 0) { /* Condition handled */ }
+      if (recategorizedCount > 0) {
+        /* Condition handled */
+      }
 
       // Step 3: Replace or Append mode
       let existingItems: DatabaseMenuItem[] = [];
@@ -454,27 +484,30 @@ export const POST = withUnifiedAuth(
         });
       } else {
         // Append mode: intelligently merge existing items with newly extracted items
-        finalItems = await mergeItemsIntelligently(existingItems, extractionResult.items, normalizedVenueId);
+        finalItems = await mergeItemsIntelligently(
+          existingItems,
+          extractionResult.items,
+          normalizedVenueId
+        );
       }
 
       // Step 5: Insert into database
 
       if (finalItems.length > 0) {
-
         const { data, error: insertItemsError } = await supabase
           .from("menu_items")
           .upsert(finalItems, {
             onConflict: "id",
-            ignoreDuplicates: false
+            ignoreDuplicates: false,
           })
           .select();
 
         if (insertItemsError) {
-
           throw new Error(`Failed to insert items: ${insertItemsError.message}`);
         }
-
-      } else { /* Else case handled */ }
+      } else {
+        /* Else case handled */
+      }
 
       const duration = Date.now() - startTime;
 
@@ -489,8 +522,9 @@ export const POST = withUnifiedAuth(
         // Revalidate menu pages
         revalidatePath(`/menu/${normalizedVenueId}`, "page");
         revalidatePath(`/order/${normalizedVenueId}`, "page");
-
-      } catch (revalidateError) { /* Error handled silently */ }
+      } catch (revalidateError) {
+        /* Error handled silently */
+      }
 
       // STEP 7: Return success response
       return NextResponse.json({
@@ -551,21 +585,14 @@ export const POST = withUnifiedAuth(
             venueId =
               (formData.get("venue_id") as string) || (formData.get("venueId") as string) || null;
           } catch (formDataError) {
-
             // venueId remains null - will need to be extracted in main handler
           }
         }
 
-        // Ensure extracted venueId is normalized before returning
-        const normalized = venueId
-          ? venueId.startsWith("venue-")
-            ? venueId
-            : `venue-${venueId}`
-          : null;
+        const normalized = normalizeVenueId(venueId);
 
         return normalized;
       } catch (error) {
-
         return null;
       }
     },

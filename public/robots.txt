@@ -16,7 +16,6 @@ Disallow: /dashboard/
 Disallow: /settings/
 Disallow: /onboarding/
 Disallow: /kitchen/
-Disallow: /pos/
 Disallow: /staff/
 Disallow: /menu-builder/
 Disallow: /complete-profile/

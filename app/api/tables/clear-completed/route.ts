@@ -12,16 +12,17 @@ export const dynamic = "force-dynamic";
  * Clear tables for all completed/cancelled orders
  * Call: POST /api/tables/clear-completed
  */
-export const POST = createUnifiedHandler(async (_req: NextRequest, context) => {
-  // Get venueId from context
-  const venueId = context.venueId;
+export const POST = createUnifiedHandler(
+  async (_req: NextRequest, context) => {
+    // Get venueId from context
+    const venueId = context.venueId;
 
-  if (!venueId) {
-    return apiErrors.badRequest("venue_id is required");
-  }
+    if (!venueId) {
+      return apiErrors.badRequest("venue_id is required");
+    }
 
-  // Business logic - Find completed orders and clear their table sessions
-  const supabase = createAdminClient();
+    // Business logic - Find completed orders and clear their table sessions
+    const supabase = createAdminClient();
 
     // Find all orders that are completed or cancelled and have a table
     const { data: completedOrders, error: ordersError } = await supabase

@@ -55,7 +55,6 @@ export const POST = withUnifiedAuth(
         .maybeSingle();
 
       if (!venueAccess && !staffAccess) {
-
         return apiErrors.forbidden("Insufficient permissions");
       }
 
@@ -77,7 +76,6 @@ export const POST = withUnifiedAuth(
             "Staff invitation system not set up. Please run the database migration first."
           );
         } else {
-
           return apiErrors.database("Database error. Please try again.");
         }
       }
@@ -91,7 +89,6 @@ export const POST = withUnifiedAuth(
         .single();
 
       if (fetchInvitationError) {
-
         return apiErrors.notFound("Invitation not found");
       }
 
@@ -110,7 +107,6 @@ export const POST = withUnifiedAuth(
         .eq("id", body.id);
 
       if (updateError) {
-
         return apiErrors.database(
           "Failed to cancel invitation",
           isDevelopment() ? updateError.message : undefined
@@ -122,7 +118,6 @@ export const POST = withUnifiedAuth(
         message: "Invitation cancelled successfully",
       });
     } catch (error) {
-
       if (isZodError(error)) {
         return handleZodError(error);
       }

@@ -94,7 +94,6 @@ export const POST = withUnifiedAuth(
         paymentIntentId: paymentIntent.id,
       });
     } catch (error) {
-
       if (isZodError(error)) {
         return handleZodError(error);
       }

@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 import { supabaseBrowser as createClient } from "@/lib/supabase";
 import QuestionsClient from "@/app/dashboard/[venueId]/feedback/QuestionsClient";
+import { normalizeVenueId } from "@/lib/utils/venueId";
 
 interface Feedback {
   id: string;
@@ -59,16 +60,13 @@ interface FeedbackSystemProps {
   initialQuestions?: FeedbackQuestion[];
 }
 
-export function EnhancedFeedbackSystem({
-  venueId,
-  initialQuestions = [],
-}: FeedbackSystemProps) {
+export function EnhancedFeedbackSystem({ venueId, initialQuestions = [] }: FeedbackSystemProps) {
   const [feedback, setFeedback] = useState<Feedback[]>([]);
   const [stats, setStats] = useState<FeedbackStats | null>(null);
   const [questions, setQuestions] = useState<FeedbackQuestion[]>(initialQuestions);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<"overview" | "feedback" | "create">("overview");
-  
+
   // Use initialQuestions if available, otherwise use state (prevents flash)
   const displayQuestions = useMemo(() => {
     return questions.length > 0 ? questions : initialQuestions;
@@ -83,7 +81,7 @@ export function EnhancedFeedbackSystem({
 
   const fetchQuestions = useCallback(async () => {
     try {
-      const normalizedVenueId = venueId.startsWith("venue-") ? venueId : `venue-${venueId}`;
+      const normalizedVenueId = normalizeVenueId(venueId) ?? venueId;
       const response = await fetch(`/api/feedback/questions?venueId=${normalizedVenueId}`, {
         credentials: "include",
       });
@@ -211,11 +209,13 @@ export function EnhancedFeedbackSystem({
     };
     feedbackData.forEach((f) => {
       const category = f.category || "General";
-      if (!categoryStats[category]) {
-        categoryStats[category] = { count: 0, totalRating: 0 };
+      let entry = categoryStats[category];
+      if (!entry) {
+        entry = { count: 0, totalRating: 0 };
+        categoryStats[category] = entry;
       }
-      categoryStats[category].count++;
-      categoryStats[category].totalRating += f.rating;
+      entry.count++;
+      entry.totalRating += f.rating;
     });
 
     const topCategories = Object.entries(categoryStats)
@@ -227,7 +227,6 @@ export function EnhancedFeedbackSystem({
       .sort((a, b) => b.count - a.count)
       .slice(0, 5);
 
-    // Rating distribution
     const ratingCounts: Record<number, number> = {
       /* Empty */
     };
@@ -298,7 +297,7 @@ export function EnhancedFeedbackSystem({
   // Only fetch feedback when the feedback tab is active
   useEffect(() => {
     if (activeTab === "feedback") {
-    fetchFeedback();
+      fetchFeedback();
     }
   }, [activeTab, fetchFeedback]);
 

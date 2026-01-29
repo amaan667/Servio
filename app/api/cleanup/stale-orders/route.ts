@@ -49,7 +49,6 @@ export async function POST(req: NextRequest) {
     const { data: staleOrders, error: fetchError } = await staleOrdersQuery;
 
     if (fetchError) {
-
       return apiErrors.internal("Failed to fetch orders");
     }
 
@@ -73,7 +72,6 @@ export async function POST(req: NextRequest) {
       .in("id", orderIds);
 
     if (updateError) {
-
       return apiErrors.internal("Failed to update orders");
     }
 
@@ -104,7 +102,9 @@ export async function POST(req: NextRequest) {
     cleanupResults.forEach((result) => {
       if (result.status === "fulfilled" && result.value.success) {
         successfulCleanups++;
-      } else { /* Else case handled */ }
+      } else {
+        /* Else case handled */
+      }
     });
 
     return NextResponse.json({
@@ -123,7 +123,6 @@ export async function POST(req: NextRequest) {
       })),
     });
   } catch (_error) {
-
     return apiErrors.internal("Internal server error");
   }
 }

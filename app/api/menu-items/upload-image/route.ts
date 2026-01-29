@@ -63,7 +63,9 @@ export async function POST(req: NextRequest) {
       if (!hasBucket) {
         await supabase.storage.createBucket("menu-images", { public: true });
       }
-    } catch (bucketError) { /* Error handled silently */ }
+    } catch (bucketError) {
+      /* Error handled silently */
+    }
 
     // Get file extension
     const fileName = file.name || "image";
@@ -83,7 +85,6 @@ export async function POST(req: NextRequest) {
       });
 
     if (uploadError) {
-
       return apiErrors.internal("Failed to upload image");
     }
 
@@ -99,13 +100,11 @@ export async function POST(req: NextRequest) {
       .eq("id", itemId);
 
     if (updateError) {
-
       return apiErrors.internal("Failed to update menu item");
     }
 
     return NextResponse.json({ imageUrl: publicUrl });
   } catch (error) {
-
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "Internal server error" },
       { status: 500 }

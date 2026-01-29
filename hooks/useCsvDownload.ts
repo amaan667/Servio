@@ -29,7 +29,6 @@ export function downloadCSV({ filename, csv }: CsvDownloadOptions): void {
   try {
     // Validate inputs
     if (!filename || !csv) {
-
       return;
     }
 
@@ -58,7 +57,6 @@ export function downloadCSV({ filename, csv }: CsvDownloadOptions): void {
     // Clean up the URL object
     URL.revokeObjectURL(url);
   } catch (_error) {
-
     // Fallback: try to open in new window (may not work in all browsers)
     try {
       const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
@@ -66,7 +64,9 @@ export function downloadCSV({ filename, csv }: CsvDownloadOptions): void {
       window.open(url, "_blank");
       // Note: We don't revoke this URL immediately as the new window might need it
       // It will be garbage collected when the window closes
-    } catch (fallbackError) { /* Error handled silently */ }
+    } catch (fallbackError) {
+      /* Error handled silently */
+    }
   }
 }
 

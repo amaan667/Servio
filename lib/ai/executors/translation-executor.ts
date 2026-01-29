@@ -1320,7 +1320,9 @@ OUTPUT FORMAT:
           },
         };
       }
-    } catch (_error) { /* Error handled silently */ }
+    } catch (_error) {
+      /* Error handled silently */
+    }
 
     return {
       toolName: "menu.translate",
@@ -1442,13 +1444,11 @@ OUTPUT FORMAT:
             retryCount++;
           }
         } catch (batchError) {
-
           retryCount++;
         }
       }
 
       if (!batchTranslated) {
-
         const fallbackItems = batch.map((item) => ({
           id: item.id,
           name: item.name,
@@ -1528,7 +1528,6 @@ OUTPUT FORMAT:
       const { revalidatePath } = await import("next/cache");
       revalidatePath(`/dashboard/${venueId}/menu-management`, "page");
     } catch (revalidateError) {
-
       // Don't fail the whole operation if revalidation fails
     }
 
@@ -1548,7 +1547,6 @@ OUTPUT FORMAT:
       auditId: "",
     };
   } catch (_error) {
-
     const errorDetails =
       _error instanceof Error
         ? { message: _error.message, stack: _error.stack }

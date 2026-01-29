@@ -171,7 +171,7 @@ export function buildRevenueByCategory(params: {
   }));
 }
 
-export function useAnalyticsData(venueId: string) {
+export function useDashboardAnalyticsData(venueId: string) {
   // Always start without cached analytics data to avoid stale charts on first load
   // We still write to sessionStorage for potential future use, but we don't read from it
   const [data, setData] = useState<AnalyticsData | null>(null);
@@ -209,7 +209,6 @@ export function useAnalyticsData(venueId: string) {
         .order("created_at", { ascending: true });
 
       if (ordersError) {
-
         throw ordersError;
       }
 
@@ -247,14 +246,18 @@ export function useAnalyticsData(venueId: string) {
         .select("id, category_id")
         .eq("venue_id", venueId);
 
-      if (menuItemsError) { /* Condition handled */ }
+      if (menuItemsError) {
+        /* Condition handled */
+      }
 
       const { data: menuCategories, error: categoriesError } = await supabase
         .from("menu_categories")
         .select("id, name")
         .eq("venue_id", venueId);
 
-      if (categoriesError) { /* Condition handled */ }
+      if (categoriesError) {
+        /* Condition handled */
+      }
 
       const revenueByCategory = buildRevenueByCategory({
         orders: (todayOrders || []) as UnknownRecord[],
@@ -445,9 +448,7 @@ export function useAnalyticsData(venueId: string) {
         .subscribe((status: string) => {
           if (status === "SUBSCRIBED") {
             channelRef.current = channel;
-
           } else if (status === "CHANNEL_ERROR" || status === "TIMED_OUT") {
-
             // Clear any existing reconnect timeout
             if (reconnectTimeoutRef.current) {
               clearTimeout(reconnectTimeoutRef.current);

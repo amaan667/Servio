@@ -35,7 +35,6 @@ export async function GET(request: NextRequest) {
       },
     });
   } catch (error) {
-
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "Failed to get job status" },
       { status: 500 }

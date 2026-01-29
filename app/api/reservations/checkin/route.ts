@@ -66,7 +66,6 @@ export const POST = withUnifiedAuth(async (req: NextRequest, context) => {
       .single();
 
     if (updateError) {
-
       return NextResponse.json(
         {
           ok: false,
@@ -90,7 +89,6 @@ export const POST = withUnifiedAuth(async (req: NextRequest, context) => {
     );
 
     if (tableError) {
-
       // Don't fail the request, just log the error
     }
 
@@ -99,7 +97,6 @@ export const POST = withUnifiedAuth(async (req: NextRequest, context) => {
       reservation: updatedReservation,
     });
   } catch (_error) {
-
     return NextResponse.json(
       {
         ok: false,

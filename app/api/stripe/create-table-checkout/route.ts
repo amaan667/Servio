@@ -64,7 +64,6 @@ export async function POST(req: Request) {
       sessionId: session.id,
     });
   } catch (_error) {
-
     return apiErrors.internal("Failed to create checkout session");
   }
 }

@@ -35,10 +35,10 @@ export const POST = createUnifiedHandler(
   async (_req: NextRequest, context) => {
     const { body, venueId } = context;
 
-      // Verify venue_id matches context
-      if (body.venueId !== venueId) {
-        return apiErrors.forbidden("Venue ID mismatch");
-      }
+    // Verify venue_id matches context
+    if (body.venueId !== venueId) {
+      return apiErrors.forbidden("Venue ID mismatch");
+    }
 
     // Business logic - Store cart data
     const cartData = {
@@ -69,7 +69,10 @@ export const POST = createUnifiedHandler(
     rateLimit: RATE_LIMITS.GENERAL,
     extractVenueId: async (req) => {
       try {
-        const body = await req.clone().json().catch(() => ({}));
+        const body = await req
+          .clone()
+          .json()
+          .catch(() => ({}));
         return (
           (body as { venueId?: string; venue_id?: string })?.venueId ||
           (body as { venueId?: string; venue_id?: string })?.venue_id ||

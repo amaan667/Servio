@@ -48,7 +48,6 @@ export async function POST(req: NextRequest, context: ReservationParams = {}) {
           .single();
 
         if (reservationError || !reservation) {
-
           return apiErrors.notFound("Reservation not found");
         }
 
@@ -59,7 +58,6 @@ export async function POST(req: NextRequest, context: ReservationParams = {}) {
         });
 
         if (error) {
-
           return apiErrors.badRequest(error.message || "Failed to assign reservation");
         }
 
@@ -68,7 +66,6 @@ export async function POST(req: NextRequest, context: ReservationParams = {}) {
           message: "Reservation assigned successfully",
         });
       } catch (error) {
-
         if (isZodError(error)) {
           return handleZodError(error);
         }

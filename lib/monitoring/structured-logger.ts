@@ -33,7 +33,12 @@ export interface StructuredLog {
 }
 
 class StructuredLogger {
-  private formatLog(level: LogLevel, message: string, context?: LogContext, error?: Error): StructuredLog {
+  private formatLog(
+    level: LogLevel,
+    message: string,
+    context?: LogContext,
+    error?: Error
+  ): StructuredLog {
     const log: StructuredLog = {
       timestamp: new Date().toISOString(),
       level,
@@ -84,19 +89,17 @@ class StructuredLogger {
       };
 
       const color = colors[log.level] || colors.reset;
-       
+
       console.log(`${color}[${log.level.toUpperCase()}]${colors.reset} ${log.message}`);
       if (log.context) {
-         
         console.log("  Context:", log.context);
       }
       if (log.error) {
-         
         console.error("  Error:", log.error);
       }
     } else {
       // Production: structured JSON logging
-       
+
       console.log(jsonLog);
     }
   }
@@ -124,12 +127,7 @@ class StructuredLogger {
   /**
    * Log API request
    */
-  logRequest(
-    method: string,
-    path: string,
-    context?: LogContext,
-    duration?: number
-  ): void {
+  logRequest(method: string, path: string, context?: LogContext, duration?: number): void {
     this.info(`${method} ${path}`, {
       ...context,
       duration,
@@ -192,13 +190,17 @@ class StructuredLogger {
     error?: Error
   ): void {
     if (error) {
-      this.error(`External ${service}.${operation} failed`, {
-        ...context,
-        service,
-        operation,
-        duration,
-        type: "external_service",
-      }, error);
+      this.error(
+        `External ${service}.${operation} failed`,
+        {
+          ...context,
+          service,
+          operation,
+          duration,
+          type: "external_service",
+        },
+        error
+      );
     } else {
       this.info(`External ${service}.${operation}`, {
         ...context,

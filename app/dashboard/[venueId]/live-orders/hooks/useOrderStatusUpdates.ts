@@ -66,4 +66,3 @@ export async function updateOrderStatus(
     // Table cleanup is handled server-side for terminal statuses
   }
 }
-

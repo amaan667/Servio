@@ -24,7 +24,9 @@ export function usePerformance() {
           performance.measure(measureName, startMark, endMark);
           const measure = performance.getEntriesByName(measureName)[0];
 
-          if (process.env.NODE_ENV === "development") { /* Condition handled */ }
+          if (process.env.NODE_ENV === "development") {
+            /* Condition handled */
+          }
 
           // Clean up marks
           performance.clearMarks(startMark);
@@ -141,7 +143,9 @@ export function withPerformanceTracking<P extends object>(
       measure.start();
       return () => {
         const duration = measure.end();
-        if (duration && duration > 100) { /* Condition handled */ }
+        if (duration && duration > 100) {
+          /* Condition handled */
+        }
       };
     }, [measureComponentRender, componentName]);
 

@@ -38,7 +38,6 @@ export async function executeMenuUpdatePrices(
     );
 
   if (fetchError) {
-
     throw new AIAssistantError("Failed to fetch menu items", "EXECUTION_FAILED", {
       error: fetchError,
     });
@@ -52,7 +51,6 @@ export async function executeMenuUpdatePrices(
   const foundIds = new Set(currentItems.map((i) => i.id));
   const missingIds = params.items.filter((i) => !foundIds.has(i.id));
   if (missingIds.length > 0) {
-
     throw new AIAssistantError(
       `Some items not found: ${missingIds.length} items do not exist`,
       "INVALID_PARAMS",
@@ -139,13 +137,10 @@ export async function executeMenuUpdatePrices(
       .select("id, name, price");
 
     if (error) {
-
       failedUpdates.push({ id: item.id, name: itemName, error: error.message });
     } else if (!data || data.length === 0) {
-
       failedUpdates.push({ id: item.id, name: itemName, error: "Item not found or access denied" });
     } else {
-
       updatedCount++;
     }
   }

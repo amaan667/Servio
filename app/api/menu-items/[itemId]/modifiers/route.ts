@@ -68,7 +68,6 @@ export async function GET(req: NextRequest, context: { params: Promise<{ itemId:
       .single();
 
     if (fetchError) {
-
       return apiErrors.database("Failed to fetch modifiers");
     }
 
@@ -165,7 +164,6 @@ export async function POST(req: NextRequest, context: { params: Promise<{ itemId
       .eq("id", itemId);
 
     if (updateError) {
-
       return apiErrors.internal("Failed to update modifiers");
     }
 
@@ -233,7 +231,6 @@ export async function DELETE(_req: NextRequest, context: { params: Promise<{ ite
       .eq("id", itemId);
 
     if (updateError) {
-
       return apiErrors.database("Failed to remove modifiers");
     }
 

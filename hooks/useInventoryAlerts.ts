@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import type { LowStockAlert } from "@/types/inventory";
 
@@ -20,7 +19,9 @@ export function useInventoryAlerts(venueId: string | null) {
         if (result.data) {
           setAlerts(result.data);
         }
-      } catch (_error) { /* Error handled silently */ } finally {
+      } catch (_error) {
+        /* Error handled silently */
+      } finally {
         setLoading(false);
       }
     };

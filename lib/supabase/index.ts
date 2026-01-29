@@ -42,7 +42,6 @@ export function getSupabaseAnonKey(): string {
   if (typeof window !== "undefined") {
     const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
     if (!key) {
-
       throw new Error(
         "NEXT_PUBLIC_SUPABASE_ANON_KEY is not set. Please check your environment variables."
       );
@@ -55,7 +54,6 @@ export function getSupabaseAnonKey(): string {
   }
   const key = env("NEXT_PUBLIC_SUPABASE_ANON_KEY");
   if (!key) {
-
     throw new Error(
       "NEXT_PUBLIC_SUPABASE_ANON_KEY is not set. Please check your environment variables."
     );
@@ -173,7 +171,9 @@ export function supabaseBrowser() {
     }
 
     // Log client creation for debugging (only in development)
-    if (process.env.NODE_ENV === "development") { /* Condition handled */ }
+    if (process.env.NODE_ENV === "development") {
+      /* Condition handled */
+    }
 
     // Double-check that anonKey is valid before creating client
     if (!anonKey || anonKey.trim().length === 0) {
@@ -322,23 +322,22 @@ export async function createServerSupabase() {
 
         return allCookies;
       },
-      setAll(
-        cookiesToSet: Array<{ name: string; value: string; options: CookieOptions }>
-      ) {
+      setAll(cookiesToSet: Array<{ name: string; value: string; options: CookieOptions }>) {
         try {
           cookiesToSet.forEach(
             ({ name, value, options }: { name: string; value: string; options: CookieOptions }) => {
-
-            cookieStore.set(name, value, {
-              ...options,
-              httpOnly: false, // Must be false for Supabase to read from client
-              sameSite: "lax",
-              secure: true, // Always use secure in production - critical for mobile Safari
-              path: "/",
-            });
-          });
-
-        } catch (error) { /* Error handled silently */ }
+              cookieStore.set(name, value, {
+                ...options,
+                httpOnly: false, // Must be false for Supabase to read from client
+                sameSite: "lax",
+                secure: true, // Always use secure in production - critical for mobile Safari
+                path: "/",
+              });
+            }
+          );
+        } catch (error) {
+          /* Error handled silently */
+        }
       },
     },
     global: {

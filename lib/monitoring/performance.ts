@@ -31,7 +31,9 @@ class PerformanceMonitor {
     }
 
     // Log slow operations
-    if (duration > 1000) { /* Condition handled */ }
+    if (duration > 1000) {
+      /* Condition handled */
+    }
   }
 
   /**
@@ -213,7 +215,9 @@ export async function reportPerformanceMetrics(): Promise<void> {
 
   // Check for performance degradation
   for (const [operation, stats] of Object.entries(summary)) {
-    if (stats.p95 > 2000) { /* Condition handled */ }
+    if (stats.p95 > 2000) {
+      /* Condition handled */
+    }
   }
 }
 

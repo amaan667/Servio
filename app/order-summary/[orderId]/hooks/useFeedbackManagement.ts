@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { createClient } from "@/lib/supabase";
 import { toast } from "@/hooks/use-toast";
+import { normalizeVenueId } from "@/lib/utils/venueId";
 
 export interface FeedbackQuestion {
   id: string;
@@ -27,8 +28,7 @@ export function useFeedbackManagement(venueId: string) {
   useEffect(() => {
     const fetchFeedbackQuestions = async () => {
       try {
-        // Normalize venueId - ensure it has venue- prefix
-        const normalizedVenueId = venueId.startsWith("venue-") ? venueId : `venue-${venueId}`;
+        const normalizedVenueId = normalizeVenueId(venueId) ?? venueId;
 
         // Use public API endpoint to get properly mapped questions
         const response = await fetch(`/api/feedback/questions/public?venueId=${normalizedVenueId}`);

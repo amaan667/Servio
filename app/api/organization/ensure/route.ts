@@ -42,7 +42,6 @@ export const POST = withUnifiedAuth(
         const { createAdminClient } = await import("@/lib/supabase");
         adminClient = createAdminClient();
       } catch (adminError) {
-
         return NextResponse.json(
           { error: "Admin client creation failed", details: String(adminError) },
           { status: 500 }
@@ -51,7 +50,6 @@ export const POST = withUnifiedAuth(
 
       // Verify SERVICE_ROLE_KEY is set
       if (!env("SUPABASE_SERVICE_ROLE_KEY")) {
-
         return NextResponse.json(
           { error: "Server configuration error: Missing SERVICE_ROLE_KEY" },
           { status: 500 }
@@ -82,7 +80,9 @@ export const POST = withUnifiedAuth(
         orgCheckError = result.error;
       }
 
-      if (orgCheckError) { /* Condition handled */ }
+      if (orgCheckError) {
+        /* Condition handled */
+      }
 
       // If organization exists, return it with no-cache headers
       if (existingOrg && !orgCheckError) {
@@ -127,7 +127,6 @@ export const POST = withUnifiedAuth(
         .single();
 
       if (createError) {
-
         return NextResponse.json(
           {
             error: "Failed to create organization",
@@ -146,7 +145,9 @@ export const POST = withUnifiedAuth(
         .eq("owner_user_id", user.id)
         .or(`organization_id.is.null,organization_id.neq.${newOrg.id}`);
 
-      if (venueLinkError) { /* Condition handled */ }
+      if (venueLinkError) {
+        /* Condition handled */
+      }
 
       // Create user_venue_roles entries (using admin client)
       const { data: userVenues } = await adminClient

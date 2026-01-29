@@ -112,7 +112,6 @@ export function EditItemModal({ item, venueId, open, onClose, onSuccess }: EditI
         }
       } catch (bucketError) {
         // Bucket might already exist or creation failed - continue anyway
-
       }
 
       const fileExt = imageFile.name.split(".").pop();
@@ -137,7 +136,6 @@ export function EditItemModal({ item, venueId, open, onClose, onSuccess }: EditI
 
       return publicUrl;
     } catch (error) {
-
       toast.error("Failed to upload image");
       return null;
     } finally {
@@ -186,7 +184,6 @@ export function EditItemModal({ item, venueId, open, onClose, onSuccess }: EditI
       onSuccess();
       onClose();
     } catch (error) {
-
       toast.error("Failed to update item");
     } finally {
       setSaving(false);

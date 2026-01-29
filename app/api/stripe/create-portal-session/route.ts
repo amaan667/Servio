@@ -47,7 +47,6 @@ export const POST = withUnifiedAuth(
         .single();
 
       if (orgError || !org) {
-
         return apiErrors.notFound("Organization not found or access denied");
       }
 
@@ -66,7 +65,6 @@ export const POST = withUnifiedAuth(
         url: portalSession.url,
       });
     } catch (error) {
-
       if (isZodError(error)) {
         return handleZodError(error);
       }

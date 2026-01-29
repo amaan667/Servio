@@ -40,7 +40,6 @@ export const POST = withUnifiedAuth(
 
       // Verify venue matches context (double-check for security)
       if (body.venue_id && body.venue_id !== context.venueId) {
-
         return apiErrors.forbidden("Order does not belong to your venue");
       }
 
@@ -55,7 +54,6 @@ export const POST = withUnifiedAuth(
       });
 
       if (error) {
-
         return apiErrors.database(
           "Failed to deduct stock for order",
           isDevelopment() ? error.message : undefined
@@ -65,7 +63,6 @@ export const POST = withUnifiedAuth(
       // STEP 4: Return success response
       return success({ data: data || null });
     } catch (error) {
-
       if (isZodError(error)) {
         return handleZodError(error);
       }

@@ -119,7 +119,6 @@ export const POST = withUnifiedAuth(
         "message" in error &&
         error.message !== "exec_sql not available"
       ) {
-
         return NextResponse.json(
           {
             success: false,

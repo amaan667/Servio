@@ -64,11 +64,17 @@ export default function KDSClient({
   role,
 }: KDSClientProps) {
   // Log immediately in browser console when component mounts
-   
-  console.log("%c[KDS-CLIENT] ========== COMPONENT MOUNTED ==========", "color: #ef4444; font-weight: bold; font-size: 16px;");
-   
-  console.log("%c[KDS-CLIENT] Auth Info Received from Server", "color: #ef4444; font-weight: bold;");
-   
+
+  console.log(
+    "%c[KDS-CLIENT] ========== COMPONENT MOUNTED ==========",
+    "color: #ef4444; font-weight: bold; font-size: 16px;"
+  );
+
+  console.log(
+    "%c[KDS-CLIENT] Auth Info Received from Server",
+    "color: #ef4444; font-weight: bold;"
+  );
+
   console.log({
     venueId,
     kdsTier,
@@ -78,9 +84,9 @@ export default function KDSClient({
     hasInitialStations: !!initialStations,
     timestamp: new Date().toISOString(),
   });
-   
+
   console.log("%c[KDS-CLIENT] Full Props", "color: #ef4444; font-weight: bold;");
-   
+
   console.log({ venueId, initialTickets, initialStations, kdsTier, tier, role });
   // Cache KDS stations to prevent flicker
   const getCachedStations = () => {
@@ -116,12 +122,12 @@ export default function KDSClient({
     "connected" | "connecting" | "disconnected" | "error"
   >("connecting");
   const [reconnectAttempts, setReconnectAttempts] = useState(0);
-  
+
   // Throttle fetch requests to prevent rate limiting
   const lastFetchRef = React.useRef<number>(0);
   const minFetchInterval = 3000; // Minimum 3 seconds between fetches
   const selectedStationRef = React.useRef<string | null>(selectedStation);
-  
+
   // Keep ref in sync with state
   React.useEffect(() => {
     selectedStationRef.current = selectedStation;
@@ -130,7 +136,6 @@ export default function KDSClient({
   // Fetch stations
   const fetchStations = async () => {
     try {
-       
       console.log("[KDS-CLIENT] Fetching stations", {
         venueId,
         timestamp: new Date().toISOString(),
@@ -138,8 +143,7 @@ export default function KDSClient({
 
       const { apiClient } = await import("@/lib/api-client");
       const response = await apiClient.get("/api/kds/stations", { params: { venueId } });
-      
-       
+
       console.log("[KDS-CLIENT] Stations response", {
         status: response.status,
         statusText: response.statusText,
@@ -148,7 +152,6 @@ export default function KDSClient({
 
       const data = await response.json();
 
-       
       console.log("[KDS-CLIENT] Stations data", {
         success: data.success,
         hasStations: !!data.data?.stations,
@@ -170,7 +173,6 @@ export default function KDSClient({
           }
         }
       } else {
-         
         console.error("[KDS-CLIENT] Failed to load stations", {
           error: data.error,
           message: data.error?.message,
@@ -178,7 +180,6 @@ export default function KDSClient({
         setError(data.error?.message || "Failed to load stations");
       }
     } catch (error) {
-       
       console.error("[KDS-CLIENT] Exception fetching stations", {
         error: error instanceof Error ? error.message : String(error),
         stack: error instanceof Error ? error.stack : undefined,
@@ -191,22 +192,20 @@ export default function KDSClient({
   const fetchTickets = async () => {
     const now = Date.now();
     const timeSinceLastFetch = now - lastFetchRef.current;
-    
+
     if (timeSinceLastFetch < minFetchInterval) {
-       
       console.log("[KDS-CLIENT] Fetch throttled", {
         timeSinceLastFetch,
         minInterval: minFetchInterval,
       });
       return;
     }
-    
+
     lastFetchRef.current = now;
-    
+
     try {
       const currentStation = selectedStationRef.current;
-      
-       
+
       console.log("[KDS-CLIENT] Fetching tickets", {
         venueId,
         stationId: currentStation,
@@ -220,8 +219,7 @@ export default function KDSClient({
           ...(currentStation ? { station_id: currentStation } : {}),
         },
       });
-      
-       
+
       console.log("[KDS-CLIENT] Tickets response", {
         status: response.status,
         statusText: response.statusText,
@@ -230,7 +228,6 @@ export default function KDSClient({
 
       const data = await response.json();
 
-       
       console.log("[KDS-CLIENT] Tickets data", {
         success: data.success,
         hasTickets: !!data.data?.tickets,
@@ -241,18 +238,14 @@ export default function KDSClient({
       if (data.success) {
         const fetchedTickets = (data.data?.tickets || []) as KDSTicket[];
         const activeFetchedTickets = fetchedTickets.filter((t) => t.status !== "bumped");
-        
+
         // Simple update - use fetched tickets directly (real-time handlers handle updates)
         setTickets(activeFetchedTickets);
         setError(null);
         if (typeof window !== "undefined") {
-          sessionStorage.setItem(
-            `kds_tickets_${venueId}`,
-            JSON.stringify(activeFetchedTickets)
-          );
+          sessionStorage.setItem(`kds_tickets_${venueId}`, JSON.stringify(activeFetchedTickets));
         }
       } else {
-         
         console.error("[KDS-CLIENT] Failed to load tickets", {
           error: data.error,
           message: data.error?.message,
@@ -260,7 +253,6 @@ export default function KDSClient({
         setError(data.error?.message || "Failed to load tickets");
       }
     } catch (error) {
-       
       console.error("[KDS-CLIENT] Exception fetching tickets", {
         error: error instanceof Error ? error.message : String(error),
         stack: error instanceof Error ? error.stack : undefined,
@@ -275,10 +267,11 @@ export default function KDSClient({
   const updateTicketStatus = async (ticketId: string, status: string) => {
     const previousTickets = tickets;
     if (status === "ready") {
-      setTickets((prev) =>
-        prev.map((t) =>
-          t.id === ticketId ? { ...t, status: "ready", ready_at: new Date().toISOString() } : t
-        ) as KDSTicket[]
+      setTickets(
+        (prev) =>
+          prev.map((t) =>
+            t.id === ticketId ? { ...t, status: "ready", ready_at: new Date().toISOString() } : t
+          ) as KDSTicket[]
       );
     } else if (status === "bumped") {
       setTickets((prev) => prev.filter((t) => t.id !== ticketId));
@@ -287,14 +280,10 @@ export default function KDSClient({
       const { apiClient } = await import("@/lib/api-client");
       const payload = { ticket_id: ticketId, status, venueId };
       const idempotencyKey = `kds-ticket-${ticketId}-${status}-${Date.now()}`;
-      const response = await apiClient.patch(
-        "/api/kds/tickets",
-        payload,
-        {
-          params: { venueId },
-          headers: { "x-idempotency-key": idempotencyKey },
-        }
-      );
+      const response = await apiClient.patch("/api/kds/tickets", payload, {
+        params: { venueId },
+        headers: { "x-idempotency-key": idempotencyKey },
+      });
       if (!response.ok) {
         setTickets(previousTickets);
         return;
@@ -327,9 +316,7 @@ export default function KDSClient({
       const { apiClient } = await import("@/lib/api-client");
 
       // Collect all ready tickets for this order
-      const orderTickets = tickets.filter(
-        (t) => t.order_id === orderId && t.status === "ready"
-      );
+      const orderTickets = tickets.filter((t) => t.order_id === orderId && t.status === "ready");
 
       if (orderTickets.length === 0) {
         return;
@@ -402,7 +389,7 @@ export default function KDSClient({
   useEffect(() => {
     // Only trigger backfill once per session
     if (backfillTriggeredRef.current) return;
-    
+
     const triggerBackfill = async () => {
       // Wait a bit for initial fetch to complete
       await new Promise((resolve) => setTimeout(resolve, 3000));
@@ -442,7 +429,6 @@ export default function KDSClient({
     if (!initialTickets || (Array.isArray(initialTickets) && initialTickets.length === 0)) {
       fetchTickets();
     }
-     
   }, [venueId]); // Only depend on venueId, ignore fetch functions to prevent infinite loop
 
   // Set up realtime subscription with token refresh handling
@@ -557,7 +543,8 @@ export default function KDSClient({
                 }
 
                 const oldTicket = payload.old as KDSTicket | undefined;
-                const stationChanged = oldTicket && oldTicket.station_id !== updatedTicket.station_id;
+                const stationChanged =
+                  oldTicket && oldTicket.station_id !== updatedTicket.station_id;
                 const currentStation = selectedStationRef.current;
 
                 if (!currentStation) {
@@ -672,7 +659,7 @@ export default function KDSClient({
 
   // Filter out bumped tickets - they disappear from KDS and move to Live Orders
   const activeTickets = tickets.filter((t) => t.status !== "bumped");
-  
+
   // Sort by created_at (oldest first for priority)
   const sortedTickets = [...activeTickets].sort((a, b) => {
     return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();

@@ -33,13 +33,11 @@ export const GET = withUnifiedAuth(async (req: NextRequest, context) => {
       .order("created_at", { ascending: false });
 
     if (fetchError) {
-
       return apiErrors.database("Failed to fetch invitations");
     }
 
     return success({ invitations: invitations || [] });
   } catch (error) {
-
     return apiErrors.internal("Internal server error");
   }
 });
@@ -52,7 +50,6 @@ export async function POST(_request: NextRequest) {
     const user = await getUserSafe();
 
     if (!user) {
-
       return apiErrors.unauthorized("Unauthorized");
     }
 
@@ -63,7 +60,6 @@ export async function POST(_request: NextRequest) {
     const { email, role, venue_id, permissions = {} } = body;
 
     if (!email || !role || !venue_id) {
-
       return apiErrors.badRequest("email, role, and venue_id are required");
     }
 
@@ -79,7 +75,6 @@ export async function POST(_request: NextRequest) {
       .single();
 
     if (venueError || !venue) {
-
       return apiErrors.notFound("Venue not found");
     }
 
@@ -99,7 +94,6 @@ export async function POST(_request: NextRequest) {
     }
 
     if (!isVenueOwner && !hasPermission) {
-
       return apiErrors.forbidden("Forbidden - Only owners and managers can send invitations");
     }
 
@@ -119,7 +113,6 @@ export async function POST(_request: NextRequest) {
     // sending the invite.
     const limitCheck = await checkLimit(venue.owner_user_id, "maxStaff", staffCount);
     if (!limitCheck.allowed) {
-
       return apiErrors.forbidden(
         `Staff limit reached. You have ${staffCount}/${limitCheck.limit} staff members. Upgrade to ${limitCheck.limit === 3 ? "Pro" : "Enterprise"} tier for more staff.`,
         {
@@ -142,14 +135,12 @@ export async function POST(_request: NextRequest) {
 
     // If a pending invitation exists, delete it first (to allow resending)
     if (existingInvitation) {
-
       const { error: deleteError } = await supabase
         .from("staff_invitations")
         .delete()
         .eq("id", existingInvitation.id);
 
       if (deleteError) {
-
         return apiErrors.internal("Failed to resend invitation. Please try again.");
       }
     }
@@ -178,7 +169,6 @@ export async function POST(_request: NextRequest) {
       .single();
 
     if (invitationError) {
-
       // Handle duplicate key error with a friendly message
       if (
         invitationError.message?.includes("duplicate key") ||
@@ -198,7 +188,6 @@ export async function POST(_request: NextRequest) {
     try {
       const resendApiKey = env("RESEND_API_KEY");
       if (!resendApiKey) {
-
         throw new Error("Email service not configured");
       }
 
@@ -240,7 +229,6 @@ export async function POST(_request: NextRequest) {
         emailSent: true,
       });
     } catch (emailError) {
-
       // Don't fail the whole request if email fails
       // The invitation is created, user can be notified manually
       return success({
@@ -250,7 +238,6 @@ export async function POST(_request: NextRequest) {
       });
     }
   } catch (error) {
-
     return apiErrors.internal("Internal server error");
   }
 }
@@ -263,7 +250,6 @@ export async function DELETE(_request: NextRequest) {
     const user = await getUserSafe();
 
     if (!user) {
-
       return apiErrors.unauthorized("Unauthorized");
     }
 
@@ -310,13 +296,11 @@ export async function DELETE(_request: NextRequest) {
       .eq("venue_id", venue_id);
 
     if (error) {
-
       return apiErrors.internal(error.message || "Internal server error");
     }
 
     return success({});
   } catch (error) {
-
     return apiErrors.internal("Internal server error");
   }
 }

@@ -102,7 +102,6 @@ export const POST = withUnifiedAuth(
         note: "SMS sending is currently logged. Integrate with Twilio or similar service for production.",
       });
     } catch (error) {
-
       if (isZodError(error)) {
         return handleZodError(error);
       }

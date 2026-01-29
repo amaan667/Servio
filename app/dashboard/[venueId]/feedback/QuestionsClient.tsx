@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { normalizeVenueId } from "@/lib/utils/venueId";
 import {
   Plus,
   Edit,
@@ -94,7 +95,7 @@ export default function QuestionsClient({
       setLoading(true);
 
       // Normalize venueId - database stores with venue- prefix
-      const normalizedVenueId = venueId.startsWith("venue-") ? venueId : `venue-${venueId}`;
+      const normalizedVenueId = normalizeVenueId(venueId) ?? venueId;
 
       // Use API endpoint instead of direct Supabase query to get properly mapped data
       const response = await fetch(`/api/feedback/questions?venueId=${normalizedVenueId}`, {
@@ -176,7 +177,6 @@ export default function QuestionsClient({
     if (venueId) {
       fetchQuestions();
     }
-     
   }, [venueId]);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -436,7 +436,7 @@ export default function QuestionsClient({
 
     try {
       // Normalize venueId - database stores with venue- prefix
-      const normalizedVenueId = venueId.startsWith("venue-") ? venueId : `venue-${venueId}`;
+      const normalizedVenueId = normalizeVenueId(venueId) ?? venueId;
 
       // Add venueId to query string to help withUnifiedAuth extract it
       const url = new URL("/api/feedback/questions", window.location.origin);

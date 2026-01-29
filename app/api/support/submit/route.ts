@@ -17,7 +17,7 @@ export const POST = createUnifiedHandler(
   async (_req: NextRequest, context) => {
     const { body, user } = context;
     const { type, subject, description, steps } = body;
-    
+
     const userEmail = user?.email || "unknown@example.com";
     const userMetadata = user?.user_metadata as { full_name?: string } | undefined;
     const userName = userMetadata?.full_name || user?.email?.split("@")[0] || "User";
@@ -25,9 +25,9 @@ export const POST = createUnifiedHandler(
 
     // Generate email content
     const isFeatureRequest = type === "feature";
-      const emailSubject = `[${isFeatureRequest ? "FEATURE REQUEST" : "BUG REPORT"}] ${subject}`;
+    const emailSubject = `[${isFeatureRequest ? "FEATURE REQUEST" : "BUG REPORT"}] ${subject}`;
 
-      const emailHtml = `
+    const emailHtml = `
         <!DOCTYPE html>
         <html>
           <head>
@@ -88,7 +88,7 @@ export const POST = createUnifiedHandler(
         </html>
       `;
 
-      const emailText = `
+    const emailText = `
 ${isFeatureRequest ? "FEATURE REQUEST" : "BUG REPORT"}
 
 From: ${userName} (${userEmail})

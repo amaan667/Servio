@@ -16,7 +16,6 @@ export async function GET() {
       allCookies: allCookies.map((c) => ({ name: c.name, hasValue: !!c.value })),
     });
   } catch (err) {
-
     return apiErrors.internal("Failed to check cookies");
   }
 }

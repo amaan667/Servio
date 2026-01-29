@@ -23,7 +23,11 @@ export const POST = createUnifiedHandler(
   async (_req, context) => {
     const { body, venueId } = context;
 
-    logBulkComplete("request", { venueId, bodyOrderIds: body.orderIds, bodyOrderIdsLength: body.orderIds?.length });
+    logBulkComplete("request", {
+      venueId,
+      bodyOrderIds: body.orderIds,
+      bodyOrderIdsLength: body.orderIds?.length,
+    });
 
     // 1. Get IDs to complete
     let orderIds = body.orderIds;
@@ -34,11 +38,13 @@ export const POST = createUnifiedHandler(
       });
       logBulkComplete("active orders from getOrders", {
         count: activeOrders?.length,
-        orders: activeOrders?.map((o) => ({ id: o.id, order_status: o.order_status, payment_status: o.payment_status })),
+        orders: activeOrders?.map((o) => ({
+          id: o.id,
+          order_status: o.order_status,
+          payment_status: o.payment_status,
+        })),
       });
-      orderIds = activeOrders
-        .filter((o) => o.order_status !== "COMPLETED")
-        .map((o) => o.id);
+      orderIds = activeOrders.filter((o) => o.order_status !== "COMPLETED").map((o) => o.id);
     } else {
       const orders = await orderService.getOrders(venueId, {});
       const completedOrderIds = new Set(

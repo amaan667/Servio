@@ -15,9 +15,7 @@ export type Categorizable = {
  * - Normalizes missing categories to an empty string.
  * - Keeps insertion order for categories (callers can sort keys if needed).
  */
-export function groupByCategory<T extends Categorizable>(
-  items: T[]
-): Record<string, T[]> {
+export function groupByCategory<T extends Categorizable>(items: T[]): Record<string, T[]> {
   return items.reduce<Record<string, T[]>>((acc, item) => {
     const cat = item.category ?? "";
     const arr = acc[cat] ?? [];
@@ -26,4 +24,3 @@ export function groupByCategory<T extends Categorizable>(
     return acc;
   }, {});
 }
-

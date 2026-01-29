@@ -1,8 +1,8 @@
 import { useEffect, useRef, useCallback } from "react";
 import { supabaseBrowser } from "@/lib/supabase";
-
 import { getRealtimeChannelName } from "@/lib/realtime-device-id";
 import type { RealtimeChannel } from "@supabase/supabase-js";
+import { normalizeVenueId } from "@/lib/utils/venueId";
 
 interface RealtimePayload {
   eventType: "INSERT" | "UPDATE" | "DELETE";
@@ -49,7 +49,9 @@ export function useDashboardRealtime({
       if (!isMountedRef.current) return;
       try {
         await refreshCountsRef.current();
-      } catch (_error) { /* Error handled silently */ }
+      } catch (_error) {
+        /* Error handled silently */
+      }
     }, 300); // 300ms debounce
   }, []); // No dependencies - uses ref
 
@@ -58,7 +60,9 @@ export function useDashboardRealtime({
     if (!isMountedRef.current) return;
     try {
       await refreshCountsRef.current();
-    } catch (_error) { /* Error handled silently */ }
+    } catch (_error) {
+      /* Error handled silently */
+    }
   }, []); // No dependencies - uses ref
 
   // Store loadStats in a ref to avoid recreating callbacks
@@ -190,7 +194,7 @@ export function useDashboardRealtime({
 
             // Also fetch and dispatch tables count for instant updates
             try {
-              const normalizedVenueId = venueId.startsWith("venue-") ? venueId : `venue-${venueId}`;
+              const normalizedVenueId = normalizeVenueId(venueId) ?? venueId;
               const { data: allTables } = await supabase
                 .from("tables")
                 .select("id, is_active")
@@ -238,7 +242,7 @@ export function useDashboardRealtime({
             try {
               // Use unified count function - single source of truth
               const { fetchMenuItemCount } = await import("@/lib/counts/unified-counts");
-              const normalizedVenueId = venueId.startsWith("venue-") ? venueId : `venue-${venueId}`;
+              const normalizedVenueId = normalizeVenueId(venueId) ?? venueId;
               const count = await fetchMenuItemCount(venueId);
 
               // Dispatch custom event for instant updates
@@ -258,7 +262,6 @@ export function useDashboardRealtime({
           if (status === "SUBSCRIBED") {
             channelRef.current = channel;
           } else if (status === "CHANNEL_ERROR" || status === "TIMED_OUT") {
-
             // Clear any existing reconnect timeout
             if (reconnectTimeoutRef.current) {
               clearTimeout(reconnectTimeoutRef.current);

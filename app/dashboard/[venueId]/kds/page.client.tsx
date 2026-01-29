@@ -23,11 +23,17 @@ export default function KDSClientPage({
   role,
 }: KDSClientPageProps) {
   // Log immediately in browser console when wrapper component mounts
-   
-  console.log("%c[KDS-PAGE-CLIENT] ========== WRAPPER MOUNTED ==========", "color: #3b82f6; font-weight: bold; font-size: 16px;");
-   
-  console.log("%c[KDS-PAGE-CLIENT] Props Received from Server", "color: #3b82f6; font-weight: bold;");
-   
+
+  console.log(
+    "%c[KDS-PAGE-CLIENT] ========== WRAPPER MOUNTED ==========",
+    "color: #3b82f6; font-weight: bold; font-size: 16px;"
+  );
+
+  console.log(
+    "%c[KDS-PAGE-CLIENT] Props Received from Server",
+    "color: #3b82f6; font-weight: bold;"
+  );
+
   console.log({
     venueId,
     tier,
@@ -37,9 +43,9 @@ export default function KDSClientPage({
     hasInitialStations: !!initialStations,
     timestamp: new Date().toISOString(),
   });
-   
+
   console.log("%c[KDS-PAGE-CLIENT] Full Props Object", "color: #3b82f6; font-weight: bold;");
-   
+
   console.log({ venueId, initialTickets, initialStations, tier, kdsTier, role });
 
   return (
@@ -62,9 +68,7 @@ export default function KDSClientPage({
           {kdsTier && (
             <div className="flex items-center gap-2">
               {kdsTier === "advanced" && (
-                <Badge className="bg-blue-100 text-blue-800 border-blue-300">
-                  Advanced KDS
-                </Badge>
+                <Badge className="bg-blue-100 text-blue-800 border-blue-300">Advanced KDS</Badge>
               )}
               {kdsTier === "enterprise" && (
                 <Badge className="bg-purple-100 text-purple-800 border-purple-300">

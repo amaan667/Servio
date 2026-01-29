@@ -112,7 +112,6 @@ const rootValue = {
       .range(offset, offset + limit - 1);
 
     if (error) {
-
       throw new Error(`Failed to fetch orders: ${error.message}`);
     }
 
@@ -167,7 +166,6 @@ const rootValue = {
       .order("category", { ascending: true });
 
     if (error) {
-
       throw new Error(`Failed to fetch menu: ${error.message}`);
     }
 
@@ -221,7 +219,6 @@ const rootValue = {
       .single();
 
     if (orderError || !order) {
-
       throw new Error(`Failed to create order: ${orderError?.message}`);
     }
 
@@ -237,7 +234,6 @@ const rootValue = {
     const { error: itemsError } = await supabase.from("order_items").insert(orderItems);
 
     if (itemsError) {
-
       throw new Error(`Failed to create order items: ${itemsError.message}`);
     }
 
@@ -295,7 +291,6 @@ export const POST = withUnifiedAuth(async (req: NextRequest) => {
     });
 
     if (result.errors) {
-
       return NextResponse.json(
         {
           data: result.data,
@@ -313,7 +308,6 @@ export const POST = withUnifiedAuth(async (req: NextRequest) => {
 
     return NextResponse.json({ data: result.data });
   } catch (error) {
-
     return NextResponse.json(
       {
         errors: [

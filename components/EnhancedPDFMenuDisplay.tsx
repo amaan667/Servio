@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { formatPriceWithCurrency } from "@/lib/pricing-utils";
 import { groupByCategory } from "@/lib/utils/group-by-category";
 import { safeGetItem, safeSetItem, safeRemoveItem } from "@/app/order/utils/safeStorage";
+import { normalizeVenueId } from "@/lib/utils/venueId";
 
 interface MenuItem {
   id: string;
@@ -51,7 +52,7 @@ export function EnhancedPDFMenuDisplay({
   isOrdering = false,
   onViewCart,
 }: EnhancedPDFMenuDisplayProps) {
-  const normalizedVenueId = venueId.startsWith("venue-") ? venueId : `venue-${venueId}`;
+  const normalizedVenueId = normalizeVenueId(venueId) ?? venueId;
 
   // Check cache for PDF images existence to prevent flicker
   const hasPdfImagesInCache = () => {
@@ -125,7 +126,11 @@ export function EnhancedPDFMenuDisplay({
 
           if (canCache) {
             safeSetItem(sessionStorage, `has_pdf_images_${normalizedVenueId}`, "true");
-            safeSetItem(sessionStorage, `pdf_images_${normalizedVenueId}`, JSON.stringify(pdfImagesProp));
+            safeSetItem(
+              sessionStorage,
+              `pdf_images_${normalizedVenueId}`,
+              JSON.stringify(pdfImagesProp)
+            );
           }
           // Skip caching if storage fails - images still work from props
         }
@@ -176,7 +181,11 @@ export function EnhancedPDFMenuDisplay({
 
             if (canCache) {
               safeSetItem(sessionStorage, `has_pdf_images_${normalizedVenueId}`, "true");
-              safeSetItem(sessionStorage, `pdf_images_${normalizedVenueId}`, JSON.stringify(images));
+              safeSetItem(
+                sessionStorage,
+                `pdf_images_${normalizedVenueId}`,
+                JSON.stringify(images)
+              );
             }
           }
           // Preload images

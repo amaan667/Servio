@@ -34,7 +34,9 @@ class RedisCache {
       } else {
         // Block handled
       }
-    } catch (_error) { /* Error handled silently */ }
+    } catch (_error) {
+      /* Error handled silently */
+    }
   }
 
   /**
@@ -52,7 +54,6 @@ class RedisCache {
       }
       return null;
     } catch (_error) {
-
       return null;
     }
   }
@@ -93,7 +94,6 @@ class RedisCache {
 
       return true;
     } catch (_error) {
-
       return false;
     }
   }
@@ -110,7 +110,6 @@ class RedisCache {
       await this.redis.del(key);
       return true;
     } catch (_error) {
-
       return false;
     }
   }
@@ -137,7 +136,6 @@ class RedisCache {
       await pipeline.exec();
       return true;
     } catch (_error) {
-
       return false;
     }
   }
@@ -154,7 +152,6 @@ class RedisCache {
       await this.redis.flushdb();
       return true;
     } catch (_error) {
-
       return false;
     }
   }
@@ -191,7 +188,6 @@ class RedisCache {
         misses: 0,
       };
     } catch (_error) {
-
       return {
         connected: false,
         memory: "0B",

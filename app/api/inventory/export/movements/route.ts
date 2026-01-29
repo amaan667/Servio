@@ -97,7 +97,6 @@ export const GET = withUnifiedAuth(
       const { data, error } = await query;
 
       if (error) {
-
         return NextResponse.json(
           {
             error: "Failed to fetch movements",

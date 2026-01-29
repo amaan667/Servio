@@ -75,7 +75,10 @@ export default function PaymentCancelPage() {
                 </Button>
               )}
               {!backToOrderUrl && (
-                <Button onClick={() => router.push("/")} className="w-full bg-blue-600 hover:bg-blue-700">
+                <Button
+                  onClick={() => router.push("/")}
+                  className="w-full bg-blue-600 hover:bg-blue-700"
+                >
                   Back to home
                 </Button>
               )}

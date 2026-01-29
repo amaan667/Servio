@@ -51,7 +51,6 @@ export async function GET(
           .single();
 
         if (tableError || !table) {
-
           return NextResponse.json(
             {
               ok: false,
@@ -73,7 +72,6 @@ export async function GET(
           .maybeSingle();
 
         if (reservationError) {
-
           return NextResponse.json(
             {
               ok: false,

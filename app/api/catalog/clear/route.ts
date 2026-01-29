@@ -16,7 +16,6 @@ export const POST = withUnifiedAuth(async (req: NextRequest, _context) => {
 
     return success({ message: "All menu items cleared" });
   } catch (_error) {
-
     return apiErrors.internal("Internal server error");
   }
 });

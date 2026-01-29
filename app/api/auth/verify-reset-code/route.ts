@@ -23,7 +23,6 @@ export async function POST(request: NextRequest) {
       const { data, error } = await supabase.auth.exchangeCodeForSession(code);
 
       if (error) {
-
         // If code exchange fails, try verifyOtp as fallback
 
         const { data: otpData, error: otpError } = await supabase.auth.verifyOtp({
@@ -61,11 +60,9 @@ export async function POST(request: NextRequest) {
         },
       });
     } catch (err) {
-
       return apiErrors.internal("Failed to verify reset code");
     }
   } catch (error) {
-
     return apiErrors.internal("Failed to verify reset code");
   }
 }

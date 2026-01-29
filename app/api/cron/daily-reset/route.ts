@@ -31,7 +31,6 @@ export async function POST(req: NextRequest) {
     const expectedAuth = env("CRON_SECRET") || "default-cron-secret";
 
     if (authHeader !== `Bearer ${expectedAuth}`) {
-
       return apiErrors.unauthorized("Unauthorized");
     }
 
@@ -56,7 +55,6 @@ export async function POST(req: NextRequest) {
       .not("daily_reset_time", "is", null);
 
     if (venuesError) {
-
       return NextResponse.json(
         {
           error: "Failed to fetch venues",
@@ -174,7 +172,9 @@ export async function POST(req: NextRequest) {
             .delete()
             .eq("venue_id", venue.venue_id);
 
-          if (sessionDeleteError) { /* Condition handled */ }
+          if (sessionDeleteError) {
+            /* Condition handled */
+          }
 
           // Delete all tables
           const { error: tableDeleteError } = await supabase
@@ -182,7 +182,9 @@ export async function POST(req: NextRequest) {
             .delete()
             .eq("venue_id", venue.venue_id);
 
-          if (tableDeleteError) { /* Condition handled */ }
+          if (tableDeleteError) {
+            /* Condition handled */
+          }
         }
 
         // Clear table runtime state
@@ -191,7 +193,9 @@ export async function POST(req: NextRequest) {
           .delete()
           .eq("venue_id", venue.venue_id);
 
-        if (runtimeDeleteError) { /* Condition handled */ }
+        if (runtimeDeleteError) {
+          /* Condition handled */
+        }
 
         resetResults.push({
           venueId: venue.venue_id,
@@ -202,7 +206,6 @@ export async function POST(req: NextRequest) {
           deletedTables: venueTables?.length || 0,
         });
       } catch (_error) {
-
         resetResults.push({
           venueId: venue.venue_id,
           venueName: venue.venue_name,

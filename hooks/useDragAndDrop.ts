@@ -58,11 +58,9 @@ export function useDragAndDrop<T extends MenuItem>(
         const result = await onReorder(reorderedItems);
 
         if (!result.success) {
-
           throw result.error;
         }
       } catch (error) {
-
         // Could show toast notification here
       } finally {
         setIsReordering(false);

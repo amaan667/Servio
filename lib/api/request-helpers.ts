@@ -13,7 +13,7 @@ export function getRequestMetadata(req: NextRequest) {
   const correlationId = getCorrelationIdFromRequest(req);
   const userAgent = req.headers.get("user-agent") || "unknown";
   const ip = req.headers.get("x-forwarded-for") || req.headers.get("x-real-ip") || "unknown";
-  
+
   return {
     correlationId,
     userAgent,

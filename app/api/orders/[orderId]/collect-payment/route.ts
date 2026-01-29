@@ -52,7 +52,6 @@ export const POST = createUnifiedHandler(
       .single();
 
     if (fetchError || !order) {
-
       return apiErrors.notFound("Order not found");
     }
 
@@ -125,7 +124,7 @@ export const POST = createUnifiedHandler(
         // Try to get from body first
         const body = await req.clone().json();
         if (body?.venue_id) return body.venue_id;
-        
+
         // Try to get from orderId in route params
         const params = routeContext?.params ? await routeContext.params : {};
         const orderId = params?.orderId as string | undefined;

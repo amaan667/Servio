@@ -144,7 +144,6 @@ export async function POST(req: NextRequest) {
     });
 
     if (authError || !authData.user) {
-
       return NextResponse.json(
         {
           error: authError?.message || "Failed to create account",

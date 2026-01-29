@@ -90,7 +90,6 @@ export const POST = withUnifiedAuth(async (req: NextRequest, context) => {
     // Check tier limit
     const limitCheck = await checkLimit(venue.owner_user_id, "maxTables", tableCount);
     if (!limitCheck.allowed) {
-
       return NextResponse.json(
         {
           success: false,
@@ -131,7 +130,6 @@ export const POST = withUnifiedAuth(async (req: NextRequest, context) => {
         .single();
 
       if (tableError) {
-
         return NextResponse.json(
           {
             success: false,
@@ -162,7 +160,6 @@ export const POST = withUnifiedAuth(async (req: NextRequest, context) => {
       });
 
       if (sessionError) {
-
         // Don't fail the request if session creation fails, table is still created
       }
     }
@@ -176,7 +173,6 @@ export const POST = withUnifiedAuth(async (req: NextRequest, context) => {
       },
     });
   } catch (_error) {
-
     return NextResponse.json(
       {
         success: false,

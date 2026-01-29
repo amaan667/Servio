@@ -23,7 +23,9 @@ export async function POST(req: NextRequest) {
   try {
     event = stripe.webhooks.constructEvent(body, signature, webhookSecret!);
   } catch (err) {
-    return new NextResponse(`Webhook Error: ${err instanceof Error ? err.message : "Unknown"}`, { status: 400 });
+    return new NextResponse(`Webhook Error: ${err instanceof Error ? err.message : "Unknown"}`, {
+      status: 400,
+    });
   }
 
   // 1. Idempotency Check
@@ -47,7 +49,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: true });
   } catch (err) {
     await stripeService.finalizeWebhookEvent(event.id, "failed", err as Error);
-    trackPaymentError(err as Error, { 
+    trackPaymentError(err as Error, {
       stripeSessionId: event.id,
     });
     return new NextResponse("Webhook processing failed", { status: 500 });

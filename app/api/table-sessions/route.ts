@@ -47,7 +47,6 @@ export const POST = withUnifiedAuth(async (req: NextRequest, context) => {
       .single();
 
     if (tableError || !table) {
-
       return apiErrors.notFound("Table not found");
     }
 
@@ -65,7 +64,6 @@ export const POST = withUnifiedAuth(async (req: NextRequest, context) => {
       .single();
 
     if (createError || !session) {
-
       return apiErrors.database(
         "Failed to create table session",
         isDevelopment() ? createError?.message : undefined
@@ -75,7 +73,6 @@ export const POST = withUnifiedAuth(async (req: NextRequest, context) => {
     // STEP 5: Return success response
     return success({ session });
   } catch (error) {
-
     if (isZodError(error)) {
       return handleZodError(error);
     }

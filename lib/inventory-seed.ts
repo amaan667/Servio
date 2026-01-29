@@ -1,4 +1,3 @@
-
 /**
  * Inventory Seed Data Script
  *
@@ -195,7 +194,6 @@ export async function seedInventoryData(venueId: string) {
         .single();
 
       if (error) {
-
         continue;
       }
 
@@ -212,7 +210,9 @@ export async function seedInventoryData(venueId: string) {
           note: "Initial seed stock",
         });
       }
-    } catch (_error) { /* Error handled silently */ }
+    } catch (_error) {
+      /* Error handled silently */
+    }
   }
 
   // Step 2: Create recipe mappings
@@ -228,7 +228,6 @@ export async function seedInventoryData(venueId: string) {
         .single();
 
       if (!menuItem) {
-
         continue;
       }
 
@@ -240,7 +239,6 @@ export async function seedInventoryData(venueId: string) {
         .map((ing) => {
           const ingredientId = createdIngredients[ing.ingredientName];
           if (!ingredientId) {
-
             return null;
           }
 
@@ -256,11 +254,15 @@ export async function seedInventoryData(venueId: string) {
       if (recipeData.length > 0) {
         const { error } = await supabase.from("menu_item_ingredients").insert(recipeData);
 
-        if (error) { /* Condition handled */ } else {
+        if (error) {
+          /* Condition handled */
+        } else {
           // Block handled
         }
       }
-    } catch (_error) { /* Error handled silently */ }
+    } catch (_error) {
+      /* Error handled silently */
+    }
   }
 
   return {

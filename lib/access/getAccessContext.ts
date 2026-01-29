@@ -4,8 +4,14 @@
  */
 
 import { cache } from "react";
-import { type AccessContext, type Tier, type FeatureKey, hasFeatureAccess } from "@/lib/tier-limits";
+import {
+  type AccessContext,
+  type Tier,
+  type FeatureKey,
+  hasFeatureAccess,
+} from "@/lib/tier-limits";
 import { createServerSupabaseReadOnly } from "@/lib/supabase";
+import { normalizeVenueId } from "@/lib/utils/venueId";
 
 /**
  * Get unified access context via RPC
@@ -26,21 +32,14 @@ export const getAccessContext = cache(
       } = await supabase.auth.getUser();
 
       if (authError) {
-
         return null;
       }
 
       if (!user) {
-
         return null;
       }
 
-      // Normalize venueId - database stores with venue- prefix
-      const normalizedVenueId = venueId
-        ? venueId.startsWith("venue-")
-          ? venueId
-          : `venue-${venueId}`
-        : null;
+      const normalizedVenueId = normalizeVenueId(venueId);
 
       // Call RPC function using the authenticated Supabase client
       // eslint-disable-next-line no-console
@@ -59,18 +58,22 @@ export const getAccessContext = cache(
       console.log("[GET-ACCESS-CONTEXT] RPC result", {
         hasData: !!data,
         hasError: !!rpcError,
-        error: rpcError ? {
-          message: rpcError.message,
-          code: rpcError.code,
-          details: rpcError.details,
-          hint: rpcError.hint,
-        } : null,
-        data: data ? {
-          user_id: data.user_id,
-          venue_id: data.venue_id,
-          role: data.role,
-          tier: data.tier,
-        } : null,
+        error: rpcError
+          ? {
+              message: rpcError.message,
+              code: rpcError.code,
+              details: rpcError.details,
+              hint: rpcError.hint,
+            }
+          : null,
+        data: data
+          ? {
+              user_id: data.user_id,
+              venue_id: data.venue_id,
+              role: data.role,
+              tier: data.tier,
+            }
+          : null,
         userId: user.id,
         venueId: normalizedVenueId,
       });
@@ -102,7 +105,6 @@ export const getAccessContext = cache(
       const context = data as AccessContext;
 
       if (!context.user_id || !context.role) {
-
         return null;
       }
 
@@ -110,7 +112,6 @@ export const getAccessContext = cache(
       const tier = (context.tier?.toLowerCase().trim() || "starter") as Tier;
 
       if (!["starter", "pro", "enterprise"].includes(tier)) {
-
         return {
           ...context,
           tier: "starter" as Tier,
@@ -122,7 +123,6 @@ export const getAccessContext = cache(
         tier,
       };
     } catch (error) {
-
       return null;
     }
   }
@@ -131,9 +131,7 @@ export const getAccessContext = cache(
 /**
  * Get access context with feature access helper
  */
-export async function getAccessContextWithFeatures(
-  venueId?: string | null
-): Promise<{
+export async function getAccessContextWithFeatures(venueId?: string | null): Promise<{
   context: AccessContext | null;
   hasFeatureAccess: (feature: FeatureKey) => boolean;
 } | null> {
@@ -145,4 +143,3 @@ export async function getAccessContextWithFeatures(
     hasFeatureAccess: (feature: FeatureKey) => hasFeatureAccess(context, feature),
   };
 }
-

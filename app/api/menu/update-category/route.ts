@@ -33,7 +33,6 @@ export async function POST(_request: NextRequest) {
       .select("id, name, category");
 
     if (updateError) {
-
       return apiErrors.internal("Failed to update menu items");
     }
 
@@ -60,7 +59,6 @@ export async function POST(_request: NextRequest) {
         .eq("id", uploadData.id);
 
       if (orderUpdateError) {
-
         // Don't fail the whole operation for this
       }
     }
@@ -71,7 +69,6 @@ export async function POST(_request: NextRequest) {
       updatedItems: updatedItems?.length || 0,
     });
   } catch (_error) {
-
     return apiErrors.internal("Internal server error");
   }
 }

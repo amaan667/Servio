@@ -62,7 +62,6 @@ export class VenueRepository extends BaseRepository<Venue> {
 
       return data as Venue;
     } catch (_error) {
-
       throw _error;
     }
   }
@@ -83,13 +82,11 @@ export class VenueRepository extends BaseRepository<Venue> {
         .single();
 
       if (error) {
-
         throw error;
       }
 
       return data as Venue;
     } catch (_error) {
-
       throw _error;
     }
   }

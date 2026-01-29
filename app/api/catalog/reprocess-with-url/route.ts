@@ -126,7 +126,6 @@ export const POST = withUnifiedAuth(
           throw new Error(scrapeResult.error || "Scraping returned no items");
         }
       } catch (_error) {
-
         // Continue with PDF-only extraction
       }
 

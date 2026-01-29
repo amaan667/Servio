@@ -58,13 +58,11 @@ export async function createKDSTicketsWithAI(
   };
 
   try {
-
     // Step 1: Ensure KDS stations exist for this venue
 
     let existingStations = await ensureKDSStations(supabase, order.venue_id);
 
     if (!existingStations || existingStations.length === 0) {
-
       throw new Error("No KDS stations available");
     }
 
@@ -73,7 +71,6 @@ export async function createKDSTicketsWithAI(
       existingStations.find((s) => s.station_type === "expo") || existingStations[0];
 
     if (!expoStation) {
-
       throw new Error("No KDS station available");
     }
 
@@ -85,7 +82,6 @@ export async function createKDSTicketsWithAI(
     const items = Array.isArray(order.items) ? order.items : [];
 
     if (items.length === 0) {
-
       return;
     }
 
@@ -97,7 +93,7 @@ export async function createKDSTicketsWithAI(
       // Step 1: Try category-based assignment (menu item category → station mapping)
       let assignedStation: KDSStation | null = null;
       let assignment: StationAssignment | null = null;
-      
+
       if (menuItemId) {
         try {
           // First, get the menu item to find its category
@@ -126,11 +122,12 @@ export async function createKDSTicketsWithAI(
                 assignedStation = stationFromCategory;
                 // Category-based assignment has high confidence
                 assignment = { station: stationFromCategory, confidence: 0.95 };
-
               }
             }
           }
-        } catch (error) { /* Error handled silently */ }
+        } catch (error) {
+          /* Error handled silently */
+        }
       }
 
       // Step 2: Keyword-based assignment (if category mapping not found)
@@ -144,7 +141,6 @@ export async function createKDSTicketsWithAI(
       // Only call AI if confidence is below threshold (0.7) to avoid unnecessary API calls
       const CONFIDENCE_THRESHOLD = 0.7;
       if (assignment.confidence < CONFIDENCE_THRESHOLD) {
-
         try {
           // Get menu item description if available for better AI context
           let itemDescription: string | undefined;
@@ -174,17 +170,16 @@ export async function createKDSTicketsWithAI(
           if (aiAssignment.confidence > assignment.confidence) {
             assignment = aiAssignment;
             assignedStation = assignment.station;
-
-          } else { /* Else case handled */ }
+          } else {
+            /* Else case handled */
+          }
         } catch (aiError) {
           // AI failed, continue with keyword assignment
-
         }
       }
 
       // Ensure assignedStation is never null (should be set by assignment at this point)
       if (!assignedStation) {
-
         assignedStation = expoStation;
         assignment = { station: expoStation, confidence: 0.5 };
       }
@@ -216,7 +211,9 @@ export async function createKDSTicketsWithAI(
           } else if (typeof item.modifiers === "string") {
             modifiersText = item.modifiers;
           }
-        } catch (error) { /* Error handled silently */ }
+        } catch (error) {
+          /* Error handled silently */
+        }
 
         // Combine instructions and modifiers
         if (modifiersText) {
@@ -241,18 +238,14 @@ export async function createKDSTicketsWithAI(
       const { error: ticketError } = await supabase.from("kds_tickets").insert(ticketData);
 
       if (ticketError) {
-
         // Convert to proper Error with details
         const errorMsg = `KDS ticket insert failed: ${ticketError.message || ticketError.code || "Unknown error"}`;
         const error = new Error(errorMsg);
         (error as unknown as { details: unknown }).details = ticketError;
         throw error;
       }
-
     }
-
   } catch (error) {
-
     throw error;
   }
 }
@@ -268,7 +261,6 @@ async function ensureKDSStations(supabase: SupabaseClient, venueId: string): Pro
     .eq("is_active", true);
 
   if (!existingStations || existingStations.length === 0) {
-
     // Create default stations
     const defaultStations = [
       { name: "Expo", type: "expo", order: 0, color: "#3b82f6" },
@@ -402,7 +394,6 @@ function assignStationByKeywords(
   if (baristaKeywords.some((keyword) => itemNameLower.includes(keyword))) {
     const baristaStation = stations.find((s) => s.station_type === "barista");
     if (baristaStation) {
-
       return { station: baristaStation, confidence: 0.9 }; // High confidence for exact keyword matches
     }
   }
@@ -439,7 +430,6 @@ function assignStationByKeywords(
   if (fryerKeywords.some((keyword) => itemNameLower.includes(keyword))) {
     const fryerStation = stations.find((s) => s.station_type === "fryer");
     if (fryerStation) {
-
       return { station: fryerStation, confidence: 0.9 };
     }
   }
@@ -474,7 +464,6 @@ function assignStationByKeywords(
       (s) => s.station_type === "pizza" || s.station_type === "pasta"
     );
     if (pizzaStation) {
-
       return { station: pizzaStation, confidence: 0.9 };
     }
     // If no dedicated pizza/pasta station, fall through to Grill (many venues handle pizza at grill)
@@ -555,7 +544,6 @@ function assignStationByKeywords(
   ) {
     const grillStation = stations.find((s) => s.station_type === "grill");
     if (grillStation) {
-
       return { station: grillStation, confidence: 0.85 };
     }
   }
@@ -566,13 +554,11 @@ function assignStationByKeywords(
   if (isSoupItem) {
     const soupStation = stations.find((s) => s.station_type === "soup");
     if (soupStation) {
-
       return { station: soupStation, confidence: 0.9 };
     }
     // If no soup station, soups often prepared at Grill
     const grillStation = stations.find((s) => s.station_type === "grill");
     if (grillStation) {
-
       return { station: grillStation, confidence: 0.7 };
     }
   }
@@ -618,7 +604,6 @@ function assignStationByKeywords(
   ) {
     const coldStation = stations.find((s) => s.station_type === "cold");
     if (coldStation) {
-
       return { station: coldStation, confidence: 0.9 };
     }
   }
@@ -654,13 +639,11 @@ function assignStationByKeywords(
   if (dessertKeywords.some((keyword) => itemNameLower.includes(keyword))) {
     const dessertStation = stations.find((s) => s.station_type === "dessert");
     if (dessertStation) {
-
       return { station: dessertStation, confidence: 0.9 };
     }
     // If no dessert station, desserts often prepared at Cold Prep or Barista
     const coldStation = stations.find((s) => s.station_type === "cold");
     if (coldStation) {
-
       return { station: coldStation, confidence: 0.7 };
     }
   }
@@ -704,7 +687,6 @@ async function assignStationWithAI(
   }
 
   if (!openaiApiKey) {
-
     return { station: defaultStation, confidence: 0.5 };
   }
 
@@ -747,7 +729,6 @@ Do not include any explanation or additional text.`;
     const aiStationType = response.choices[0]?.message?.content?.trim().toLowerCase();
 
     if (!aiStationType) {
-
       return { station: defaultStation, confidence: 0.5 };
     }
 
@@ -767,7 +748,6 @@ Do not include any explanation or additional text.`;
 
     return { station: matchedStation, confidence };
   } catch (error) {
-
     // Gracefully degrade to default station
     return { station: defaultStation, confidence: 0.5 };
   }

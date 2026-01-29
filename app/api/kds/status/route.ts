@@ -15,7 +15,6 @@ const statusQuerySchema = z.object({
 
 export const GET = createUnifiedHandler(
   async (_req: NextRequest, context) => {
-
     const supabaseAdmin = createAdminClient();
     const venueId = context.venueId;
 

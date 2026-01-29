@@ -26,7 +26,7 @@ export default function OnboardingProgress({
   currentStep,
   onStepChange,
   allowSkip = true,
-  allowNavigation = true
+  allowNavigation = true,
 }: OnboardingProgressProps) {
   const router = useRouter();
   const [completedSteps, setCompletedSteps] = useState<number[]>([]);
@@ -39,7 +39,7 @@ export default function OnboardingProgress({
       description: "Name, logo & payment",
       route: "/onboarding/venue-setup",
       skippable: false,
-      estimatedTime: "2 min"
+      estimatedTime: "2 min",
     },
     {
       number: 2,
@@ -47,7 +47,7 @@ export default function OnboardingProgress({
       description: "Upload or create your menu",
       route: "/onboarding/menu",
       skippable: true,
-      estimatedTime: "1-2 min"
+      estimatedTime: "1-2 min",
     },
     {
       number: 3,
@@ -55,7 +55,7 @@ export default function OnboardingProgress({
       description: "Set up tables & QR codes",
       route: "/onboarding/tables",
       skippable: true,
-      estimatedTime: "1 min"
+      estimatedTime: "1 min",
     },
     {
       number: 4,
@@ -63,7 +63,7 @@ export default function OnboardingProgress({
       description: "Try the customer experience",
       route: "/onboarding/test-order",
       skippable: true,
-      estimatedTime: "1 min"
+      estimatedTime: "1 min",
     },
   ];
 
@@ -110,7 +110,9 @@ export default function OnboardingProgress({
 
       // Move to next step or complete onboarding
       if (stepNumber < 4) {
-        const nextStep = Math.min(...steps.filter(s => !newCompletedSteps.includes(s.number)).map(s => s.number));
+        const nextStep = Math.min(
+          ...steps.filter((s) => !newCompletedSteps.includes(s.number)).map((s) => s.number)
+        );
         const next = nextStep != null && nextStep !== Infinity ? steps[nextStep - 1] : undefined;
         if (next) {
           router.push(next.route);
@@ -148,7 +150,9 @@ export default function OnboardingProgress({
   };
 
   const isStepCompleted = (stepNumber: number) => completedSteps.includes(stepNumber);
-  const isStepClickable = (stepNumber: number) => allowNavigation && (stepNumber <= Math.max(currentStep, ...completedSteps) || isStepCompleted(stepNumber));
+  const isStepClickable = (stepNumber: number) =>
+    allowNavigation &&
+    (stepNumber <= Math.max(currentStep, ...completedSteps) || isStepCompleted(stepNumber));
 
   return (
     <div className="mb-8">
@@ -177,7 +181,9 @@ export default function OnboardingProgress({
                 <div className="text-center mt-2">
                   <div
                     className={`font-semibold text-sm ${
-                      isStepCompleted(step.number) || step.number <= currentStep ? "text-gray-900" : "text-gray-500"
+                      isStepCompleted(step.number) || step.number <= currentStep
+                        ? "text-gray-900"
+                        : "text-gray-500"
                     }`}
                   >
                     {step.label}
@@ -188,18 +194,21 @@ export default function OnboardingProgress({
                 </div>
 
                 {/* Skip Button */}
-                {allowSkip && step.skippable && step.number === currentStep && !isStepCompleted(step.number) && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => handleSkipStep(step.number)}
-                    disabled={isLoading}
-                    className="mt-2 text-xs text-gray-500 hover:text-gray-700"
-                  >
-                    <SkipForward className="w-3 h-3 mr-1" />
-                    Skip
-                  </Button>
-                )}
+                {allowSkip &&
+                  step.skippable &&
+                  step.number === currentStep &&
+                  !isStepCompleted(step.number) && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleSkipStep(step.number)}
+                      disabled={isLoading}
+                      className="mt-2 text-xs text-gray-500 hover:text-gray-700"
+                    >
+                      <SkipForward className="w-3 h-3 mr-1" />
+                      Skip
+                    </Button>
+                  )}
               </div>
 
               {/* Connector Line */}
@@ -222,17 +231,15 @@ export default function OnboardingProgress({
           <p className="text-sm text-gray-600">
             Step {currentStep} of 4 • Estimated time: {steps[currentStep - 1]?.estimatedTime ?? "—"}
           </p>
-          <p className="text-xs text-gray-500 mt-1">
-            {completedSteps.length} of 4 steps completed
-          </p>
+          <p className="text-xs text-gray-500 mt-1">{completedSteps.length} of 4 steps completed</p>
         </div>
 
         {/* Quick Navigation */}
         {allowNavigation && (
           <div className="flex gap-2">
             {steps
-              .filter(step => step.number !== currentStep && isStepClickable(step.number))
-              .map(step => (
+              .filter((step) => step.number !== currentStep && isStepClickable(step.number))
+              .map((step) => (
                 <Button
                   key={step.number}
                   variant="outline"
@@ -252,7 +259,11 @@ export default function OnboardingProgress({
       {completedSteps.length > 0 && (
         <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded-lg">
           <p className="text-sm text-green-800">
-            ✅ Completed: {steps.filter(step => completedSteps.includes(step.number)).map(step => step.label).join(", ")}
+            ✅ Completed:{" "}
+            {steps
+              .filter((step) => completedSteps.includes(step.number))
+              .map((step) => step.label)
+              .join(", ")}
           </p>
         </div>
       )}

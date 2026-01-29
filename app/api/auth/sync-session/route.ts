@@ -22,7 +22,6 @@ export async function POST(request: NextRequest) {
     const projectRef = supabaseUrl.match(/https:\/\/([^.]+)\.supabase\.co/)?.[1] || "";
 
     if (!projectRef) {
-
       return apiErrors.internal("Configuration error");
     }
 
@@ -41,7 +40,6 @@ export async function POST(request: NextRequest) {
 
     return response;
   } catch (err) {
-
     return apiErrors.internal("Internal server error");
   }
 }

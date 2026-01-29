@@ -34,7 +34,6 @@ export const GET = withUnifiedAuth(async (req: NextRequest, context) => {
       .order("created_at", { ascending: false });
 
     if (fetchError) {
-
       return apiErrors.database(
         "Failed to fetch reviews",
         isDevelopment() ? fetchError.message : undefined
@@ -44,7 +43,6 @@ export const GET = withUnifiedAuth(async (req: NextRequest, context) => {
     // STEP 4: Return success response
     return success({ reviews: data || [] });
   } catch (error) {
-
     if (isZodError(error)) {
       return handleZodError(error);
     }

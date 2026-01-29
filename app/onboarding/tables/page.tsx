@@ -243,7 +243,7 @@ export default function OnboardingTablesPage() {
             1: "/onboarding/venue-setup",
             2: "/onboarding/menu",
             3: "/onboarding/tables",
-            4: "/onboarding/test-order"
+            4: "/onboarding/test-order",
           };
           router.push(routes[step as keyof typeof routes]);
         }}

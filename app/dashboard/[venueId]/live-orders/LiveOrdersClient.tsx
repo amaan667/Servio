@@ -394,64 +394,66 @@ export default function LiveOrdersClient({
               <div className="rounded-2xl border border-slate-200 bg-slate-50 p-10 text-center text-gray-700">
                 <p className="text-lg font-medium">Loading orders…</p>
               </div>
-            ) : (() => {
-              // Combine live and all today orders if table filter is active
-              const allFilteredOrders = parsedTableFilter
-                ? [...filteredLiveOrders, ...filteredAllTodayOrders]
-                : filteredLiveOrders;
+            ) : (
+              (() => {
+                // Combine live and all today orders if table filter is active
+                const allFilteredOrders = parsedTableFilter
+                  ? [...filteredLiveOrders, ...filteredAllTodayOrders]
+                  : filteredLiveOrders;
 
-              if (allFilteredOrders.length === 0) {
+                if (allFilteredOrders.length === 0) {
+                  return (
+                    <EmptyState
+                      title={searchQuery ? "No orders found" : "No Live Orders"}
+                      description={
+                        searchQuery
+                          ? "Try adjusting your search query"
+                          : "Recent orders will appear here"
+                      }
+                    />
+                  );
+                }
+
                 return (
-                  <EmptyState
-                    title={searchQuery ? "No orders found" : "No Live Orders"}
-                    description={
-                      searchQuery
-                        ? "Try adjusting your search query"
-                        : "Recent orders will appear here"
-                    }
-                  />
+                  <>
+                    <BulkCompleteButton
+                      count={
+                        allFilteredOrders.filter((order) =>
+                          ["PLACED", "IN_PREP", "READY", "SERVING", "SERVED"].includes(
+                            order.order_status
+                          )
+                        ).length
+                      }
+                      isCompleting={isBulkCompleting}
+                      onClick={handleBulkComplete}
+                    />
+
+                    {searchQuery && (
+                      <div className="text-sm text-gray-600 mb-4">
+                        Found {allFilteredOrders.length} order
+                        {allFilteredOrders.length !== 1 ? "s" : ""} matching "{searchQuery}"
+                      </div>
+                    )}
+
+                    {renderOrdersSection(
+                      allFilteredOrders.filter((order) => isCounterOrder(order)),
+                      "Counter Orders",
+                      "orange"
+                    )}
+
+                    {renderOrdersSection(
+                      allFilteredOrders.filter(
+                        (order) =>
+                          !isCounterOrder(order) &&
+                          LIVE_TABLE_ORDER_STATUSES.includes(order.order_status)
+                      ),
+                      "Table Orders",
+                      "blue"
+                    )}
+                  </>
                 );
-              }
-
-              return (
-                <>
-                  <BulkCompleteButton
-                    count={
-                      allFilteredOrders.filter((order) =>
-                        ["PLACED", "IN_PREP", "READY", "SERVING", "SERVED"].includes(
-                          order.order_status
-                        )
-                      ).length
-                    }
-                    isCompleting={isBulkCompleting}
-                    onClick={handleBulkComplete}
-                  />
-
-                  {searchQuery && (
-                    <div className="text-sm text-gray-600 mb-4">
-                      Found {allFilteredOrders.length} order
-                      {allFilteredOrders.length !== 1 ? "s" : ""} matching "{searchQuery}"
-                    </div>
-                  )}
-
-                  {renderOrdersSection(
-                    allFilteredOrders.filter((order) => isCounterOrder(order)),
-                    "Counter Orders",
-                    "orange"
-                  )}
-
-                  {renderOrdersSection(
-                    allFilteredOrders.filter(
-                      (order) =>
-                        !isCounterOrder(order) &&
-                        LIVE_TABLE_ORDER_STATUSES.includes(order.order_status)
-                    ),
-                    "Table Orders",
-                    "blue"
-                  )}
-                </>
-              );
-            })()}
+              })()
+            )}
           </div>
         )}
 
@@ -461,60 +463,62 @@ export default function LiveOrdersClient({
               <div className="rounded-2xl border border-slate-200 bg-slate-50 p-10 text-center text-gray-700">
                 <p className="text-lg font-medium">Loading orders…</p>
               </div>
-            ) : (() => {
-              // Combine live and all today orders if table filter is active
-              const allFilteredOrders = parsedTableFilter
-                ? [...filteredLiveOrders, ...filteredAllTodayOrders]
-                : filteredAllTodayOrders;
+            ) : (
+              (() => {
+                // Combine live and all today orders if table filter is active
+                const allFilteredOrders = parsedTableFilter
+                  ? [...filteredLiveOrders, ...filteredAllTodayOrders]
+                  : filteredAllTodayOrders;
 
-              if (allFilteredOrders.length === 0) {
+                if (allFilteredOrders.length === 0) {
+                  return (
+                    <EmptyState
+                      title={searchQuery ? "No orders found" : "No Earlier Orders Today"}
+                      description={
+                        searchQuery
+                          ? "Try adjusting your search query"
+                          : "Orders from earlier today will appear here"
+                      }
+                    />
+                  );
+                }
+
                 return (
-                  <EmptyState
-                    title={searchQuery ? "No orders found" : "No Earlier Orders Today"}
-                    description={
-                      searchQuery
-                        ? "Try adjusting your search query"
-                        : "Orders from earlier today will appear here"
-                    }
-                  />
+                  <>
+                    <BulkCompleteButton
+                      count={
+                        allFilteredOrders.filter((order) =>
+                          ["PLACED", "IN_PREP", "READY", "SERVING", "SERVED"].includes(
+                            order.order_status
+                          )
+                        ).length
+                      }
+                      isCompleting={isBulkCompleting}
+                      onClick={handleBulkComplete}
+                    />
+
+                    {searchQuery && (
+                      <div className="text-sm text-gray-600 mb-4">
+                        Found {allFilteredOrders.length} order
+                        {allFilteredOrders.length !== 1 ? "s" : ""} matching "{searchQuery}"
+                      </div>
+                    )}
+
+                    {renderOrdersSection(
+                      allFilteredOrders.filter((order) => isCounterOrder(order)),
+                      "Counter Orders",
+                      "orange"
+                    )}
+
+                    {renderOrdersSection(
+                      allFilteredOrders.filter((order) => !isCounterOrder(order)),
+                      "Table Orders",
+                      "blue"
+                    )}
+                  </>
                 );
-              }
-
-              return (
-                <>
-                  <BulkCompleteButton
-                    count={
-                      allFilteredOrders.filter((order) =>
-                        ["PLACED", "IN_PREP", "READY", "SERVING", "SERVED"].includes(
-                          order.order_status
-                        )
-                      ).length
-                    }
-                    isCompleting={isBulkCompleting}
-                    onClick={handleBulkComplete}
-                  />
-
-                  {searchQuery && (
-                    <div className="text-sm text-gray-600 mb-4">
-                      Found {allFilteredOrders.length} order
-                      {allFilteredOrders.length !== 1 ? "s" : ""} matching "{searchQuery}"
-                    </div>
-                  )}
-
-                  {renderOrdersSection(
-                    allFilteredOrders.filter((order) => isCounterOrder(order)),
-                    "Counter Orders",
-                    "orange"
-                  )}
-
-                  {renderOrdersSection(
-                    allFilteredOrders.filter((order) => !isCounterOrder(order)),
-                    "Table Orders",
-                    "blue"
-                  )}
-                </>
-              );
-            })()}
+              })()
+            )}
           </div>
         )}
 

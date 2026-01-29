@@ -8,10 +8,7 @@
  * - Graceful degradation in private browsing mode
  */
 
-export function safeGetItem(
-  storage: Storage,
-  key: string
-): string | null {
+export function safeGetItem(storage: Storage, key: string): string | null {
   try {
     return storage.getItem(key);
   } catch {
@@ -34,14 +31,10 @@ const ESSENTIAL_KEYS = [
  * Check if a key is essential for app functionality
  */
 function isEssentialKey(key: string): boolean {
-  return ESSENTIAL_KEYS.some(prefix => key.startsWith(prefix));
+  return ESSENTIAL_KEYS.some((prefix) => key.startsWith(prefix));
 }
 
-export function safeSetItem(
-  storage: Storage,
-  key: string,
-  value: string
-): boolean {
+export function safeSetItem(storage: Storage, key: string, value: string): boolean {
   try {
     storage.setItem(key, value);
     return true;
@@ -54,16 +47,18 @@ export function safeSetItem(
       // First pass: clear non-essential keys
       for (let i = 0; i < storage.length; i++) {
         const k = storage.key(i);
-        if (k && !isEssentialKey(k) && (
-          k.startsWith("menu_") ||
-          k.startsWith("categories_") ||
-          k.startsWith("venue_name_") ||
-          k.startsWith("has_pdf_images_") ||
-          k.startsWith("pdf_images_") ||
-          k.startsWith("user_role_") ||
-          k.startsWith("venue_id_") ||
-          k.startsWith("dashboard_")
-        )) {
+        if (
+          k &&
+          !isEssentialKey(k) &&
+          (k.startsWith("menu_") ||
+            k.startsWith("categories_") ||
+            k.startsWith("venue_name_") ||
+            k.startsWith("has_pdf_images_") ||
+            k.startsWith("pdf_images_") ||
+            k.startsWith("user_role_") ||
+            k.startsWith("venue_id_") ||
+            k.startsWith("dashboard_"))
+        ) {
           keysToRemove.push(k);
         }
       }
@@ -91,10 +86,7 @@ export function safeSetItem(
   }
 }
 
-export function safeRemoveItem(
-  storage: Storage,
-  key: string
-): void {
+export function safeRemoveItem(storage: Storage, key: string): void {
   try {
     storage.removeItem(key);
   } catch {

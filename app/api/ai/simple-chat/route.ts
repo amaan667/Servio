@@ -39,7 +39,6 @@ export const POST = withUnifiedAuth(
       try {
         body = await req.json();
       } catch (jsonError) {
-
         return NextResponse.json(
           {
             error: "Invalid request body",
@@ -62,15 +61,12 @@ export const POST = withUnifiedAuth(
       let assistantContext;
       let summaries;
       try {
-
         assistantContext = await getAssistantContext(context.venueId, context.user.id);
         // Context retrieved successfully
 
         summaries = await getAllSummaries(context.venueId, assistantContext.features);
         // Summaries retrieved
-
       } catch (contextError) {
-
         return NextResponse.json(
           { error: "Failed to load assistant context", message: "Please try again" },
           { status: 500 }
@@ -80,7 +76,11 @@ export const POST = withUnifiedAuth(
       // Build conversation context from history
 
       let conversationContext = "";
-      if (conversationHistory && Array.isArray(conversationHistory) && conversationHistory.length > 0) {
+      if (
+        conversationHistory &&
+        Array.isArray(conversationHistory) &&
+        conversationHistory.length > 0
+      ) {
         const recentMessages = conversationHistory.slice(-5); // Last 5 messages
         conversationContext =
           "\n\nRECENT CONVERSATION:\n" +
@@ -95,8 +95,9 @@ export const POST = withUnifiedAuth(
             .filter((s) => s.length > 0)
             .join("\n");
         // Conversation context built
-
-      } else { /* Else case handled */ }
+      } else {
+        /* Else case handled */
+      }
 
       // Plan the action with conversation context
       const enhancedMessage = conversationContext ? `${message}${conversationContext}` : message;
@@ -109,7 +110,6 @@ export const POST = withUnifiedAuth(
 
       // Handle direct answer (no tools needed)
       if (plan.directAnswer) {
-
         response = plan.directAnswer;
       }
       // Check if we have warnings asking for clarification (should not execute tools)
@@ -156,9 +156,7 @@ export const POST = withUnifiedAuth(
                 };
                 // Add navigation message if there are no other messages
                 if (messages.length === 0) {
-                  messages.push(
-                    (resultData.message as string) || "Navigating..."
-                  );
+                  messages.push((resultData.message as string) || "Navigating...");
                 }
               }
               // Handle QR code generation
@@ -276,12 +274,14 @@ export const POST = withUnifiedAuth(
         }
         // Otherwise, provide a helpful generic response without exposing reasoning
         else {
-          response = "I'm sorry, I couldn't find the information you're looking for. Please try rephrasing your question or ask me something else.";
+          response =
+            "I'm sorry, I couldn't find the information you're looking for. Please try rephrasing your question or ask me something else.";
         }
       }
       // Ultimate fallback - only show greeting for completely unhandled cases
       else {
-        response = "Hello! I'm here to help you with your hospitality business. I can assist with menu management, orders, inventory, QR codes, analytics, and more. Try asking me questions like 'How many menu items do I have?', 'What's my revenue today?', or 'Generate a QR code for Table 5'.";
+        response =
+          "Hello! I'm here to help you with your hospitality business. I can assist with menu management, orders, inventory, QR codes, analytics, and more. Try asking me questions like 'How many menu items do I have?', 'What's my revenue today?', or 'Generate a QR code for Table 5'.";
       }
 
       // Returning response

@@ -38,7 +38,7 @@ export const POST = createUnifiedHandler(
         metadata: {
           full_name: body.fullName || "",
           venue_name: body.venueName || "",
-        }
+        },
       });
 
       return { sessionId: session.id, url: session.url };
@@ -50,7 +50,7 @@ export const POST = createUnifiedHandler(
     }
 
     const supabase = await createSupabaseClient();
-    
+
     // Get or Create Organization
     let { data: org } = await supabase
       .from("organizations")
@@ -79,7 +79,7 @@ export const POST = createUnifiedHandler(
       id: user.id,
       email: user.email || "",
     });
-    
+
     // Update org if customer ID was just created
     if (customerId !== org!.stripe_customer_id) {
       await supabase

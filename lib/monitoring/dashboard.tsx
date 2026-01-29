@@ -37,7 +37,9 @@ export function PerformanceDashboard() {
         const response = await fetch("/api/performance");
         const metrics = await response.json();
         setData(metrics.data);
-      } catch (error) { /* Error handled silently */ } finally {
+      } catch (error) {
+        /* Error handled silently */
+      } finally {
         setLoading(false);
       }
     };

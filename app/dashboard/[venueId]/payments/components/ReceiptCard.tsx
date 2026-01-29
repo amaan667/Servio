@@ -29,7 +29,12 @@ interface ReceiptCardProps {
   showSplitButton?: boolean;
 }
 
-export function ReceiptCard({ order, onViewReceipt, onSplitBill, showSplitButton = false }: ReceiptCardProps) {
+export function ReceiptCard({
+  order,
+  onViewReceipt,
+  onSplitBill,
+  showSplitButton = false,
+}: ReceiptCardProps) {
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     return date.toLocaleDateString("en-GB", {
@@ -42,12 +47,18 @@ export function ReceiptCard({ order, onViewReceipt, onSplitBill, showSplitButton
   };
 
   const getStatusBadge = (status?: string) => {
-    const statusMap: Record<string, { label: string; variant: "default" | "secondary" | "destructive" | "outline" }> = {
+    const statusMap: Record<
+      string,
+      { label: string; variant: "default" | "secondary" | "destructive" | "outline" }
+    > = {
       PAID: { label: "Paid", variant: "default" },
       UNPAID: { label: "Unpaid", variant: "secondary" },
       REFUNDED: { label: "Refunded", variant: "destructive" },
     };
-    const statusInfo = statusMap[status || ""] || { label: status || "Unknown", variant: "outline" as const };
+    const statusInfo = statusMap[status || ""] || {
+      label: status || "Unknown",
+      variant: "outline" as const,
+    };
     return <Badge variant={statusInfo.variant}>{statusInfo.label}</Badge>;
   };
 
@@ -103,12 +114,22 @@ export function ReceiptCard({ order, onViewReceipt, onSplitBill, showSplitButton
           </div>
 
           <div className="flex flex-col sm:flex-row gap-2 sm:items-start">
-            <Button variant="outline" size="sm" onClick={() => onViewReceipt(order)} className="gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => onViewReceipt(order)}
+              className="gap-2"
+            >
               <Receipt className="h-4 w-4" />
               Receipt
             </Button>
             {showSplitButton && onSplitBill && (
-              <Button variant="outline" size="sm" onClick={() => onSplitBill(order)} className="gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => onSplitBill(order)}
+                className="gap-2"
+              >
                 <Split className="h-4 w-4" />
                 Split
               </Button>

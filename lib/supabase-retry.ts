@@ -23,13 +23,17 @@ export async function retrySupabaseQuery<T>(
 
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
     try {
-      if (attempt > 0) { /* Condition handled */ }
+      if (attempt > 0) {
+        /* Condition handled */
+      }
 
       const result = await queryFn();
 
       // If successful or has data, return immediately
       if (!result.error || result.data) {
-        if (attempt > 0) { /* Condition handled */ }
+        if (attempt > 0) {
+          /* Condition handled */
+        }
         return result;
       }
 
@@ -50,7 +54,6 @@ export async function retrySupabaseQuery<T>(
         errorCode === "503";
 
       if (!isRetryable || attempt === maxRetries) {
-
         return result;
       }
 

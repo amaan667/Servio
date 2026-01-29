@@ -53,7 +53,6 @@ export default async function HomePage() {
       }
     }
   } catch (error) {
-
     // If error, default to not signed in
     isSignedIn = false;
   }

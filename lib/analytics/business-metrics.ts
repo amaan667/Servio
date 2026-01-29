@@ -90,7 +90,6 @@ export class BusinessMetricsService {
         ...staffMetrics,
       };
     } catch (_error) {
-
       throw _error;
     }
   }
@@ -513,7 +512,6 @@ export class BusinessMetricsService {
         todayOrders,
       };
     } catch (_error) {
-
       throw _error;
     }
   }

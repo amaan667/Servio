@@ -86,7 +86,6 @@ export async function updateOrderStatus(
     .single();
 
   if (fetchError || !currentOrder) {
-
     throw new Error(`Order ${orderId} not found`);
   }
 
@@ -114,7 +113,6 @@ export async function updateOrderStatus(
     .eq("venue_id", venueId);
 
   if (updateError) {
-
     throw new Error(`Failed to update order: ${updateError.message}`);
   }
 
@@ -141,7 +139,6 @@ export async function getKitchenOrders(venueId: string): Promise<KitchenOrdersRe
     .order("created_at", { ascending: true });
 
   if (error) {
-
     throw new Error(`Failed to fetch kitchen orders: ${error.message}`);
   }
 
@@ -193,7 +190,6 @@ export async function getOverdueOrders(
     .order("created_at", { ascending: true });
 
   if (error) {
-
     throw new Error(`Failed to fetch overdue orders: ${error.message}`);
   }
 
@@ -241,7 +237,6 @@ export async function getPendingOrders(venueId: string): Promise<PendingOrdersRe
     .order("created_at", { ascending: false });
 
   if (error) {
-
     throw new Error(`Failed to fetch pending orders: ${error.message}`);
   }
 
@@ -291,7 +286,6 @@ export async function getTodayOrderStats(venueId: string): Promise<{
     .not("order_status", "in", '("CANCELLED","REFUNDED")');
 
   if (error) {
-
     throw new Error(`Failed to fetch orders: ${error.message}`);
   }
 

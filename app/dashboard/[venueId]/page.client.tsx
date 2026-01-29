@@ -9,6 +9,7 @@ import { useConnectionMonitor } from "@/lib/connection-monitor";
 // RoleManagementPopup and VenueSwitcherPopup removed - not used in this component
 import TrialStatusBanner from "@/components/TrialStatusBanner";
 import { useAuthRedirect } from "./hooks/useAuthRedirect";
+import { normalizeVenueId } from "@/lib/utils/venueId";
 
 // Removed PullToRefresh - not needed, causes build issues
 
@@ -18,7 +19,7 @@ import {
   type DashboardCounts,
   type DashboardStats,
 } from "./hooks/useDashboardData";
-import { useAnalyticsData } from "./hooks/useAnalyticsData";
+import { useDashboardAnalyticsData } from "./hooks/useAnalyticsData";
 
 // New Modern Components
 import { QuickActionsToolbar } from "./components/QuickActionsToolbar";
@@ -60,20 +61,26 @@ const DashboardClient = React.memo(function DashboardClient({
   initialStats?: DashboardStats;
 }) {
   // Log immediately in browser console when component mounts
-   
-  console.log("%c[DASHBOARD-CLIENT] ========== COMPONENT MOUNTED ==========", "color: #f59e0b; font-weight: bold; font-size: 16px;");
-   
+
+  console.log(
+    "%c[DASHBOARD-CLIENT] ========== COMPONENT MOUNTED ==========",
+    "color: #f59e0b; font-weight: bold; font-size: 16px;"
+  );
+
   console.log("%c[DASHBOARD-CLIENT] Component Props", "color: #f59e0b; font-weight: bold;");
-   
+
   console.log({
     venueId,
     hasInitialCounts: !!initialCounts,
     hasInitialStats: !!initialStats,
     timestamp: new Date().toISOString(),
   });
-   
-  console.log("%c[DASHBOARD-CLIENT] Check window.__PLATFORM_AUTH__ for server auth info", "color: #f59e0b; font-weight: bold;");
-   
+
+  console.log(
+    "%c[DASHBOARD-CLIENT] Check window.__PLATFORM_AUTH__ for server auth info",
+    "color: #f59e0b; font-weight: bold;"
+  );
+
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   console.log("window.__PLATFORM_AUTH__:", (window as any).__PLATFORM_AUTH__);
 
@@ -301,7 +308,7 @@ const DashboardClient = React.memo(function DashboardClient({
 
   // Listen to custom events for instant updates when menu items or tables change
   useEffect(() => {
-    const normalizedVenueId = venueId.startsWith("venue-") ? venueId : `venue-${venueId}`;
+    const normalizedVenueId = normalizeVenueId(venueId) ?? venueId;
 
     const handleMenuItemsChanged = (event: Event) => {
       const customEvent = event as CustomEvent<{ venueId: string; count: number }>;
@@ -351,7 +358,7 @@ const DashboardClient = React.memo(function DashboardClient({
 
   // Fetch live analytics data for charts
   // Hooks must be called unconditionally
-  const analyticsData = useAnalyticsData(venueId);
+  const analyticsData = useDashboardAnalyticsData(venueId);
 
   // Log after hook completes
   // Analytics data is derived - no effect needed
@@ -431,12 +438,13 @@ const DashboardClient = React.memo(function DashboardClient({
 
   // Use live analytics data or fallback to empty data
   // Derived state - no memoization needed (React Compiler handles this)
-  const ordersByHour = analyticsData.data?.ordersByHour && analyticsData.data.ordersByHour.length > 0
-    ? analyticsData.data.ordersByHour
-    : Array.from({ length: 24 }, (_, i) => ({
-        hour: `${i}:00`,
-        orders: 0,
-      }));
+  const ordersByHour =
+    analyticsData.data?.ordersByHour && analyticsData.data.ordersByHour.length > 0
+      ? analyticsData.data.ordersByHour
+      : Array.from({ length: 24 }, (_, i) => ({
+          hour: `${i}:00`,
+          orders: 0,
+        }));
 
   // Removed table utilization - can't calculate without knowing max table capacity
   const tableUtilization = 0; // Placeholder, not displayed

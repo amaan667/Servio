@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 
 export interface CreateTableParams {
@@ -62,7 +61,6 @@ export function useTableManagement() {
 
       return data.table;
     } catch (_err) {
-
       const errorMessage = _err instanceof Error ? _err.message : "Failed to create table";
       setError(errorMessage);
       throw _err;
@@ -92,7 +90,6 @@ export function useTableManagement() {
 
       return data.table;
     } catch (_err) {
-
       const errorMessage = _err instanceof Error ? _err.message : "Failed to update table";
       setError(errorMessage);
       throw _err;
@@ -117,7 +114,6 @@ export function useTableManagement() {
 
       return data;
     } catch (_err) {
-
       const errorMessage = _err instanceof Error ? _err.message : "Failed to delete table";
       setError(errorMessage);
       throw _err;
@@ -144,7 +140,6 @@ export function useTableManagement() {
 
       return data.table;
     } catch (_err) {
-
       const errorMessage = _err instanceof Error ? _err.message : "Failed to reissue QR";
       setError(errorMessage);
       throw _err;

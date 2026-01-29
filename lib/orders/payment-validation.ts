@@ -27,7 +27,6 @@ export async function validateOrderCompletion(
       .single();
 
     if (error || !order) {
-
       return {
         isValid: false,
         error: "Order not found",
@@ -64,7 +63,6 @@ export async function validateOrderCompletion(
       orderStatus,
     };
   } catch (error) {
-
     return {
       isValid: false,
       error: "Failed to validate order payment status",
@@ -88,7 +86,6 @@ export async function validateBulkOrderCompletion(
       .eq("venue_id", venueId);
 
     if (error) {
-
       return {
         isValid: false,
         error: "Failed to fetch orders for validation",
@@ -122,7 +119,6 @@ export async function validateBulkOrderCompletion(
     );
 
     if (nonCompletableOrders.length > 0) {
-
       // Return valid but with warning - caller can filter
       return {
         isValid: true,
@@ -133,7 +129,6 @@ export async function validateBulkOrderCompletion(
       isValid: true,
     };
   } catch (error) {
-
     return {
       isValid: false,
       error: "Failed to validate orders payment status",

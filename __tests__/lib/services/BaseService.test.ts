@@ -42,11 +42,7 @@ describe("BaseService", () => {
     it("should return cached value if available", async () => {
       vi.mocked(cache.get).mockResolvedValue("cached-value" as never);
 
-      const result = await service["withCache"](
-        "test-key",
-        async () => "new-value",
-        300
-      );
+      const result = await service["withCache"]("test-key", async () => "new-value", 300);
 
       expect(result).toBe("cached-value");
       expect(cache.get).toHaveBeenCalledWith("test-key");

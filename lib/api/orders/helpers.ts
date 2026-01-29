@@ -65,7 +65,6 @@ export async function ensureTableExists(
     .single();
 
   if (createError || !newTable) {
-
     return { tableId: null, autoCreated: false };
   }
 
@@ -95,13 +94,11 @@ export async function findDuplicateOrder(
       .limit(1);
 
     if (error) {
-
       return null;
     }
 
     return data && data.length > 0 ? (data[0] as Record<string, unknown>) : null;
   } catch (_error) {
-
     return null;
   }
 }

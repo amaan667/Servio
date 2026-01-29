@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 
@@ -41,7 +40,6 @@ export function useOrderSummary() {
         setOrderData(data);
       } catch (_error) {
         // Don't redirect - let the parent component handle it
-
       }
     }
     // Don't redirect if no data - the page will show "No order data found" message

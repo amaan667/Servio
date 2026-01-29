@@ -50,7 +50,6 @@ export async function POST(
           .single();
 
         if (fetchError || !currentTable) {
-
           return NextResponse.json({ error: "Table not found or access denied" }, { status: 404 });
         }
 
@@ -67,7 +66,6 @@ export async function POST(
           .single();
 
         if (error) {
-
           return NextResponse.json(
             {
               error: "Failed to reissue QR",

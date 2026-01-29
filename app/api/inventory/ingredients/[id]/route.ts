@@ -25,7 +25,6 @@ export async function PATCH(_request: NextRequest, context: IngredientParams = {
       .single();
 
     if (error) {
-
       return apiErrors.internal(error.message || "Internal server error");
     }
 
@@ -50,7 +49,6 @@ export async function DELETE(_request: NextRequest, context: IngredientParams = 
     const { error } = await supabase.from("ingredients").delete().eq("id", id);
 
     if (error) {
-
       return apiErrors.internal(error.message || "Internal server error");
     }
 

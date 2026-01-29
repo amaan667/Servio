@@ -27,7 +27,6 @@ export const GET = withUnifiedAuth(
       });
 
       if (error) {
-
         return apiErrors.database(
           "Failed to fetch counter status",
           isDevelopment() ? error.message : undefined
@@ -37,7 +36,6 @@ export const GET = withUnifiedAuth(
       // STEP 4: Return success response
       return success({ counters: counterStatus || [] });
     } catch (error) {
-
       if (isZodError(error)) {
         return handleZodError(error);
       }
@@ -101,7 +99,6 @@ export const POST = withUnifiedAuth(
           .single();
 
         if (error || !session) {
-
           return apiErrors.database(
             "Failed to start counter session",
             isDevelopment() ? error?.message : undefined
@@ -120,7 +117,6 @@ export const POST = withUnifiedAuth(
           .single();
 
         if (error || !session) {
-
           return apiErrors.database(
             "Failed to end counter session",
             isDevelopment() ? error?.message : undefined
@@ -130,7 +126,6 @@ export const POST = withUnifiedAuth(
         return success({ session });
       }
     } catch (error) {
-
       if (isZodError(error)) {
         return handleZodError(error);
       }

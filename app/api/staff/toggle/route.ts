@@ -3,6 +3,7 @@ import { withUnifiedAuth } from "@/lib/auth/unified-auth";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import { NextRequest } from "next/server";
 import { success, apiErrors } from "@/lib/api/standard-response";
+import { normalizeVenueId } from "@/lib/utils/venueId";
 
 export const runtime = "nodejs";
 
@@ -21,10 +22,7 @@ export const POST = withUnifiedAuth(
         return apiErrors.badRequest("id and active required");
       }
 
-      // Normalize venueId - database stores with venue- prefix
-      const normalizedVenueId = context.venueId.startsWith("venue-")
-        ? context.venueId
-        : `venue-${context.venueId}`;
+      const normalizedVenueId = normalizeVenueId(context.venueId) ?? context.venueId;
 
       const admin = createAdminClient();
       const { error } = await admin

@@ -107,7 +107,6 @@ export async function getUserTier(userId: string): Promise<string> {
   const accessContext = await getAccessContext(null); // null venueId = user-only context
 
   if (!accessContext || accessContext.user_id !== userId) {
-
     return "starter";
   }
 
@@ -218,7 +217,9 @@ export async function hasAdvancedAnalytics(userId: string): Promise<boolean> {
  * Use this when you already have the tier from auth context
  */
 export function hasAdvancedAnalyticsByTier(tier: string): boolean {
-  const tierKey = String(tier || "starter").toLowerCase().trim();
+  const tierKey = String(tier || "starter")
+    .toLowerCase()
+    .trim();
   const limits = getTierLimits(tierKey);
   return (
     limits.features.analytics === "advanced" || limits.features.analytics === "advanced+exports"
@@ -230,13 +231,18 @@ export function hasAdvancedAnalyticsByTier(tier: string): boolean {
  * Returns: "basic" | "advanced" | "enterprise"
  */
 export function getAnalyticsTierLabel(tier: string): "basic" | "advanced" | "enterprise" {
-  const tierKey = String(tier || "starter").toLowerCase().trim();
+  const tierKey = String(tier || "starter")
+    .toLowerCase()
+    .trim();
   const limits = getTierLimits(tierKey);
-  
+
   if (tierKey === "enterprise") {
     return "enterprise";
   }
-  if (limits.features.analytics === "advanced+exports" || limits.features.analytics === "advanced") {
+  if (
+    limits.features.analytics === "advanced+exports" ||
+    limits.features.analytics === "advanced"
+  ) {
     return "advanced";
   }
   return "basic";

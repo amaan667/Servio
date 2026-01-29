@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 
 export interface TableActionParams {
@@ -43,7 +42,6 @@ export function useTableActions() {
 
       return data;
     } catch (_err) {
-
       const errorMessage = _err instanceof Error ? _err.message : "Failed to execute action";
       setError(errorMessage);
       throw _err;

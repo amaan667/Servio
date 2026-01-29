@@ -57,7 +57,6 @@ export async function GET(req: NextRequest) {
     const { data: orders, error } = await query;
 
     if (error) {
-
       return apiErrors.database("Failed to find unpaid orders", error.message);
     }
 
@@ -69,7 +68,6 @@ export async function GET(req: NextRequest) {
       order: unpaidOrder,
     });
   } catch (error) {
-
     return apiErrors.internal(
       "Failed to check for unpaid orders",
       error instanceof Error ? error.message : undefined

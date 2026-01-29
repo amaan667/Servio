@@ -61,7 +61,7 @@ export function PayAtTillTab({ orders, onMarkPaid, isProcessing }: PayAtTillTabP
       <div className="space-y-4">
         {payAtTillOrders.map((order) => {
           const isPayLater = String(order.payment_method || "").toUpperCase() === "PAY_LATER";
-          
+
           return (
             <Card key={order.id} className="hover:shadow-md transition-shadow">
               <CardContent className="p-4 sm:p-6">
@@ -75,7 +75,9 @@ export function PayAtTillTab({ orders, onMarkPaid, isProcessing }: PayAtTillTabP
                           </h3>
                           <Badge variant="secondary">Unpaid</Badge>
                         </div>
-                        <p className="text-sm text-muted-foreground">{formatDate(order.created_at)}</p>
+                        <p className="text-sm text-muted-foreground">
+                          {formatDate(order.created_at)}
+                        </p>
                       </div>
                     </div>
 
@@ -84,7 +86,9 @@ export function PayAtTillTab({ orders, onMarkPaid, isProcessing }: PayAtTillTabP
                         <div className="flex items-center gap-2">
                           <MapPin className="h-4 w-4 text-muted-foreground" />
                           <span className="text-muted-foreground">
-                            {order.table_label || order.counter_label || `Table ${order.table_number}`}
+                            {order.table_label ||
+                              order.counter_label ||
+                              `Table ${order.table_number}`}
                           </span>
                         </div>
                       )}

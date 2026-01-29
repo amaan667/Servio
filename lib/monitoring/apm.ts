@@ -38,7 +38,7 @@ function initializeDatadog(): void {
   try {
     // Dynamic import to avoid breaking if package not installed
     const tracer = require("dd-trace");
-    
+
     tracer.init({
       service: process.env.DD_SERVICE || "servio-api",
       env: process.env.DD_ENV || process.env.NODE_ENV || "development",
@@ -52,13 +52,11 @@ function initializeDatadog(): void {
     });
 
     if (!isDevelopment()) {
-       
       console.log("[APM] Datadog tracer initialized");
     }
   } catch (error) {
     // Datadog package not installed - graceful degradation
     if (isDevelopment()) {
-       
       console.warn("[APM] Datadog package not installed. Install with: pnpm add dd-trace");
     }
   }
@@ -70,17 +68,15 @@ function initializeDatadog(): void {
 function initializeNewRelic(): void {
   try {
     // Dynamic import to avoid breaking if package not installed
-     
+
     require("newrelic");
-    
+
     if (!isDevelopment()) {
-       
       console.log("[APM] New Relic agent initialized");
     }
   } catch (error) {
     // New Relic package not installed - graceful degradation
     if (isDevelopment()) {
-       
       console.warn("[APM] New Relic package not installed. Install with: pnpm add newrelic");
     }
   }
@@ -89,7 +85,10 @@ function initializeNewRelic(): void {
 /**
  * Start APM transaction
  */
-export function startTransaction(name: string, type: "web" | "db" | "cache" | "external" = "web"): {
+export function startTransaction(
+  name: string,
+  type: "web" | "db" | "cache" | "external" = "web"
+): {
   finish: () => void;
   setTag: (key: string, value: string) => void;
   addError: (error: Error) => void;
@@ -108,7 +107,6 @@ export function startTransaction(name: string, type: "web" | "db" | "cache" | "e
   // For Datadog
   if (provider === "datadog") {
     try {
-       
       const tracer = require("dd-trace");
       const span = tracer.startSpan(name, {
         service: process.env.DD_SERVICE || "servio-api",
@@ -119,7 +117,8 @@ export function startTransaction(name: string, type: "web" | "db" | "cache" | "e
       return {
         finish: () => span.finish(),
         setTag: (key: string, value: string) => span.setTag(key, value),
-        addError: (error: Error) => span.setTag("error", true).setTag("error.message", error.message),
+        addError: (error: Error) =>
+          span.setTag("error", true).setTag("error.message", error.message),
       };
     } catch {
       return { finish: () => {}, setTag: () => {}, addError: () => {} };
@@ -129,7 +128,6 @@ export function startTransaction(name: string, type: "web" | "db" | "cache" | "e
   // For New Relic
   if (provider === "newrelic") {
     try {
-       
       const newrelic = require("newrelic");
       return {
         finish: () => {},
@@ -152,9 +150,12 @@ export function recordMetric(name: string, value: number, tags?: Record<string, 
 
   if (provider === "datadog") {
     try {
-       
       const tracer = require("dd-trace");
-      tracer.dogstatsd.histogram(name, value, tags ? Object.entries(tags).map(([k, v]) => `${k}:${v}`) : []);
+      tracer.dogstatsd.histogram(
+        name,
+        value,
+        tags ? Object.entries(tags).map(([k, v]) => `${k}:${v}`) : []
+      );
     } catch {
       // Datadog not available
     }
@@ -162,7 +163,6 @@ export function recordMetric(name: string, value: number, tags?: Record<string, 
 
   if (provider === "newrelic") {
     try {
-       
       const newrelic = require("newrelic");
       newrelic.recordMetric(name, value);
     } catch {

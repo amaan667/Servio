@@ -55,7 +55,11 @@ export function useGroupSession(
             setGroupSize(data.groupSize);
             // Cache group size (best-effort)
             if (typeof window !== "undefined") {
-              safeSetItem(sessionStorage, `group_size_${venueSlug}_${tableNumber}`, String(data.groupSize));
+              safeSetItem(
+                sessionStorage,
+                `group_size_${venueSlug}_${tableNumber}`,
+                String(data.groupSize)
+              );
             }
             // Don't show modal if session exists
             return;
@@ -85,7 +89,11 @@ export function useGroupSession(
 
     // Cache immediately for instant load next time (best-effort)
     if (typeof window !== "undefined") {
-      safeSetItem(sessionStorage, `group_size_${venueSlug}_${tableNumber}`, String(selectedGroupSize));
+      safeSetItem(
+        sessionStorage,
+        `group_size_${venueSlug}_${tableNumber}`,
+        String(selectedGroupSize)
+      );
     }
 
     try {

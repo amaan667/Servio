@@ -77,7 +77,6 @@ export async function getAllStaff(venueId: string): Promise<StaffListResult> {
     .order("created_at", { ascending: true });
 
   if (rolesError) {
-
     throw new Error(`Failed to fetch staff: ${rolesError.message}`);
   }
 
@@ -193,7 +192,6 @@ export async function inviteStaffMember(
     .single();
 
   if (inviteError) {
-
     throw new Error(`Failed to send invitation: ${inviteError.message}`);
   }
 

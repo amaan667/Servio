@@ -73,7 +73,6 @@ export function isFeatureEnabled(feature: FeatureName, venueId?: string): boolea
   const flag = FEATURES[feature];
 
   if (!flag) {
-
     return false;
   }
 
@@ -153,5 +152,4 @@ function hashString(str: string): number {
  */
 export function logFeatureUsage(feature: FeatureName, venueId?: string, enabled?: boolean) {
   const isEnabled = enabled !== undefined ? enabled : isFeatureEnabled(feature, venueId);
-
 }

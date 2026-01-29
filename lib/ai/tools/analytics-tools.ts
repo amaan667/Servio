@@ -292,9 +292,7 @@ export async function forecastRevenue(venueId: string): Promise<RevenueForecastR
     const bestDay = dayAvgs[0]!;
     const slowestDay = dayAvgs[dayAvgs.length - 1]!;
     trends.push(`Best day: ${dayNames[bestDay.day]} (avg ${bestDay.avg.toFixed(2)})`);
-    trends.push(
-      `Slowest day: ${dayNames[slowestDay.day]} (avg ${slowestDay.avg.toFixed(2)})`
-    );
+    trends.push(`Slowest day: ${dayNames[slowestDay.day]} (avg ${slowestDay.avg.toFixed(2)})`);
   }
 
   // Recommendations

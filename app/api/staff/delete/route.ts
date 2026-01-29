@@ -2,7 +2,13 @@ import { createAdminClient } from "@/lib/supabase";
 import { withUnifiedAuth } from "@/lib/auth/unified-auth";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import { NextRequest } from "next/server";
-import { success, apiErrors, error as errorResponse, ErrorCodes } from "@/lib/api/standard-response";
+import {
+  success,
+  apiErrors,
+  error as errorResponse,
+  ErrorCodes,
+} from "@/lib/api/standard-response";
+import { normalizeVenueId } from "@/lib/utils/venueId";
 
 export const runtime = "nodejs";
 
@@ -12,12 +18,10 @@ export const runtime = "nodejs";
  */
 export const POST = withUnifiedAuth(
   async (req: NextRequest, context) => {
-
     try {
       // CRITICAL: Rate limiting
       const rateLimitResult = await rateLimit(req, RATE_LIMITS.GENERAL);
       if (!rateLimitResult.success) {
-
         return apiErrors.rateLimit(Math.ceil((rateLimitResult.reset - Date.now()) / 1000));
       }
 
@@ -25,9 +29,7 @@ export const POST = withUnifiedAuth(
 
       const id = typeof body?.id === "string" ? body.id.trim() : "";
 
-      const normalizedVenueId = context.venueId.startsWith("venue-")
-        ? context.venueId
-        : `venue-${context.venueId}`;
+      const normalizedVenueId = normalizeVenueId(context.venueId) ?? context.venueId;
 
       if (!id) {
         return apiErrors.badRequest("id required");
@@ -35,18 +37,18 @@ export const POST = withUnifiedAuth(
 
       const supabase = createAdminClient();
 
-      const { data: existing, error: selectError } = await supabase
+      // Find by id first (staff.id is globally unique); then verify venue
+      const { data: row, error: selectError } = await supabase
         .from("staff")
-        .select("id")
+        .select("id, venue_id")
         .eq("id", id)
-        .eq("venue_id", normalizedVenueId)
         .maybeSingle();
 
       if (selectError) {
         return apiErrors.badRequest(selectError.message);
       }
 
-      if (!existing) {
+      if (!row) {
         const { data: staffWithNormalized } = await supabase
           .from("staff")
           .select("id, venue_id")
@@ -69,11 +71,17 @@ export const POST = withUnifiedAuth(
         });
       }
 
+      const rowVenueNormalized = normalizeVenueId(row.venue_id) ?? row.venue_id;
+      const contextVenueNormalized = normalizeVenueId(context.venueId) ?? context.venueId;
+      if (rowVenueNormalized !== contextVenueNormalized) {
+        return apiErrors.forbidden("Staff member does not belong to this venue");
+      }
+
       const { error } = await supabase
         .from("staff")
         .delete()
         .eq("id", id)
-        .eq("venue_id", normalizedVenueId);
+        .eq("venue_id", row.venue_id);
 
       if (error) {
         return apiErrors.badRequest(error.message);

@@ -48,12 +48,10 @@ class MonitoringService {
     switch (level) {
       case "critical":
       case "error":
-
         await this.sendToSentry(event, "error");
         await this.sendAlert(event);
         break;
       case "warning":
-
         await this.sendToSentry(event, "warning");
         break;
       case "info":
@@ -132,7 +130,9 @@ class MonitoringService {
           }),
         });
       }
-    } catch (error) { /* Error handled silently */ }
+    } catch (error) {
+      /* Error handled silently */
+    }
   }
 
   /**

@@ -9,12 +9,15 @@ import { z } from "zod";
 export const runtime = "nodejs";
 
 const removeTablesSchema = z.object({
-  tableNumbers: z.array(z.number().int().positive()).min(1, "At least one table number is required"),
+  tableNumbers: z
+    .array(z.number().int().positive())
+    .min(1, "At least one table number is required"),
 });
 
-export const POST = createUnifiedHandler(async (_req: NextRequest, context) => {
-  const { body, venueId } = context;
-  const { tableNumbers } = body;
+export const POST = createUnifiedHandler(
+  async (_req: NextRequest, context) => {
+    const { body, venueId } = context;
+    const { tableNumbers } = body;
 
     // Validation already done by unified handler schema
     if (!venueId) {

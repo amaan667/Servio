@@ -23,7 +23,6 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ ven
       .maybeSingle();
 
     if (error) {
-
       return apiErrors.internal("Failed to fetch category order");
     }
 
@@ -40,7 +39,6 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ ven
       categories: categories || null,
     });
   } catch (_error) {
-
     return apiErrors.internal("Internal server error");
   }
 }

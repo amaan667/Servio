@@ -94,7 +94,9 @@ describe("Inventory Ingredients API", () => {
       expect(Array.isArray(json.data)).toBe(true);
     });
 
-    it("should validate request parameters", async () => { /* Intentionally empty */ });
+    it("should validate request parameters", async () => {
+      /* Intentionally empty */
+    });
   });
 
   describe("POST inventory/ingredients", () => {
@@ -151,6 +153,8 @@ describe("Inventory Ingredients API", () => {
       }
     });
 
-    it("should validate request parameters", async () => { /* Intentionally empty */ });
+    it("should validate request parameters", async () => {
+      /* Intentionally empty */
+    });
   });
 });

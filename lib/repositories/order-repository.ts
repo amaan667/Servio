@@ -69,13 +69,11 @@ export class OrderRepository extends BaseRepository<Order> {
       const { data, error } = await query;
 
       if (error) {
-
         throw error;
       }
 
       return (data as Order[]) || [];
     } catch (err) {
-
       throw err;
     }
   }
@@ -125,13 +123,11 @@ export class OrderRepository extends BaseRepository<Order> {
         .limit(limit);
 
       if (error) {
-
         throw error;
       }
 
       return (data as Order[]) || [];
     } catch (_error) {
-
       throw _error;
     }
   }
@@ -183,7 +179,6 @@ export class OrderRepository extends BaseRepository<Order> {
       const { data, error } = await query;
 
       if (error) {
-
         throw error;
       }
 
@@ -206,7 +201,6 @@ export class OrderRepository extends BaseRepository<Order> {
         byStatus,
       };
     } catch (_error) {
-
       throw _error;
     }
   }
@@ -226,13 +220,11 @@ export class OrderRepository extends BaseRepository<Order> {
         .select();
 
       if (error) {
-
         throw error;
       }
 
       return (data as Order[]) || [];
     } catch (_error) {
-
       throw _error;
     }
   }
@@ -251,13 +243,11 @@ export class OrderRepository extends BaseRepository<Order> {
         .limit(50);
 
       if (error) {
-
         throw error;
       }
 
       return (data as Order[]) || [];
     } catch (_error) {
-
       throw _error;
     }
   }

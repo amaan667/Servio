@@ -28,20 +28,22 @@ describe("Entitlements Guards", () => {
     it("should return entitlements for valid venue", async () => {
       const { createAdminClient } = await import("@/lib/supabase");
       const mockSupabase = {
-        rpc: vi.fn(() => Promise.resolve({
-          data: {
-            tier: "pro",
-            maxStaff: 15,
-            maxTables: 100,
-            maxLocations: 3,
-            kds: { enabled: true, mode: "multi" },
-            analytics: { level: "advanced", csvExport: true, financeExport: false },
-            branding: { level: "full", customDomain: false },
-            api: { enabled: false, level: null },
-            support: { level: "priority" },
-          },
-          error: null,
-        })),
+        rpc: vi.fn(() =>
+          Promise.resolve({
+            data: {
+              tier: "pro",
+              maxStaff: 15,
+              maxTables: 100,
+              maxLocations: 3,
+              kds: { enabled: true, mode: "multi" },
+              analytics: { level: "advanced", csvExport: true, financeExport: false },
+              branding: { level: "full", customDomain: false },
+              api: { enabled: false, level: null },
+              support: { level: "priority" },
+            },
+            error: null,
+          })
+        ),
       };
       vi.mocked(createAdminClient).mockReturnValue(mockSupabase);
 
@@ -56,13 +58,15 @@ describe("Entitlements Guards", () => {
     it("should fail closed on invalid entitlement schema", async () => {
       const { createAdminClient } = await import("@/lib/supabase");
       const mockSupabase = {
-        rpc: vi.fn(() => Promise.resolve({
-          data: {
-            tier: "invalid_tier", // Invalid enum value
-            maxStaff: 5,
-          },
-          error: null,
-        })),
+        rpc: vi.fn(() =>
+          Promise.resolve({
+            data: {
+              tier: "invalid_tier", // Invalid enum value
+              maxStaff: 5,
+            },
+            error: null,
+          })
+        ),
       };
       vi.mocked(createAdminClient).mockReturnValue(mockSupabase);
 
@@ -75,20 +79,22 @@ describe("Entitlements Guards", () => {
     it("should normalize null values to unlimited", async () => {
       const { createAdminClient } = await import("@/lib/supabase");
       const mockSupabase = {
-        rpc: vi.fn(() => Promise.resolve({
-          data: {
-            tier: "enterprise",
-            maxStaff: null, // Should become -1 (unlimited)
-            maxTables: null,
-            maxLocations: null,
-            kds: { enabled: true, mode: "enterprise" },
-            analytics: { level: "advanced", csvExport: true, financeExport: true },
-            branding: { level: "white_label", customDomain: true },
-            api: { enabled: true, level: "full" },
-            support: { level: "sla" },
-          },
-          error: null,
-        })),
+        rpc: vi.fn(() =>
+          Promise.resolve({
+            data: {
+              tier: "enterprise",
+              maxStaff: null, // Should become -1 (unlimited)
+              maxTables: null,
+              maxLocations: null,
+              kds: { enabled: true, mode: "enterprise" },
+              analytics: { level: "advanced", csvExport: true, financeExport: true },
+              branding: { level: "white_label", customDomain: true },
+              api: { enabled: true, level: "full" },
+              support: { level: "sla" },
+            },
+            error: null,
+          })
+        ),
       };
       vi.mocked(createAdminClient).mockReturnValue(mockSupabase);
 
@@ -106,20 +112,22 @@ describe("Entitlements Guards", () => {
     it("should allow access to enabled features", async () => {
       const { createAdminClient } = await import("@/lib/supabase");
       const mockSupabase = {
-        rpc: vi.fn(() => Promise.resolve({
-          data: {
-            tier: "pro",
-            maxStaff: 15,
-            maxTables: 100,
-            maxLocations: 3,
-            kds: { enabled: true, mode: "multi" },
-            analytics: { level: "advanced", csvExport: true, financeExport: false },
-            branding: { level: "full", customDomain: false },
-            api: { enabled: false, level: null },
-            support: { level: "priority" },
-          },
-          error: null,
-        })),
+        rpc: vi.fn(() =>
+          Promise.resolve({
+            data: {
+              tier: "pro",
+              maxStaff: 15,
+              maxTables: 100,
+              maxLocations: 3,
+              kds: { enabled: true, mode: "multi" },
+              analytics: { level: "advanced", csvExport: true, financeExport: false },
+              branding: { level: "full", customDomain: false },
+              api: { enabled: false, level: null },
+              support: { level: "priority" },
+            },
+            error: null,
+          })
+        ),
       };
       vi.mocked(createAdminClient).mockReturnValue(mockSupabase);
 
@@ -133,20 +141,22 @@ describe("Entitlements Guards", () => {
     it("should deny access to disabled features", async () => {
       const { createAdminClient } = await import("@/lib/supabase");
       const mockSupabase = {
-        rpc: vi.fn(() => Promise.resolve({
-          data: {
-            tier: "starter",
-            maxStaff: 5,
-            maxTables: 25,
-            maxLocations: 1,
-            kds: { enabled: false, mode: null },
-            analytics: { level: "basic", csvExport: false, financeExport: false },
-            branding: { level: "basic", customDomain: false },
-            api: { enabled: false, level: null },
-            support: { level: "email" },
-          },
-          error: null,
-        })),
+        rpc: vi.fn(() =>
+          Promise.resolve({
+            data: {
+              tier: "starter",
+              maxStaff: 5,
+              maxTables: 25,
+              maxLocations: 1,
+              kds: { enabled: false, mode: null },
+              analytics: { level: "basic", csvExport: false, financeExport: false },
+              branding: { level: "basic", customDomain: false },
+              api: { enabled: false, level: null },
+              support: { level: "email" },
+            },
+            error: null,
+          })
+        ),
       };
       vi.mocked(createAdminClient).mockReturnValue(mockSupabase);
 
@@ -162,20 +172,22 @@ describe("Entitlements Guards", () => {
     it("should allow operations within limits", async () => {
       const { createAdminClient } = await import("@/lib/supabase");
       const mockSupabase = {
-        rpc: vi.fn(() => Promise.resolve({
-          data: {
-            tier: "starter",
-            maxStaff: 5,
-            maxTables: 25,
-            maxLocations: 1,
-            kds: { enabled: false, mode: null },
-            analytics: { level: "basic", csvExport: false, financeExport: false },
-            branding: { level: "basic", customDomain: false },
-            api: { enabled: false, level: null },
-            support: { level: "email" },
-          },
-          error: null,
-        })),
+        rpc: vi.fn(() =>
+          Promise.resolve({
+            data: {
+              tier: "starter",
+              maxStaff: 5,
+              maxTables: 25,
+              maxLocations: 1,
+              kds: { enabled: false, mode: null },
+              analytics: { level: "basic", csvExport: false, financeExport: false },
+              branding: { level: "basic", customDomain: false },
+              api: { enabled: false, level: null },
+              support: { level: "email" },
+            },
+            error: null,
+          })
+        ),
       };
       vi.mocked(createAdminClient).mockReturnValue(mockSupabase);
 
@@ -195,20 +207,22 @@ describe("Entitlements Guards", () => {
     it("should deny operations over limits", async () => {
       const { createAdminClient } = await import("@/lib/supabase");
       const mockSupabase = {
-        rpc: vi.fn(() => Promise.resolve({
-          data: {
-            tier: "starter",
-            maxStaff: 5,
-            maxTables: 25,
-            maxLocations: 1,
-            kds: { enabled: false, mode: null },
-            analytics: { level: "basic", csvExport: false, financeExport: false },
-            branding: { level: "basic", customDomain: false },
-            api: { enabled: false, level: null },
-            support: { level: "email" },
-          },
-          error: null,
-        })),
+        rpc: vi.fn(() =>
+          Promise.resolve({
+            data: {
+              tier: "starter",
+              maxStaff: 5,
+              maxTables: 25,
+              maxLocations: 1,
+              kds: { enabled: false, mode: null },
+              analytics: { level: "basic", csvExport: false, financeExport: false },
+              branding: { level: "basic", customDomain: false },
+              api: { enabled: false, level: null },
+              support: { level: "email" },
+            },
+            error: null,
+          })
+        ),
       };
       vi.mocked(createAdminClient).mockReturnValue(mockSupabase);
 
@@ -230,20 +244,22 @@ describe("Entitlements Guards", () => {
       // Test starter with addon (1 station limit)
       const { createAdminClient } = await import("@/lib/supabase");
       const mockSupabase = {
-        rpc: vi.fn(() => Promise.resolve({
-          data: {
-            tier: "starter",
-            maxStaff: 5,
-            maxTables: 25,
-            maxLocations: 1,
-            kds: { enabled: true, mode: "single" }, // Starter + addon
-            analytics: { level: "basic", csvExport: false, financeExport: false },
-            branding: { level: "basic", customDomain: false },
-            api: { enabled: false, level: null },
-            support: { level: "email" },
-          },
-          error: null,
-        })),
+        rpc: vi.fn(() =>
+          Promise.resolve({
+            data: {
+              tier: "starter",
+              maxStaff: 5,
+              maxTables: 25,
+              maxLocations: 1,
+              kds: { enabled: true, mode: "single" }, // Starter + addon
+              analytics: { level: "basic", csvExport: false, financeExport: false },
+              branding: { level: "basic", customDomain: false },
+              api: { enabled: false, level: null },
+              support: { level: "email" },
+            },
+            error: null,
+          })
+        ),
       };
       vi.mocked(createAdminClient).mockReturnValue(mockSupabase);
 
@@ -266,20 +282,22 @@ describe("Entitlements Guards", () => {
     it("should allow access for sufficient tier", async () => {
       const { createAdminClient } = await import("@/lib/supabase");
       const mockSupabase = {
-        rpc: vi.fn(() => Promise.resolve({
-          data: {
-            tier: "pro",
-            maxStaff: 15,
-            maxTables: 100,
-            maxLocations: 3,
-            kds: { enabled: true, mode: "multi" },
-            analytics: { level: "advanced", csvExport: true, financeExport: false },
-            branding: { level: "full", customDomain: false },
-            api: { enabled: false, level: null },
-            support: { level: "priority" },
-          },
-          error: null,
-        })),
+        rpc: vi.fn(() =>
+          Promise.resolve({
+            data: {
+              tier: "pro",
+              maxStaff: 15,
+              maxTables: 100,
+              maxLocations: 3,
+              kds: { enabled: true, mode: "multi" },
+              analytics: { level: "advanced", csvExport: true, financeExport: false },
+              branding: { level: "full", customDomain: false },
+              api: { enabled: false, level: null },
+              support: { level: "priority" },
+            },
+            error: null,
+          })
+        ),
       };
       vi.mocked(createAdminClient).mockReturnValue(mockSupabase);
 
@@ -293,20 +311,22 @@ describe("Entitlements Guards", () => {
     it("should deny access for insufficient tier", async () => {
       const { createAdminClient } = await import("@/lib/supabase");
       const mockSupabase = {
-        rpc: vi.fn(() => Promise.resolve({
-          data: {
-            tier: "starter",
-            maxStaff: 5,
-            maxTables: 25,
-            maxLocations: 1,
-            kds: { enabled: false, mode: null },
-            analytics: { level: "basic", csvExport: false, financeExport: false },
-            branding: { level: "basic", customDomain: false },
-            api: { enabled: false, level: null },
-            support: { level: "email" },
-          },
-          error: null,
-        })),
+        rpc: vi.fn(() =>
+          Promise.resolve({
+            data: {
+              tier: "starter",
+              maxStaff: 5,
+              maxTables: 25,
+              maxLocations: 1,
+              kds: { enabled: false, mode: null },
+              analytics: { level: "basic", csvExport: false, financeExport: false },
+              branding: { level: "basic", customDomain: false },
+              api: { enabled: false, level: null },
+              support: { level: "email" },
+            },
+            error: null,
+          })
+        ),
       };
       vi.mocked(createAdminClient).mockReturnValue(mockSupabase);
 

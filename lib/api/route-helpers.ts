@@ -24,7 +24,6 @@ export function createApiHandler<TRequest, TResponse>(
         const validation = schema.safeParse(rawBody);
 
         if (!validation.success) {
-
           return NextResponse.json(
             {
               ok: false,
@@ -51,7 +50,6 @@ export function createApiHandler<TRequest, TResponse>(
         data: result,
       });
     } catch (_error) {
-
       // Handle known errors
       if (_error instanceof ZodError) {
         return NextResponse.json(
@@ -89,7 +87,6 @@ export function createGetHandler<TResponse>(handler: (req: NextRequest) => Promi
         data: result,
       });
     } catch (_error) {
-
       return NextResponse.json(
         {
           ok: false,

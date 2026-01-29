@@ -35,7 +35,6 @@ export async function createOrderWithKDSTickets<T>(
       .single();
 
     if (orderError || !insertedOrder) {
-
       return {
         success: false,
         error: orderError?.message || "Failed to create order",
@@ -49,7 +48,6 @@ export async function createOrderWithKDSTickets<T>(
     try {
       await createKDSTicketsFn(supabase, createdOrder);
     } catch (kdsError) {
-
       // Track but don't fail - KDS tickets are non-critical
       trackOrderError(kdsError, {
         orderId: createdOrderId,
@@ -64,13 +62,11 @@ export async function createOrderWithKDSTickets<T>(
       data: createdOrder,
       rollback: async () => {
         if (createdOrderId) {
-
           await supabase.from("orders").delete().eq("id", createdOrderId);
         }
       },
     };
   } catch (error) {
-
     trackOrderError(error, {
       action: "order_creation_transaction",
     });
@@ -79,7 +75,9 @@ export async function createOrderWithKDSTickets<T>(
     if (createdOrderId) {
       try {
         await supabase.from("orders").delete().eq("id", createdOrderId);
-      } catch (rollbackError) { /* Error handled silently */ }
+      } catch (rollbackError) {
+        /* Error handled silently */
+      }
     }
 
     return {

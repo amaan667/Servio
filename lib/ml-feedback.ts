@@ -53,13 +53,11 @@ export async function recordMatchCorrection(correction: MatchCorrection) {
     });
 
     if (error) {
-
       return false;
     }
 
     return true;
   } catch (error) {
-
     return false;
   }
 }
@@ -85,13 +83,11 @@ export async function recordCategoryCorrection(correction: CategoryCorrection) {
     });
 
     if (error) {
-
       return false;
     }
 
     return true;
   } catch (error) {
-
     return false;
   }
 }
@@ -131,7 +127,6 @@ export async function getAdaptiveMatchingThreshold(
 
     return adaptiveThreshold;
   } catch (error) {
-
     return defaultThreshold;
   }
 }
@@ -150,13 +145,11 @@ export async function getAIAccuracyMetrics(venueId?: string, days: number = 30) 
     });
 
     if (error) {
-
       return null;
     }
 
     return data?.[0] || null;
   } catch (error) {
-
     return null;
   }
 }
@@ -222,7 +215,6 @@ export async function recordAIPerformanceMetric(
 
     return true;
   } catch (error) {
-
     return false;
   }
 }

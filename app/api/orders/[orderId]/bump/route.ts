@@ -34,7 +34,6 @@ export const POST = withUnifiedAuth(
       });
 
       if (error) {
-
         return apiErrors.badRequest(isDevelopment() ? error.message : "Failed to bump order");
       }
 
@@ -63,4 +62,3 @@ export const POST = withUnifiedAuth(
     },
   }
 );
-

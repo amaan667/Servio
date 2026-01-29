@@ -58,7 +58,9 @@ function sendToAnalytics(metric: Metric) {
   );
 
   // Log poor ratings
-  if (metric.rating === "poor") { /* Condition handled */ }
+  if (metric.rating === "poor") {
+    /* Condition handled */
+  }
 }
 
 /**
@@ -77,7 +79,9 @@ export function initWebVitals() {
     onFCP(sendToAnalytics); // First Contentful Paint
     onINP(sendToAnalytics); // Interaction to Next Paint
     onTTFB(sendToAnalytics); // Time to First Byte
-  } catch (_error) { /* Error handled silently */ }
+  } catch (_error) {
+    /* Error handled silently */
+  }
 }
 
 /**
@@ -95,7 +99,9 @@ export class PerformanceTracker {
     try {
       this.marks.set(name, performance.now());
       performance.mark(name);
-    } catch (_error) { /* Error handled silently */ }
+    } catch (_error) {
+      /* Error handled silently */
+    }
   }
 
   /**
@@ -128,7 +134,6 @@ export class PerformanceTracker {
 
       return measure.duration;
     } catch (_error) {
-
       return null;
     }
   }
@@ -194,7 +199,9 @@ export class PerformanceTracker {
 
     const observer = new PerformanceObserver((list) => {
       for (const entry of list.getEntries()) {
-        if (entry.duration > 2000) { /* Condition handled */ }
+        if (entry.duration > 2000) {
+          /* Condition handled */
+        }
       }
     });
 
@@ -210,7 +217,6 @@ export class PerformanceTracker {
     try {
       const observer = new PerformanceObserver((list) => {
         for (const entry of list.getEntries()) {
-
           EnhancedErrorTracker.addBreadcrumb("Long Task", "performance", "warning", {
             duration: entry.duration,
             startTime: entry.startTime,

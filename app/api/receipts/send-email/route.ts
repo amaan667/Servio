@@ -173,7 +173,6 @@ export const POST = withUnifiedAuth(
       // STEP 4: Return success response
       return success({ message: "Receipt sent successfully" });
     } catch (error) {
-
       if (isZodError(error)) {
         return handleZodError(error);
       }

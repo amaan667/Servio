@@ -25,8 +25,7 @@ export async function GET(_request: NextRequest, context: { params: { venueId: s
 
     return NextResponse.json({
       ok: true,
-      allow_pay_at_till_for_table_collection:
-        data?.allow_pay_at_till_for_table_collection === true,
+      allow_pay_at_till_for_table_collection: data?.allow_pay_at_till_for_table_collection === true,
     });
   } catch {
     return apiErrors.internal("Internal server error");

@@ -21,7 +21,6 @@ export async function POST(
     });
 
     if (error) {
-
       return apiErrors.internal(error.message || "Internal server error");
     }
 
