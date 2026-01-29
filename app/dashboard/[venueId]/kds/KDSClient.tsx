@@ -271,51 +271,51 @@ export default function KDSClient({
     }
   };
 
-  // Update ticket status
-  // Derived function - no useCallback needed (React Compiler handles this)
+  // Update ticket status (optimistic for "ready" so item moves to Ready section immediately)
   const updateTicketStatus = async (ticketId: string, status: string) => {
+    const previousTickets = tickets;
+    if (status === "ready") {
+      setTickets((prev) =>
+        prev.map((t) =>
+          t.id === ticketId ? { ...t, status: "ready", ready_at: new Date().toISOString() } : t
+        ) as KDSTicket[]
+      );
+    } else if (status === "bumped") {
+      setTickets((prev) => prev.filter((t) => t.id !== ticketId));
+    }
     try {
       const { apiClient } = await import("@/lib/api-client");
       const payload = { ticket_id: ticketId, status, venueId };
-
       const idempotencyKey = `kds-ticket-${ticketId}-${status}-${Date.now()}`;
-
       const response = await apiClient.patch(
         "/api/kds/tickets",
         payload,
         {
           params: { venueId },
-          headers: {
-            "x-idempotency-key": idempotencyKey,
-          },
+          headers: { "x-idempotency-key": idempotencyKey },
         }
       );
-
       if (!response.ok) {
+        setTickets(previousTickets);
         return;
       }
-
       const data = await response.json();
-
       if (data.success) {
-        // Update local state immediately for instant feedback
-        // Real-time handler will also update it, but this provides instant UI feedback
+        const updatedTicket = data.data?.ticket as Partial<KDSTicket> | undefined;
+        const effectiveStatus = (updatedTicket?.status ?? status) as KDSTicket["status"];
         setTickets((prev) => {
-          const updatedTicket = data.data?.ticket as KDSTicket | undefined;
-          if (!updatedTicket) return prev;
-
-          // If ticket is bumped, remove it immediately
-          if (updatedTicket.status === "bumped") {
+          if (effectiveStatus === "bumped") {
             return prev.filter((t) => t.id !== ticketId);
           }
-
-          // Otherwise, update the ticket in place
-          return prev.map((t) => (t.id === ticketId ? { ...t, ...updatedTicket } : t));
+          return prev.map((t) =>
+            t.id === ticketId ? { ...t, ...updatedTicket, status: effectiveStatus } : t
+          );
         });
-        // Don't refetch - real-time handler will keep it in sync
+      } else {
+        setTickets(previousTickets);
       }
     } catch (error) {
-      // Error handled by UI state
+      setTickets(previousTickets);
       setError(error instanceof Error ? error.message : "Failed to update ticket");
     }
   };

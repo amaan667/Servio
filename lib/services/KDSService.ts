@@ -66,9 +66,14 @@ export class KDSService extends BaseService {
   }
 
   /**
-   * Update ticket status and handle order coordination
+   * Update ticket status and handle order coordination.
+   * Returns full ticket so clients can update UI without refetch.
    */
-  async updateTicketStatus(ticketId: string, venueId: string, status: string): Promise<{ order_id: string }> {
+  async updateTicketStatus(
+    ticketId: string,
+    venueId: string,
+    status: string
+  ): Promise<Record<string, unknown> & { order_id: string }> {
     const supabase = await createSupabaseClient();
     const now = new Date().toISOString();
 
@@ -81,25 +86,25 @@ export class KDSService extends BaseService {
     else if (status === "preparing" || status === "in_progress") updateData.started_at = now;
     else if (status === "bumped") updateData.bumped_at = now;
 
-    // 1. Update the ticket
+    // 1. Update the ticket and return full row for UI
     const { data: ticket, error: updateError } = await supabase
       .from("kds_tickets")
       .update(updateData)
       .eq("id", ticketId)
       .eq("venue_id", venueId)
-      .select("order_id")
+      .select("*")
       .single();
 
     if (updateError) throw updateError;
 
     // 2. Coordinate with order if bumped
-    if (status === "bumped" && ticket.order_id) {
+    if (status === "bumped" && ticket?.order_id) {
       const { data: allTickets } = await supabase
         .from("kds_tickets")
         .select("status")
         .eq("order_id", ticket.order_id);
 
-      const allBumped = allTickets?.every(t => t.status === "bumped");
+      const allBumped = allTickets?.every((t) => t.status === "bumped");
       if (allBumped) {
         await supabase.rpc("orders_set_kitchen_bumped", {
           p_order_id: ticket.order_id,
@@ -108,7 +113,7 @@ export class KDSService extends BaseService {
       }
     }
 
-    return ticket;
+    return ticket as Record<string, unknown> & { order_id: string };
   }
 
   /**

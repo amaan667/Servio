@@ -7,6 +7,7 @@ const protectedPaths = [
   "/dashboard",
   "/api/catalog",
   "/api/kds", // KDS: middleware auth only; KDS rate limit on routes - no auth/rate-limit errors
+  "/api/orders", // Live orders serve/complete, etc. - require auth so x-user-id is set
   "/api/tables",
   "/api/inventory",
   "/api/staff",

@@ -383,13 +383,16 @@ export function OrderCard({
     try {
       setIsProcessing(true);
 
+      const { apiClient } = await import("@/lib/api-client");
+      const idempotencyKey = `order-${order.id}-${nextStatus}-${Date.now()}`;
+      const headers = { "x-idempotency-key": idempotencyKey };
+
       if (nextStatus === "SERVED") {
-        // Use server endpoint for serving to ensure related side-effects
-        const response = await fetch("/api/orders/serve", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ orderId: order.id }),
-        });
+        const response = await apiClient.post(
+          "/api/orders/serve",
+          { orderId: order.id, venueId },
+          { headers }
+        );
 
         if (!response.ok) {
           const errorText = await response.text();
@@ -398,12 +401,11 @@ export function OrderCard({
 
         await response.json().catch(() => null);
       } else if (nextStatus === "COMPLETED") {
-        // Use server endpoint for completing to clear tables
-        const response = await fetch("/api/orders/complete", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ orderId: order.id }),
-        });
+        const response = await apiClient.post(
+          "/api/orders/complete",
+          { orderId: order.id, venueId },
+          { headers }
+        );
 
         if (!response.ok) {
           const errorText = await response.text();
@@ -412,11 +414,11 @@ export function OrderCard({
 
         await response.json().catch(() => null);
       } else {
-        const response = await fetch("/api/orders/set-status", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ orderId: order.id, status: nextStatus }),
-        });
+        const response = await apiClient.post(
+          "/api/orders/set-status",
+          { orderId: order.id, status: nextStatus, venueId },
+          { headers }
+        );
 
         if (!response.ok) {
           const errorText = await response.text();
