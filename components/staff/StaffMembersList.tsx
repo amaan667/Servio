@@ -134,6 +134,7 @@ const StaffMembersList: React.FC<StaffMembersListProps> = ({
       const normalizedVenueId = normalizeVenueId(venueId) ?? venueId;
       const url = new URL("/api/staff/delete", window.location.origin);
       url.searchParams.set("venueId", normalizedVenueId);
+      url.searchParams.set("id", staffToDelete.id);
 
       const res = await fetch(url.toString(), {
         method: "POST",

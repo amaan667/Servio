@@ -26,8 +26,10 @@ export const POST = withUnifiedAuth(
       }
 
       const body = await req.json().catch(() => ({}));
-
-      const id = typeof body?.id === "string" ? body.id.trim() : "";
+      const url = new URL(req.url);
+      const idFromBody = typeof body?.id === "string" ? body.id.trim() : "";
+      const idFromQuery = url.searchParams.get("id")?.trim() ?? "";
+      const id = idFromBody || idFromQuery;
 
       const normalizedVenueId = normalizeVenueId(context.venueId) ?? context.venueId;
 

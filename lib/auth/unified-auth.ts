@@ -39,6 +39,7 @@ export const verifyVenueAccess = verifyVenueAccessMiddleware;
 import { checkFeatureAccess, checkLimit, TIER_LIMITS } from "@/lib/tier-restrictions";
 
 import { apiErrors } from "@/lib/api/standard-response";
+import { normalizeVenueId } from "@/lib/utils/venueId";
 import type { User } from "@supabase/supabase-js";
 
 // ============================================================================
@@ -522,15 +523,16 @@ export function withUnifiedAuth(
         );
       }
 
-      const authResult = await requireAuthAndVenueAccess(req, venueId);
+      // Normalize so context.venueId and verifyVenueAccess use DB-consistent format everywhere
+      const normalizedVenueId = normalizeVenueId(venueId) ?? venueId;
+      const authResult = await requireAuthAndVenueAccess(req, normalizedVenueId);
 
       if (!authResult.success) {
         return authResult.response;
       }
 
-      // Auth successful
-
-      const context = authResult.context;
+      // Auth successful (context.venueId is already normalized from requireAuthAndVenueAccess)
+      const context = { ...authResult.context, venueId: normalizedVenueId };
 
       // Feature check
       if (options?.requireFeature) {

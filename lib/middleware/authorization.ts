@@ -53,18 +53,18 @@ export async function verifyVenueAccess(
   userId: string
 ): Promise<VenueAccess | null> {
   try {
+    const normalizedVenueId = normalizeVenueId(venueId) ?? venueId;
     const supabase = await createSupabaseClient();
     const { data: venue, error: venueError } = await supabase
       .from("venues")
       .select("*")
-      .eq("venue_id", venueId)
+      .eq("venue_id", normalizedVenueId)
       .single();
 
     if (venueError || !venue) {
       return null;
     }
 
-    const normalizedVenueId = normalizeVenueId(venueId) ?? venueId;
     const { data: ctx, error: rpcError } = await supabase.rpc("get_access_context", {
       p_venue_id: normalizedVenueId,
     });
@@ -99,6 +99,7 @@ export async function verifyVenueExists(
   venueId: string
 ): Promise<{ valid: boolean; venue?: Venue; error?: string }> {
   try {
+    const normalizedVenueId = normalizeVenueId(venueId) ?? venueId;
     const supabase = await createSupabaseClient();
 
     // Use authenticated client which respects RLS
@@ -106,7 +107,7 @@ export async function verifyVenueExists(
     const { data: venue, error: venueError } = await supabase
       .from("venues")
       .select("venue_id, owner_user_id, name, created_at, updated_at")
-      .eq("venue_id", venueId)
+      .eq("venue_id", normalizedVenueId)
       .maybeSingle();
 
     if (venueError) {
@@ -132,13 +133,14 @@ export async function verifyOrderVenueAccess(
   venueId: string
 ): Promise<{ valid: boolean; error?: string }> {
   try {
+    const normalizedVenueId = normalizeVenueId(venueId) ?? venueId;
     const supabase = await createSupabaseClient();
 
     const { data: order, error: orderError } = await supabase
       .from("orders")
       .select("id, venue_id")
       .eq("id", orderId)
-      .eq("venue_id", venueId)
+      .eq("venue_id", normalizedVenueId)
       .maybeSingle();
 
     if (orderError) {
@@ -184,8 +186,9 @@ export function withAuthorization(
         return NextResponse.json({ error: "Unauthorized", message: authError }, { status: 401 });
       }
 
-      // Extract venueId from params or query
-      const venueId = params?.venueId || new URL(req.url).searchParams.get("venueId");
+      // Extract venueId from params or query; normalize for DB/context consistency
+      const rawVenueId = params?.venueId || new URL(req.url).searchParams.get("venueId");
+      const venueId = rawVenueId ? normalizeVenueId(rawVenueId) ?? rawVenueId : null;
 
       if (!venueId) {
         return NextResponse.json(
@@ -204,7 +207,7 @@ export function withAuthorization(
         );
       }
 
-      // Call handler with authorized context
+      // Call handler with authorized context (venueId normalized)
       return await handler(req, {
         venue: access.venue,
         user: access.user,
@@ -238,8 +241,9 @@ export function withOptionalAuth(
         return await handler(req, null);
       }
 
-      // Extract venueId
-      const venueId = params?.venueId || new URL(req.url).searchParams.get("venueId");
+      // Extract venueId; normalize for DB/context consistency
+      const rawVenueId = params?.venueId || new URL(req.url).searchParams.get("venueId");
+      const venueId = rawVenueId ? normalizeVenueId(rawVenueId) ?? rawVenueId : null;
 
       if (!venueId) {
         return await handler(req, null);
@@ -252,7 +256,7 @@ export function withOptionalAuth(
         return await handler(req, null);
       }
 
-      // Call handler with authorized context
+      // Call handler with authorized context (venueId normalized)
       return await handler(req, {
         venue: access.venue,
         user: access.user,
