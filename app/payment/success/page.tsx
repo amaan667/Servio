@@ -3,6 +3,10 @@
 import { useSearchParams, useRouter } from "next/navigation";
 import { useEffect } from "react";
 import { Loader2 } from "lucide-react";
+import {
+  getScopedCartKey,
+  safeRemoveItem,
+} from "@/app/order/utils/safeStorage";
 
 export default function PaymentSuccessPage() {
   const searchParams = useSearchParams();
@@ -33,10 +37,17 @@ export default function PaymentSuccessPage() {
 
         if (response.ok) {
           const data = await response.json();
-          // Check for both response formats: { order: ... } and { ok: true, order: ... }
-          const order = data.order || (data.ok && data.order);
+          const order = data.data?.order ?? data.order ?? (data.ok && data.order);
           if (order?.id) {
-            localStorage.removeItem("servio-checkout-data");
+            safeRemoveItem(localStorage, "servio-checkout-data");
+            if (order.venue_id) {
+              const tableOrCounter =
+                order.table_number ?? order.counter_number ?? "";
+              safeRemoveItem(
+                localStorage,
+                getScopedCartKey(order.venue_id, String(tableOrCounter))
+              );
+            }
             window.location.href = `/order-summary?orderId=${order.id}`;
             return;
           }
@@ -56,9 +67,18 @@ export default function PaymentSuccessPage() {
 
         if (retryResponse.ok) {
           const retryData = await retryResponse.json();
-          const retryOrder = retryData.order || (retryData.ok && retryData.order);
+          const retryOrder =
+            retryData.data?.order ?? retryData.order ?? (retryData.ok && retryData.order);
           if (retryOrder?.id) {
-            localStorage.removeItem("servio-checkout-data");
+            safeRemoveItem(localStorage, "servio-checkout-data");
+            if (retryOrder.venue_id) {
+              const tableOrCounter =
+                retryOrder.table_number ?? retryOrder.counter_number ?? "";
+              safeRemoveItem(
+                localStorage,
+                getScopedCartKey(retryOrder.venue_id, String(tableOrCounter))
+              );
+            }
             window.location.href = `/order-summary?orderId=${retryOrder.id}`;
             return;
           }
@@ -67,7 +87,7 @@ export default function PaymentSuccessPage() {
         // No orderId in URL: create order from checkout session (Pay Now flow)
         const orderIdFromUrl = searchParams?.get("orderId");
         if (orderIdFromUrl) {
-          localStorage.removeItem("servio-checkout-data");
+          safeRemoveItem(localStorage, "servio-checkout-data");
           window.location.href = `/order-summary?orderId=${orderIdFromUrl}`;
           return;
         }
@@ -78,9 +98,17 @@ export default function PaymentSuccessPage() {
           body: JSON.stringify({ session_id: sessionId }),
         });
         const createData = await createRes.json();
-        const createdOrder = createData?.data?.order;
+        const createdOrder = createData?.data?.order ?? createData?.order;
         if (createRes.ok && createdOrder?.id) {
-          localStorage.removeItem("servio-checkout-data");
+          safeRemoveItem(localStorage, "servio-checkout-data");
+          if (createdOrder.venue_id) {
+            const tableOrCounter =
+              createdOrder.table_number ?? createdOrder.counter_number ?? "";
+            safeRemoveItem(
+              localStorage,
+              getScopedCartKey(createdOrder.venue_id, String(tableOrCounter))
+            );
+          }
           window.location.href = `/order-summary?orderId=${createdOrder.id}`;
           return;
         }

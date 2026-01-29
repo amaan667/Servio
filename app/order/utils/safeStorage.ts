@@ -102,6 +102,11 @@ export function safeRemoveItem(
   }
 }
 
+/** Scoped cart key used by useOrderCart — clear this after successful order so cart is empty on return. */
+export function getScopedCartKey(venueId: string, tableOrCounter: string | number): string {
+  return `servio-order-cart-${venueId}-${tableOrCounter}`;
+}
+
 export function safeParseJSON<T>(value: string | null, fallback: T): T {
   if (!value) return fallback;
   try {

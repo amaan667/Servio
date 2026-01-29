@@ -3,7 +3,11 @@ import { toast } from "@/hooks/use-toast";
 import { PaymentAction } from "./usePaymentState";
 import { CheckoutData } from "@/types/payment";
 import { queueOrder, queueStatusUpdate } from "@/lib/offline-queue";
-import { safeRemoveItem, safeSetItem } from "@/app/order/utils/safeStorage";
+import {
+  getScopedCartKey,
+  safeRemoveItem,
+  safeSetItem,
+} from "@/app/order/utils/safeStorage";
 
 // Helper function to log to server (appears in Railway logs)
 // Uses fetch with fire-and-forget to not block the payment flow
@@ -470,8 +474,11 @@ export function usePaymentProcessing() {
           }
         }
 
-        // Clear cart after successful order (keep checkout-data for order summary page)
-        safeRemoveItem(localStorage, "servio-order-cart");
+        // Clear scoped cart so returning to order page shows empty cart
+        safeRemoveItem(
+          localStorage,
+          getScopedCartKey(checkoutData.venueId, checkoutData.tableNumber ?? 1)
+        );
 
         // Redirect to order summary page
         window.location.href = `/order-summary?orderId=${orderId}&demo=1`;
@@ -578,8 +585,11 @@ export function usePaymentProcessing() {
           }
         }
 
-        // Clear cart
-        safeRemoveItem(localStorage, "servio-order-cart");
+        // Clear scoped cart and checkout data so returning to order page shows empty cart
+        safeRemoveItem(
+          localStorage,
+          getScopedCartKey(checkoutData.venueId, checkoutData.tableNumber ?? 1)
+        );
         safeRemoveItem(localStorage, "servio-checkout-data");
 
         // Redirect to order summary with orderId
@@ -632,8 +642,11 @@ export function usePaymentProcessing() {
           })
         );
 
-        // Clear cart
-        safeRemoveItem(localStorage, "servio-order-cart");
+        // Clear scoped cart and checkout data so returning to order page shows empty cart
+        safeRemoveItem(
+          localStorage,
+          getScopedCartKey(checkoutData.venueId, checkoutData.tableNumber ?? 1)
+        );
         safeRemoveItem(localStorage, "servio-checkout-data");
 
         // Redirect to order summary with orderId
