@@ -180,8 +180,9 @@ export default function LiveOrdersClient({
 
   const handleBulkComplete = () => {
     const currentOrders = activeTab === "live" ? orders : allTodayOrders;
+    // Include all non-completed orders (last resort: complete everything regardless of paid/served)
     const activeOrders = currentOrders.filter((order) =>
-      ["PLACED", "IN_PREP", "READY", "SERVING", "SERVED", "COMPLETED"].includes(order.order_status)
+      ["PLACED", "IN_PREP", "READY", "SERVING", "SERVED"].includes(order.order_status)
     );
     bulkCompleteAllOrders(activeOrders, () => {
       window.location.reload();
@@ -518,8 +519,7 @@ export default function LiveOrdersClient({
                       month: "long",
                       year: "numeric",
                     });
-                    if (!acc[date]) acc[date] = [];
-                    acc[date].push(order);
+                    (acc[date] ??= []).push(order);
                     return acc;
                   },
                   {}

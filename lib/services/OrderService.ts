@@ -387,26 +387,23 @@ export class OrderService extends BaseService {
 
     if (!orders || orders.length === 0) return 0;
 
-    // 2. Filter out already COMPLETED orders - they shouldn't be overridden (still need payment)
-    const ordersToComplete = orders.filter(o => o.order_status !== "COMPLETED");
-    
+    // 2. Filter out already COMPLETED orders
+    const ordersToComplete = orders.filter((o) => o.order_status !== "COMPLETED");
+
     if (ordersToComplete.length === 0) {
       return 0; // All orders are already completed
     }
 
-    // 3. Validate payment status (Production requirement: all must be PAID)
-    const unpaid = ordersToComplete.filter(o => o.payment_status !== 'PAID' && o.payment_status !== 'TILL');
-    if (unpaid.length > 0) {
-      throw new Error(`Cannot complete ${unpaid.length} unpaid orders.`);
-    }
-
+    // 3. Complete every order (last resort: ignore paid/served; force-complete unpaid if needed)
     let completedCount = 0;
     for (const order of ordersToComplete) {
       try {
-        // Use RPC for atomic completion
         const { error } = await supabase.rpc("orders_complete", {
           p_order_id: order.id,
           p_venue_id: venueId,
+          p_forced: true,
+          p_forced_by: null,
+          p_forced_reason: "Bulk complete all",
         });
 
         if (!error) {
