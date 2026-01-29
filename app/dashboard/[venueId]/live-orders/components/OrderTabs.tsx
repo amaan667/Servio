@@ -13,44 +13,46 @@ interface OrderTabsProps {
   };
 }
 
+function tabCount(value: unknown): number {
+  return typeof value === "number" && Number.isFinite(value) ? value : 0;
+}
+
 export function OrderTabs({ activeTab, onTabChange, counts }: OrderTabsProps) {
+  const live = tabCount(counts?.live);
+  const earlier = tabCount(counts?.earlier);
+  const history = tabCount(counts?.history);
+
   return (
     <Tabs value={activeTab} onValueChange={onTabChange}>
       <TabsList className="grid w-full grid-cols-3">
         <TabsTrigger value="live" className="flex items-center gap-2 relative">
-          <Clock className="h-4 w-4" />
-          <span className="flex-1 text-left">Live Orders</span>
+          <Clock className="h-4 w-4 shrink-0" />
+          <span className="flex-1 text-left truncate">Live Orders</span>
           <span
-            className={`
-              ml-2 inline-flex min-w-[1.5rem] h-5 px-1.5 items-center justify-center rounded-full text-xs font-semibold transition-all duration-200
-              ${activeTab === "live" ? "bg-white text-servio-purple" : "bg-white/30 text-white"}
-            `}
+            className="ml-2 inline-flex min-w-[1.25rem] h-5 px-1.5 items-center justify-center rounded-full text-xs font-semibold tabular-nums shrink-0 bg-white/90 text-servio-purple"
+            aria-label={`${live} live orders`}
           >
-            {counts.live}
+            {live}
           </span>
         </TabsTrigger>
         <TabsTrigger value="all" className="flex items-center gap-2 relative">
-          <Timer className="h-4 w-4" />
-          <span className="flex-1 text-left">Earlier Today</span>
+          <Timer className="h-4 w-4 shrink-0" />
+          <span className="flex-1 text-left truncate">Earlier Today</span>
           <span
-            className={`
-              ml-2 inline-flex min-w-[1.5rem] h-5 px-1.5 items-center justify-center rounded-full text-xs font-semibold transition-all duration-200
-              ${activeTab === "all" ? "bg-white text-servio-purple" : "bg-white/30 text-white"}
-            `}
+            className="ml-2 inline-flex min-w-[1.25rem] h-5 px-1.5 items-center justify-center rounded-full text-xs font-semibold tabular-nums shrink-0 bg-white/90 text-servio-purple"
+            aria-label={`${earlier} earlier today`}
           >
-            {counts.earlier}
+            {earlier}
           </span>
         </TabsTrigger>
         <TabsTrigger value="history" className="flex items-center gap-2 relative">
-          <History className="h-4 w-4" />
-          <span className="flex-1 text-left">History</span>
+          <History className="h-4 w-4 shrink-0" />
+          <span className="flex-1 text-left truncate">History</span>
           <span
-            className={`
-              ml-2 inline-flex min-w-[1.5rem] h-5 px-1.5 items-center justify-center rounded-full text-xs font-semibold transition-all duration-200
-              ${activeTab === "history" ? "bg-white text-servio-purple" : "bg-white/30 text-white"}
-            `}
+            className="ml-2 inline-flex min-w-[1.25rem] h-5 px-1.5 items-center justify-center rounded-full text-xs font-semibold tabular-nums shrink-0 bg-white/90 text-servio-purple"
+            aria-label={`${history} history`}
           >
-            {counts.history}
+            {history}
           </span>
         </TabsTrigger>
       </TabsList>

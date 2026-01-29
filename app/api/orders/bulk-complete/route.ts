@@ -3,10 +3,13 @@ import { orderService } from "@/lib/services/OrderService";
 import { apiErrors } from "@/lib/api/standard-response";
 import { z } from "zod";
 
-const bulkCompleteSchema = z.object({
-  venueId: z.string(),
-  orderIds: z.array(z.string()).optional(),
-});
+const bulkCompleteSchema = z
+  .object({
+    venueId: z.string().optional(),
+    venue_id: z.string().optional(),
+    orderIds: z.array(z.string()).optional(),
+  })
+  .refine((d) => (d.venueId ?? d.venue_id) != null, { message: "venueId or venue_id required" });
 
 /**
  * POST: Bulk complete orders
@@ -50,7 +53,8 @@ export const POST = createUnifiedHandler(
         message: `Successfully completed ${completedCount} orders and cleaned up tables`,
       };
     } catch (error) {
-      return apiErrors.badRequest(error instanceof Error ? error.message : "Bulk completion failed");
+      const message = error instanceof Error ? error.message : "Bulk completion failed";
+      return apiErrors.internal(message, undefined, undefined);
     }
   },
   {
