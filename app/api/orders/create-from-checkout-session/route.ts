@@ -8,7 +8,8 @@ import { createKDSTicketsWithAI } from "@/lib/orders/kds-tickets-unified";
 export const runtime = "nodejs";
 
 /**
- * POST: Create order from Stripe Checkout Session (Pay Now without pre-creating order).
+ * POST: Create order from Stripe Checkout Session (Pay Now flow).
+ * Order is created ONLY after payment has succeeded (session.payment_status === "paid").
  * Public: no auth. Called from payment success page when session has no orderId in metadata.
  */
 export async function POST(req: NextRequest) {
@@ -30,6 +31,7 @@ export async function POST(req: NextRequest) {
 
     const session = await stripe.checkout.sessions.retrieve(sessionId);
 
+    // Pay Now: never create an order until payment has succeeded
     if (session.payment_status !== "paid") {
       return NextResponse.json(
         { success: false, error: { code: "BAD_REQUEST", message: "Payment not completed" } },

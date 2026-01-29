@@ -394,31 +394,29 @@ export class OrderService extends BaseService {
       return 0; // All orders are already completed
     }
 
-    // 3. Complete every order (last resort: ignore paid/served; force-complete unpaid if needed)
+    // 3. Complete every order: always set COMPLETED (even if unpaid/served so RPC may fail)
     let completedCount = 0;
     for (const order of ordersToComplete) {
       try {
-        const { error } = await supabase.rpc("orders_complete", {
+        await supabase.rpc("orders_complete", {
           p_order_id: order.id,
           p_venue_id: venueId,
           p_forced: true,
           p_forced_by: null,
           p_forced_reason: "Bulk complete all",
         });
-
-        if (!error) {
-          completedCount++;
-          // Trigger cleanup
-          const { cleanupTableOnOrderCompletion } = await import("@/lib/table-cleanup");
-          await cleanupTableOnOrderCompletion({
-            venueId,
-            tableId: order.table_id || undefined,
-            tableNumber: order.table_number?.toString() || undefined,
-          });
-        }
-      } catch (err) {
-        trackOrderError(err, { venueId, orderId: order.id, action: "bulkComplete" });
+        // RPC may fail for unpaid orders; we still mark COMPLETED and run cleanup
+      } catch (_rpcErr) {
+        // Continue to mark completed and cleanup
       }
+      await this.updateOrderStatus(order.id, venueId, "COMPLETED");
+      completedCount++;
+      const { cleanupTableOnOrderCompletion } = await import("@/lib/table-cleanup");
+      await cleanupTableOnOrderCompletion({
+        venueId,
+        tableId: order.table_id || undefined,
+        tableNumber: order.table_number?.toString() || undefined,
+      });
     }
 
     await this.invalidateCachePattern(`orders:*:${venueId}:*`);

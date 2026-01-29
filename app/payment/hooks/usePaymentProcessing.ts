@@ -483,7 +483,9 @@ export function usePaymentProcessing() {
         // Redirect to order summary page
         window.location.href = `/order-summary?orderId=${orderId}&demo=1`;
       } else if (action === "stripe") {
-        // Pay Now: go to Stripe first, then create order on success (no order before checkout)
+        // Pay Now: never create an order before payment. Go to Stripe first; order is created
+        // only after payment succeeds (payment success page calls create-from-checkout-session).
+        // Do NOT pass order_id so no order exists until payment is complete.
         const checkoutPayload = {
           amount: checkoutData.total,
           tableNumber: checkoutData.tableNumber,
@@ -536,7 +538,7 @@ export function usePaymentProcessing() {
           if (result?.url || result?.data?.url) {
             const checkoutUrl = result.url || result.data?.url;
             window.location.href = checkoutUrl;
-            return; // Order created, webhook will mark as PAID after payment
+            return; // No order yet; order is created on payment success page via create-from-checkout-session
           } else {
 
             throw new Error("No Stripe checkout URL returned from server");

@@ -20,7 +20,9 @@ const checkoutSchema = z.object({
 
 /**
  * POST: Create a Stripe Checkout Session for a QR order.
- * When order_id is omitted, order is created after payment (success page calls create-from-checkout-session).
+ * Pay Now: when order_id is omitted, no order exists yet; order is created only after
+ * payment succeeds (payment success page calls create-from-checkout-session with session_id).
+ * Pay Later / existing order: when order_id is provided, webhook marks that order as PAID.
  */
 export const POST = createUnifiedHandler(
   async (req, context) => {
