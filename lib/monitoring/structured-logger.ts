@@ -69,39 +69,8 @@ class StructuredLogger {
     return logIndex >= envIndex;
   }
 
-  private output(log: StructuredLog): void {
-    if (!this.shouldLog(log.level)) {
-      return;
-    }
-
-    const jsonLog = JSON.stringify(log);
-
-    // In production, log to stdout (captured by Railway/logging services)
-    // In development, use console with colors
-    if (isDevelopment()) {
-      const colors = {
-        debug: "\x1b[36m", // Cyan
-        info: "\x1b[32m", // Green
-        warn: "\x1b[33m", // Yellow
-        error: "\x1b[31m", // Red
-        fatal: "\x1b[35m", // Magenta
-        reset: "\x1b[0m",
-      };
-
-      const color = colors[log.level] || colors.reset;
-
-      console.log(`${color}[${log.level.toUpperCase()}]${colors.reset} ${log.message}`);
-      if (log.context) {
-        console.log("  Context:", log.context);
-      }
-      if (log.error) {
-        console.error("  Error:", log.error);
-      }
-    } else {
-      // Production: structured JSON logging
-
-      console.log(jsonLog);
-    }
+  private output(_log: StructuredLog): void {
+    // No console output - platform uses no logging except staff delete (browser only)
   }
 
   debug(message: string, context?: LogContext): void {

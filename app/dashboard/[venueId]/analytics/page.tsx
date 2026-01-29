@@ -43,13 +43,7 @@ export default async function AnalyticsPage({ params }: { params: { venueId: str
     <>
       <script
         dangerouslySetInnerHTML={{
-          __html: `
-            console.log("%c[PLATFORM-AUTH] Analytics Page Auth Info", "color: #10b981; font-weight: bold; font-size: 14px;");
-            console.log(JSON.stringify(${JSON.stringify(authInfo)}, null, 2));
-            console.log("%c[PLATFORM-AUTH] Full Auth Object", "color: #10b981; font-weight: bold;");
-            console.log(${JSON.stringify(authInfo)});
-            window.__PLATFORM_AUTH__ = ${JSON.stringify(authInfo)};
-          `,
+          __html: `window.__PLATFORM_AUTH__ = ${JSON.stringify(authInfo)};`,
         }}
       />
       <AnalyticsClientPage

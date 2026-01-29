@@ -51,14 +51,8 @@ function initializeDatadog(): void {
       },
     });
 
-    if (!isDevelopment()) {
-      console.log("[APM] Datadog tracer initialized");
-    }
-  } catch (error) {
+  } catch (_error) {
     // Datadog package not installed - graceful degradation
-    if (isDevelopment()) {
-      console.warn("[APM] Datadog package not installed. Install with: pnpm add dd-trace");
-    }
   }
 }
 
@@ -71,14 +65,8 @@ function initializeNewRelic(): void {
 
     require("newrelic");
 
-    if (!isDevelopment()) {
-      console.log("[APM] New Relic agent initialized");
-    }
-  } catch (error) {
+  } catch (_error) {
     // New Relic package not installed - graceful degradation
-    if (isDevelopment()) {
-      console.warn("[APM] New Relic package not installed. Install with: pnpm add newrelic");
-    }
   }
 }
 

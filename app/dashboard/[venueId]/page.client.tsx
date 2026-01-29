@@ -60,30 +60,6 @@ const DashboardClient = React.memo(function DashboardClient({
   initialCounts?: DashboardCounts;
   initialStats?: DashboardStats;
 }) {
-  // Log immediately in browser console when component mounts
-
-  console.log(
-    "%c[DASHBOARD-CLIENT] ========== COMPONENT MOUNTED ==========",
-    "color: #f59e0b; font-weight: bold; font-size: 16px;"
-  );
-
-  console.log("%c[DASHBOARD-CLIENT] Component Props", "color: #f59e0b; font-weight: bold;");
-
-  console.log({
-    venueId,
-    hasInitialCounts: !!initialCounts,
-    hasInitialStats: !!initialStats,
-    timestamp: new Date().toISOString(),
-  });
-
-  console.log(
-    "%c[DASHBOARD-CLIENT] Check window.__PLATFORM_AUTH__ for server auth info",
-    "color: #f59e0b; font-weight: bold;"
-  );
-
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  console.log("window.__PLATFORM_AUTH__:", (window as any).__PLATFORM_AUTH__);
-
   const router = useRouter();
 
   // Get cached user/venue data to prevent flicker

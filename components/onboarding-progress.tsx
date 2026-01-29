@@ -144,8 +144,8 @@ export default function OnboardingProgress({
 
       // Redirect to dashboard
       router.push("/dashboard");
-    } catch (error) {
-      console.error("Failed to complete onboarding:", error);
+    } catch (_error) {
+      // Failed to complete onboarding
     }
   };
 

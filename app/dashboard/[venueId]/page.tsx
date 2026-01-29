@@ -181,13 +181,7 @@ export default async function VenuePage({ params }: { params: { venueId: string 
       />
       <script
         dangerouslySetInnerHTML={{
-          __html: `
-            console.log("%c[PLATFORM-AUTH] Dashboard Page Auth Info", "color: #f59e0b; font-weight: bold; font-size: 14px;");
-            console.log(JSON.stringify(${JSON.stringify(authInfo)}, null, 2));
-            console.log("%c[PLATFORM-AUTH] Full Auth Object", "color: #f59e0b; font-weight: bold;");
-            console.log(${JSON.stringify(authInfo)});
-            window.__PLATFORM_AUTH__ = ${JSON.stringify(authInfo)};
-          `,
+          __html: `window.__PLATFORM_AUTH__ = ${JSON.stringify(authInfo)};`,
         }}
       />
       <ClientOnlyWrapper

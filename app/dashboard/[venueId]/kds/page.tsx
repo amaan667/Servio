@@ -6,24 +6,8 @@ import { createKDSTicketsWithAI } from "@/lib/orders/kds-tickets-unified";
 export default async function KDSPage({ params }: { params: { venueId: string } }) {
   const { venueId } = params;
 
-  console.log("[KDS-PAGE] KDS page loading", {
-    venueId,
-    timestamp: new Date().toISOString(),
-  });
-
   // Auth from middleware only (no per-page RPC) - consistent with all other pages
   const auth = await requirePageAuth(venueId).catch(() => null);
-
-  console.log("[KDS-PAGE] Auth context from headers", {
-    hasAuth: !!auth,
-    userId: auth?.user?.id,
-    email: auth?.user?.email,
-    tier: auth?.tier,
-    role: auth?.role,
-    venueId: auth?.venueId,
-    expectedVenueId: venueId,
-    tierMatches: auth?.venueId === venueId,
-  });
 
   // Determine KDS tier from tier limits - matches TIER_LIMITS configuration
   const currentTier = auth?.tier ?? "starter";
@@ -166,13 +150,7 @@ export default async function KDSPage({ params }: { params: { venueId: string } 
     <>
       <script
         dangerouslySetInnerHTML={{
-          __html: `
-            console.log("%c[PLATFORM-AUTH] KDS Page Auth Info", "color: #3b82f6; font-weight: bold; font-size: 14px;");
-            console.log(JSON.stringify(${JSON.stringify(authInfo)}, null, 2));
-            console.log("%c[PLATFORM-AUTH] Full Auth Object", "color: #3b82f6; font-weight: bold;");
-            console.log(${JSON.stringify(authInfo)});
-            window.__PLATFORM_AUTH__ = ${JSON.stringify(authInfo)};
-          `,
+          __html: `window.__PLATFORM_AUTH__ = ${JSON.stringify(authInfo)};`,
         }}
       />
       <KDSClientPage

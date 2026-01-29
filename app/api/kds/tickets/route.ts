@@ -30,9 +30,6 @@ export const GET = createUnifiedHandler(
       endpoint: "/api/kds/tickets",
     };
 
-    // eslint-disable-next-line no-console
-    console.log("[API-KDS-TICKETS] ========== REQUEST RECEIVED ==========", authInfo);
-
     await kdsService.autoBackfill(venueId);
     const tickets = await kdsService.getTickets(venueId, {
       station_id: stationId,

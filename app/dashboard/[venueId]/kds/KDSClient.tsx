@@ -60,34 +60,9 @@ export default function KDSClient({
   initialTickets,
   initialStations,
   kdsTier = false,
-  tier,
-  role,
+  tier: _tier,
+  role: _role,
 }: KDSClientProps) {
-  // Log immediately in browser console when component mounts
-
-  console.log(
-    "%c[KDS-CLIENT] ========== COMPONENT MOUNTED ==========",
-    "color: #ef4444; font-weight: bold; font-size: 16px;"
-  );
-
-  console.log(
-    "%c[KDS-CLIENT] Auth Info Received from Server",
-    "color: #ef4444; font-weight: bold;"
-  );
-
-  console.log({
-    venueId,
-    kdsTier,
-    tier,
-    role,
-    hasInitialTickets: !!initialTickets,
-    hasInitialStations: !!initialStations,
-    timestamp: new Date().toISOString(),
-  });
-
-  console.log("%c[KDS-CLIENT] Full Props", "color: #ef4444; font-weight: bold;");
-
-  console.log({ venueId, initialTickets, initialStations, kdsTier, tier, role });
   // Cache KDS stations to prevent flicker
   const getCachedStations = () => {
     if (typeof window === "undefined") return [];
@@ -136,28 +111,10 @@ export default function KDSClient({
   // Fetch stations
   const fetchStations = async () => {
     try {
-      console.log("[KDS-CLIENT] Fetching stations", {
-        venueId,
-        timestamp: new Date().toISOString(),
-      });
-
       const { apiClient } = await import("@/lib/api-client");
       const response = await apiClient.get("/api/kds/stations", { params: { venueId } });
 
-      console.log("[KDS-CLIENT] Stations response", {
-        status: response.status,
-        statusText: response.statusText,
-        ok: response.ok,
-      });
-
       const data = await response.json();
-
-      console.log("[KDS-CLIENT] Stations data", {
-        success: data.success,
-        hasStations: !!data.data?.stations,
-        stationCount: data.data?.stations?.length || 0,
-        error: data.error,
-      });
 
       if (data.success) {
         const fetchedStations = data.data?.stations || [];
@@ -173,17 +130,9 @@ export default function KDSClient({
           }
         }
       } else {
-        console.error("[KDS-CLIENT] Failed to load stations", {
-          error: data.error,
-          message: data.error?.message,
-        });
         setError(data.error?.message || "Failed to load stations");
       }
-    } catch (error) {
-      console.error("[KDS-CLIENT] Exception fetching stations", {
-        error: error instanceof Error ? error.message : String(error),
-        stack: error instanceof Error ? error.stack : undefined,
-      });
+    } catch (_error) {
       setError("Failed to load stations");
     }
   };
@@ -194,10 +143,6 @@ export default function KDSClient({
     const timeSinceLastFetch = now - lastFetchRef.current;
 
     if (timeSinceLastFetch < minFetchInterval) {
-      console.log("[KDS-CLIENT] Fetch throttled", {
-        timeSinceLastFetch,
-        minInterval: minFetchInterval,
-      });
       return;
     }
 
@@ -205,12 +150,6 @@ export default function KDSClient({
 
     try {
       const currentStation = selectedStationRef.current;
-
-      console.log("[KDS-CLIENT] Fetching tickets", {
-        venueId,
-        stationId: currentStation,
-        timestamp: new Date().toISOString(),
-      });
 
       const { apiClient } = await import("@/lib/api-client");
       const response = await apiClient.get("/api/kds/tickets", {
@@ -220,43 +159,21 @@ export default function KDSClient({
         },
       });
 
-      console.log("[KDS-CLIENT] Tickets response", {
-        status: response.status,
-        statusText: response.statusText,
-        ok: response.ok,
-      });
-
       const data = await response.json();
-
-      console.log("[KDS-CLIENT] Tickets data", {
-        success: data.success,
-        hasTickets: !!data.data?.tickets,
-        ticketCount: data.data?.tickets?.length || 0,
-        error: data.error,
-      });
 
       if (data.success) {
         const fetchedTickets = (data.data?.tickets || []) as KDSTicket[];
         const activeFetchedTickets = fetchedTickets.filter((t) => t.status !== "bumped");
 
-        // Simple update - use fetched tickets directly (real-time handlers handle updates)
         setTickets(activeFetchedTickets);
         setError(null);
         if (typeof window !== "undefined") {
           sessionStorage.setItem(`kds_tickets_${venueId}`, JSON.stringify(activeFetchedTickets));
         }
       } else {
-        console.error("[KDS-CLIENT] Failed to load tickets", {
-          error: data.error,
-          message: data.error?.message,
-        });
         setError(data.error?.message || "Failed to load tickets");
       }
     } catch (error) {
-      console.error("[KDS-CLIENT] Exception fetching tickets", {
-        error: error instanceof Error ? error.message : String(error),
-        stack: error instanceof Error ? error.stack : undefined,
-      });
       setError(error instanceof Error ? error.message : "Failed to load tickets");
     } finally {
       setLoading(false);

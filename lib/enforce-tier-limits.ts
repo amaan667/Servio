@@ -16,15 +16,13 @@ interface TierCheckResult {
  */
 export async function enforceResourceLimit(
   _userId: string,
-  venueId: string,
+  _venueId: string,
   resourceType: "maxMenuItems" | "maxTables" | "maxStaff" | "maxVenues",
   currentCount: number,
   requestHeaders: Headers
 ): Promise<TierCheckResult> {
   // REQUIRE headers - no fallback
   if (!requestHeaders) {
-    // eslint-disable-next-line no-console
-    console.error("[ENFORCE-LIMITS] No headers provided - middleware should have set them");
     return {
       allowed: false,
       response: NextResponse.json(
@@ -39,11 +37,6 @@ export async function enforceResourceLimit(
 
   const headerTier = requestHeaders.get("x-user-tier");
   if (!headerTier || !["starter", "pro", "enterprise"].includes(headerTier)) {
-    // eslint-disable-next-line no-console
-    console.error("[ENFORCE-LIMITS] Invalid or missing tier header", {
-      headerTier,
-      venueId,
-    });
     return {
       allowed: false,
       response: NextResponse.json(
@@ -104,14 +97,12 @@ export async function enforceResourceLimit(
  */
 export async function enforceFeatureAccess(
   _userId: string,
-  venueId: string,
+  _venueId: string,
   feature: "kds" | "inventory" | "analytics" | "aiAssistant" | "multiVenue",
   requestHeaders: Headers
 ): Promise<TierCheckResult> {
   // REQUIRE headers - no fallback
   if (!requestHeaders) {
-    // eslint-disable-next-line no-console
-    console.error("[ENFORCE-FEATURE] No headers provided - middleware should have set them");
     return {
       allowed: false,
       response: NextResponse.json(
@@ -126,11 +117,6 @@ export async function enforceFeatureAccess(
 
   const headerTier = requestHeaders.get("x-user-tier");
   if (!headerTier || !["starter", "pro", "enterprise"].includes(headerTier)) {
-    // eslint-disable-next-line no-console
-    console.error("[ENFORCE-FEATURE] Invalid or missing tier header", {
-      headerTier,
-      venueId,
-    });
     return {
       allowed: false,
       response: NextResponse.json(

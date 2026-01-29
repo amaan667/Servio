@@ -72,34 +72,7 @@ export const getAuthFromMiddlewareHeaders = cache(async (): Promise<PageAuthCont
   const venueIdHeader = h.get("x-venue-id");
   const emailHeader = h.get("x-user-email");
 
-  // Get ALL x- headers for comprehensive logging
-  const allXHeaders = Array.from(h.entries())
-    .filter(([k]) => k.startsWith("x-"))
-    .reduce(
-      (acc, [k, v]) => {
-        acc[k] = v;
-        return acc;
-      },
-      {} as Record<string, string>
-    );
-
-  // Comprehensive logging - this will show in server logs
-  // eslint-disable-next-line no-console
-  console.log("[PAGE-AUTH] ========== READING HEADERS ==========", {
-    timestamp: new Date().toISOString(),
-    hasUserId: !!userId,
-    userId,
-    email: emailHeader,
-    tier: tierHeader,
-    role: roleHeader,
-    venueId: venueIdHeader,
-    allXHeaders,
-    allHeadersCount: Array.from(h.entries()).length,
-  });
-
   if (!userId) {
-    // eslint-disable-next-line no-console
-    console.error("[PAGE-AUTH] ❌ NO x-user-id HEADER FOUND - Middleware did not set headers");
     return null;
   }
 
@@ -115,17 +88,6 @@ export const getAuthFromMiddlewareHeaders = cache(async (): Promise<PageAuthCont
     hasFeatureAccess: buildHasFeatureAccess(tier),
   };
 
-  // eslint-disable-next-line no-console
-  console.log("[PAGE-AUTH] ✅ Returning auth context", {
-    userId,
-    email: emailHeader,
-    tier,
-    role,
-    venueId,
-    tierSource: tierHeader ? "header" : "default",
-    roleSource: roleHeader ? "header" : "default",
-  });
-
   return authContext;
 });
 
@@ -139,26 +101,17 @@ export async function requirePageAuth(
 ): Promise<PageAuthContext | null> {
   const auth = await getAuthFromMiddlewareHeaders();
   if (!auth) {
-    // eslint-disable-next-line no-console
-    console.log("[PAGE-AUTH] requirePageAuth: No auth from headers");
     return null;
   }
 
   // Validate venueId matches headers (security check)
   if (venueId && auth.venueId && venueId !== auth.venueId) {
-    // eslint-disable-next-line no-console
-    console.error("[PAGE-AUTH] requirePageAuth: VenueId mismatch", {
-      requestedVenueId: venueId,
-      headerVenueId: auth.venueId,
-    });
     return null;
   }
 
   // Use venueId from params if provided, otherwise use header
   const finalVenueId = venueId || auth.venueId;
   if (!finalVenueId && !options.allowNoVenue) {
-    // eslint-disable-next-line no-console
-    console.error("[PAGE-AUTH] requirePageAuth: No venueId available");
     return null;
   }
 
@@ -168,21 +121,11 @@ export async function requirePageAuth(
     options.requireRole.length > 0 &&
     !options.requireRole.includes(auth.role)
   ) {
-    // eslint-disable-next-line no-console
-    console.log("[PAGE-AUTH] requirePageAuth: Role check failed", {
-      userRole: auth.role,
-      requiredRoles: options.requireRole,
-    });
     return null;
   }
 
   // Feature check
   if (options.requireFeature && !auth.hasFeatureAccess(options.requireFeature)) {
-    // eslint-disable-next-line no-console
-    console.log("[PAGE-AUTH] requirePageAuth: Feature check failed", {
-      feature: options.requireFeature,
-      tier: auth.tier,
-    });
     return null;
   }
 

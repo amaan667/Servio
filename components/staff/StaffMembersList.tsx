@@ -129,13 +129,25 @@ const StaffMembersList: React.FC<StaffMembersListProps> = ({
   const handleConfirmDelete = async () => {
     if (!staffToDelete) return;
 
+    setError(null);
     setDeletingStaffId(staffToDelete.id);
-    try {
-      const normalizedVenueId = normalizeVenueId(venueId) ?? venueId;
-      const url = new URL("/api/staff/delete", window.location.origin);
-      url.searchParams.set("venueId", normalizedVenueId);
-      url.searchParams.set("id", staffToDelete.id);
 
+    const normalizedVenueId = normalizeVenueId(venueId) ?? venueId;
+    const url = new URL("/api/staff/delete", window.location.origin);
+    url.searchParams.set("venueId", normalizedVenueId);
+    url.searchParams.set("id", staffToDelete.id);
+
+    if (typeof window !== "undefined") {
+      console.log("[STAFF DELETE] Delete clicked", {
+        staffId: staffToDelete.id,
+        staffName: staffToDelete.name,
+        venueId,
+        normalizedVenueId,
+        requestUrl: url.toString(),
+      });
+    }
+
+    try {
       const res = await fetch(url.toString(), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -145,26 +157,26 @@ const StaffMembersList: React.FC<StaffMembersListProps> = ({
 
       const data = await res.json();
 
-      if (!res.ok) {
-        // Log full response in browser console for debugging staff delete
-
-        console.log("[STAFF-DELETE] Error response", {
+      if (typeof window !== "undefined") {
+        console.log("[STAFF DELETE] Response", {
           status: res.status,
-          error: data.error,
-          details: data.error?.details,
+          ok: res.ok,
+          data,
+          serverDebug: data.error?.details?.debug,
         });
+      }
+
+      if (!res.ok) {
         throw new Error(
           data.error?.message || data.error || data.message || "Failed to delete staff member"
         );
       }
 
-      // Reload staff list
+      setDeleteConfirmOpen(false);
+      setStaffToDelete(null);
       if (onStaffAdded) {
         await onStaffAdded();
       }
-
-      setDeleteConfirmOpen(false);
-      setStaffToDelete(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to delete staff member");
     } finally {

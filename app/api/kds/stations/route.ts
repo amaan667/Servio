@@ -36,9 +36,6 @@ export const GET = createUnifiedHandler(
       endpoint: "/api/kds/stations",
     };
 
-    // eslint-disable-next-line no-console
-    console.log("[API-KDS-STATIONS] ========== REQUEST RECEIVED ==========", authInfo);
-
     if (!venueId) {
       return apiErrors.badRequest("venue_id is required");
     }

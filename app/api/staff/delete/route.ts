@@ -66,8 +66,6 @@ export const POST = withUnifiedAuth(
           staffIdsForNormalizedVenue: (staffWithNormalized ?? []).map((r) => r.id),
           staffIdsForRawVenueId: (staffWithRaw ?? []).map((r) => r.id),
         };
-        // eslint-disable-next-line no-console
-        console.log("[STAFF-DELETE] Staff member not found", debug);
         return errorResponse(ErrorCodes.NOT_FOUND, "Staff member not found", 404, {
           debug,
         });
