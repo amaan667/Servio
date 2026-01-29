@@ -66,8 +66,20 @@ export const POST = createUnifiedHandler(
         message: `Successfully completed ${completedCount} orders and cleaned up tables`,
       };
     } catch (error) {
-      const message = error instanceof Error ? error.message : "Bulk completion failed";
-      logBulkComplete("throw", { message, stack: error instanceof Error ? error.stack : undefined });
+      const message =
+        error instanceof Error
+          ? error.message
+          : typeof (error as { message?: string })?.message === "string"
+            ? (error as { message: string }).message
+            : typeof error === "string"
+              ? error
+              : "Bulk completion failed";
+      logBulkComplete("throw", {
+        message,
+        errorType: typeof error,
+        errorKeys: error && typeof error === "object" ? Object.keys(error as object) : [],
+        errorDetail: error,
+      });
       return apiErrors.internal(message, undefined, undefined);
     }
   },

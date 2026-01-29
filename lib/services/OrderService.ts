@@ -252,7 +252,7 @@ export class OrderService extends BaseService {
       .select()
       .single();
 
-    if (error) throw error;
+    if (error) throw new Error(error.message || String(error));
 
     // Invalidate cache
     await this.invalidateCachePattern(`orders:*:${venueId}:*`);
