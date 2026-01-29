@@ -165,9 +165,9 @@ export default function OrderSummary({ orderId, sessionId, orderData }: OrderSum
 
             if (res.ok) {
               const data = await res.json();
-
-              if (data.order) {
-                setOrder(data.order);
+              const orderFromApi = (data.data?.order ?? data.order) as Order | undefined;
+              if (orderFromApi) {
+                setOrder(orderFromApi);
                 fetchSuccess = true;
               } else {
                 retryCount++;

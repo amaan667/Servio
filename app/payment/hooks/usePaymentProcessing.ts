@@ -525,14 +525,9 @@ export function usePaymentProcessing() {
             throw new Error("Invalid response from server");
           }
 
-          // Redirect to Stripe checkout
+          // Redirect to Stripe checkout (do NOT clear cart/checkout-data so back button returns with cart)
           if (result?.url || result?.data?.url) {
             const checkoutUrl = result.url || result.data?.url;
-
-            // Clear cart before redirect
-            safeRemoveItem(localStorage, "servio-order-cart");
-            safeRemoveItem(localStorage, "servio-checkout-data");
-
             window.location.href = checkoutUrl;
             return; // Order created, webhook will mark as PAID after payment
           } else {

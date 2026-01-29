@@ -2,15 +2,34 @@
 import { useSearchParams, useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { XCircle } from "lucide-react";
+import { XCircle, ArrowLeft } from "lucide-react";
 import Image from "next/image";
+import { safeGetItem } from "@/app/order/utils/safeStorage";
 
 export default function PaymentCancelPage() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const orderId = searchParams?.get("orderId") as string | undefined;
-  const venueId = searchParams?.get("venueId") as string | undefined;
-  const tableNumber = searchParams?.get("tableNumber") as string | undefined;
+  let venueId = searchParams?.get("venueId") as string | undefined;
+  let tableNumber = searchParams?.get("tableNumber") as string | undefined;
+
+  if ((!venueId || !tableNumber) && typeof window !== "undefined") {
+    const stored = safeGetItem(localStorage, "servio-checkout-data");
+    if (stored) {
+      try {
+        const data = JSON.parse(stored);
+        venueId = venueId || data.venueId;
+        tableNumber = tableNumber || String(data.tableNumber ?? "1");
+      } catch {
+        // ignore
+      }
+    }
+  }
+
+  const backToOrderUrl =
+    venueId && tableNumber
+      ? `/order?venue=${encodeURIComponent(venueId)}&table=${encodeURIComponent(tableNumber)}`
+      : null;
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -41,25 +60,25 @@ export default function PaymentCancelPage() {
             </div>
             <h2 className="text-xl font-semibold text-red-900">Payment Cancelled</h2>
             <p className="text-gray-900">
-              Your payment was cancelled. No charges have been made.
-              {orderId && ` Your order #${orderId.slice(-6)} is still pending.`}
+              Your payment was cancelled. No charges have been made. Your cart is still saved — you
+              can go back and choose a different payment method.
+              {orderId && ` Order #${orderId.slice(-6)} is still pending.`}
             </p>
             <div className="pt-4 space-y-2">
-              <Button
-                onClick={() => {
-                  if (venueId && tableNumber) {
-                    router.push(`/order?venue=${venueId}&table=${tableNumber}`);
-                  } else {
-                    router.push("/");
-                  }
-                }}
-                className="w-full bg-blue-600 hover:bg-blue-700"
-              >
-                Start New Order
-              </Button>
-              <Button onClick={() => router.back()} variant="outline" className="w-full">
-                Go Back
-              </Button>
+              {backToOrderUrl && (
+                <Button
+                  onClick={() => router.push(backToOrderUrl)}
+                  className="w-full bg-blue-600 hover:bg-blue-700"
+                >
+                  <ArrowLeft className="w-4 h-4 mr-2" />
+                  Back to order
+                </Button>
+              )}
+              {!backToOrderUrl && (
+                <Button onClick={() => router.push("/")} className="w-full bg-blue-600 hover:bg-blue-700">
+                  Back to home
+                </Button>
+              )}
             </div>
           </CardContent>
         </Card>
