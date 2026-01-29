@@ -369,7 +369,6 @@ const PaymentsClient: React.FC<PaymentsClientProps> = ({ venueId }) => {
         }
       } catch (error) {
         // Silently fail - venue info is optional for payments page
-        // Silently fail - venue info is optional
       }
 
       const logoUrl = designSettings?.logo_url;
@@ -646,21 +645,23 @@ const PaymentsClient: React.FC<PaymentsClientProps> = ({ venueId }) => {
           filter: `venue_id=eq.${venueId}`,
         },
         () => {
-          // Debounce to prevent excessive calls
+          // Debounce to prevent request storm when many updates fire
           if (debounceTimeout) clearTimeout(debounceTimeout);
           debounceTimeout = setTimeout(() => {
             loadPayments();
-          }, 500);
+          }, 2000);
         }
       )
       .subscribe();
 
-    // Listen for custom payment update events
-    const handlePaymentUpdate = (event: CustomEvent) => {
-      if (event.detail?.orderId) {
-        // Immediately refresh when payment is updated
+    // Listen for custom payment update events (debounced to avoid request storm)
+    const paymentUpdateDebounce = { current: null as ReturnType<typeof setTimeout> | null };
+    const handlePaymentUpdate = () => {
+      if (paymentUpdateDebounce.current) clearTimeout(paymentUpdateDebounce.current);
+      paymentUpdateDebounce.current = setTimeout(() => {
+        paymentUpdateDebounce.current = null;
         loadPayments();
-      }
+      }, 1500);
     };
 
     if (typeof window !== "undefined") {
@@ -674,6 +675,7 @@ const PaymentsClient: React.FC<PaymentsClientProps> = ({ venueId }) => {
 
     return () => {
       if (debounceTimeout) clearTimeout(debounceTimeout);
+      if (paymentUpdateDebounce.current) clearTimeout(paymentUpdateDebounce.current);
       supabase.removeChannel(channel);
       clearInterval(refreshInterval);
       if (typeof window !== "undefined") {
@@ -690,35 +692,25 @@ const PaymentsClient: React.FC<PaymentsClientProps> = ({ venueId }) => {
         headers: {
           "Content-Type": "application/json",
         },
+        credentials: "same-origin",
         body: JSON.stringify({
           orderId,
+          venue_id: venueId,
         }),
       });
 
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        const errorMessage =
-          errorData?.error?.message || errorData?.error || "Failed to mark order as paid";
+      const data = await response.json().catch(() => ({}));
 
+      if (!response.ok) {
+        const errorMessage =
+          data?.error?.message || data?.error || "Failed to mark order as paid";
         alert(`Failed to mark order as paid: ${errorMessage}`);
         return;
       }
 
-      if (process.env.NODE_ENV !== "production") {
-        const result = await response.json().catch(() => ({}));
-
-      }
-
-      // Reload payments to reflect the change
+      // Single refresh; skip dispatching event to avoid duplicate loadPayments and request storm
       await loadPayments();
-
-      // Show success feedback
-      if (typeof window !== "undefined") {
-        // Trigger a custom event for real-time updates
-        window.dispatchEvent(new CustomEvent("order-payment-updated", { detail: { orderId } }));
-      }
     } catch (error) {
-
       const errorMessage = error instanceof Error ? error.message : "An unexpected error occurred";
       alert(`Error: ${errorMessage}`);
     } finally {

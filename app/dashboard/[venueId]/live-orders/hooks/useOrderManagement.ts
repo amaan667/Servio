@@ -23,7 +23,8 @@ export function useOrderManagement(venueId: string) {
   const [historyOrders, setHistoryOrders] = useState<Order[]>(cachedHistory);
   const [groupedHistoryOrders, setGroupedHistoryOrders] =
     useState<Record<string, Order[]>>(cachedGroupedHistory);
-  const [loading, setLoading] = useState(cachedLiveOrders.length === 0); // Only show loading if no cache
+  // Always show loading until first fetch completes to avoid flashing "No Orders"
+  const [loading, setLoading] = useState(true);
   const [todayWindow, setTodayWindow] = useState<{ startUtcISO: string; endUtcISO: string } | null>(
     null
   );

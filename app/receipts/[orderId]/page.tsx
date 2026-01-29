@@ -42,7 +42,6 @@ export default async function ReceiptPage({ params }: ReceiptPageProps) {
     }
   } catch (error) {
     // Log but continue - venue info is optional for receipt display
-    // Log but continue - venue info is optional
   }
 
   return (

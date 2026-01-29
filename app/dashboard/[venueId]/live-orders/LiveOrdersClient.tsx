@@ -319,12 +319,13 @@ export default function LiveOrdersClient({
     );
   };
 
-  // Removed loading check - render immediately with empty state
   const counts = {
     live: getDisplayCount("live"),
     earlier: getDisplayCount("all"),
     history: getDisplayCount("history"),
   };
+
+  const showLoadingState = loading;
 
   return (
     <div className="w-full">
@@ -377,7 +378,11 @@ export default function LiveOrdersClient({
       <main className="mt-4 space-y-6 pb-20">
         {activeTab === "live" && (
           <div className="space-y-6">
-            {(() => {
+            {showLoadingState ? (
+              <div className="rounded-2xl border border-slate-200 bg-slate-50 p-10 text-center text-gray-700">
+                <p className="text-lg font-medium">Loading orders…</p>
+              </div>
+            ) : (() => {
               // Combine live and all today orders if table filter is active
               const allFilteredOrders = parsedTableFilter
                 ? [...filteredLiveOrders, ...filteredAllTodayOrders]
@@ -440,7 +445,11 @@ export default function LiveOrdersClient({
 
         {activeTab === "all" && (
           <div className="space-y-6">
-            {(() => {
+            {showLoadingState ? (
+              <div className="rounded-2xl border border-slate-200 bg-slate-50 p-10 text-center text-gray-700">
+                <p className="text-lg font-medium">Loading orders…</p>
+              </div>
+            ) : (() => {
               // Combine live and all today orders if table filter is active
               const allFilteredOrders = parsedTableFilter
                 ? [...filteredLiveOrders, ...filteredAllTodayOrders]
@@ -499,7 +508,11 @@ export default function LiveOrdersClient({
 
         {activeTab === "history" && (
           <div className="space-y-6">
-            {filteredHistoryOrders.length === 0 ? (
+            {showLoadingState ? (
+              <div className="rounded-2xl border border-slate-200 bg-slate-50 p-10 text-center text-gray-700">
+                <p className="text-lg font-medium">Loading orders…</p>
+              </div>
+            ) : filteredHistoryOrders.length === 0 ? (
               <EmptyState
                 title={searchQuery ? "No orders found" : "No Historical Orders"}
                 description={
