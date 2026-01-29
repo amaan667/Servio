@@ -261,6 +261,27 @@ export class OrderService extends BaseService {
   }
 
   /**
+   * Force-complete an order (bulk complete): set COMPLETED and PAID in one update
+   * so DB check "orders_completed_requires_served_and_paid" is satisfied.
+   */
+  async forceCompleteOrder(orderId: string, venueId: string): Promise<Order> {
+    const supabase = await createSupabaseClient();
+    const { data, error } = await supabase
+      .from("orders")
+      .update({ order_status: "COMPLETED", payment_status: "PAID" })
+      .eq("id", orderId)
+      .eq("venue_id", venueId)
+      .select()
+      .single();
+
+    if (error) throw new Error(error.message || String(error));
+
+    await this.invalidateCachePattern(`orders:*:${venueId}:*`);
+
+    return data;
+  }
+
+  /**
    * Update payment status
    */
   async updatePaymentStatus(
@@ -412,7 +433,8 @@ export class OrderService extends BaseService {
       } catch (rpcErr) {
         logger.info("[bulkCompleteOrders] RPC exception", { orderId: order.id, err: String(rpcErr) });
       }
-      await this.updateOrderStatus(order.id, venueId, "COMPLETED");
+      // Single update: COMPLETED + PAID so check constraint orders_completed_requires_served_and_paid is satisfied
+      await this.forceCompleteOrder(order.id, venueId);
       completedCount++;
       const { cleanupTableOnOrderCompletion } = await import("@/lib/table-cleanup");
       await cleanupTableOnOrderCompletion({
