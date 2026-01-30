@@ -2,7 +2,7 @@ import React from "react";
 import DashboardClient from "./page.client";
 import ClientOnlyWrapper from "@/components/ClientOnlyWrapper";
 import { createAdminClient } from "@/lib/supabase";
-
+import { getDashboardCounts } from "@/lib/dashboard-counts";
 import { todayWindowForTZ } from "@/lib/time";
 import { requirePageAuth } from "@/lib/auth/page-auth-helper";
 import { fetchMenuItemCount } from "@/lib/counts/unified-counts";
@@ -66,22 +66,14 @@ export default async function VenuePage({ params }: { params: { venueId: string 
 
       // Parallelize all fetches for instant loading
       const now = new Date();
-      const [
-        countsResult,
-        tablesResult,
-        sessionsResult,
-        reservationsResult,
-        ordersResult,
-        menuItemsResult,
-      ] = await Promise.all([
-        supabase
-          .rpc("dashboard_counts", {
-            p_venue_id: normalizedVenueId,
-            p_tz: venueTz,
-            p_live_window_mins: 30,
-          })
-          .single(),
-        supabase.from("tables").select("id, is_active").eq("venue_id", normalizedVenueId),
+      const [countsResult, tablesResult, sessionsResult, reservationsResult, ordersResult, menuItemsResult] =
+        await Promise.all([
+          getDashboardCounts(supabase, {
+            venueId: normalizedVenueId,
+            tz: venueTz,
+            liveWindowMins: 30,
+          }).then((c) => ({ data: c, error: null })),
+          supabase.from("tables").select("id, is_active").eq("venue_id", normalizedVenueId),
         supabase
           .from("table_sessions")
           .select("id, status, table_id")

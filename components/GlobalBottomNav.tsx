@@ -132,18 +132,21 @@ export default function GlobalBottomNav({
             if (!isSubscribed || !isMountedRef.current) return;
 
             try {
-              const { data, error } = await supabase
-                .rpc("dashboard_counts", {
-                  p_venue_id: venueId,
-                  p_tz: "Europe/London",
-                  p_live_window_mins: 30,
-                })
-                .single();
+              const params = new URLSearchParams({
+                venueId,
+                tz: "Europe/London",
+                live_window_mins: "30",
+              });
+              const res = await fetch(`/api/dashboard/counts?${params.toString()}`, {
+                credentials: "include",
+                headers: { Accept: "application/json" },
+              });
 
               if (!isSubscribed || !isMountedRef.current) return;
 
+              const body = res.ok ? await res.json() : null;
+              const data = body?.data ?? body;
               if (
-                !error &&
                 data &&
                 typeof data === "object" &&
                 data !== null &&

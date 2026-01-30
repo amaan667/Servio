@@ -13,6 +13,7 @@
 import { supabaseBrowser as createClient, createAdminClient } from "@/lib/supabase";
 import { todayWindowForTZ } from "@/lib/time";
 import { normalizeVenueId } from "@/lib/utils/venueId";
+import { getDashboardCounts } from "@/lib/dashboard-counts";
 
 import { withRetry, DEFAULT_RETRY_OPTIONS } from "@/lib/retry";
 
@@ -148,24 +149,37 @@ export async function fetchUnifiedCounts(
   // Fetch menu items count (with retry)
   const menuItems = await fetchMenuItemCount(venueId);
 
-  // Fetch dashboard counts using RPC (with error handling)
+  // Fetch dashboard counts (API on client, getDashboardCounts on server)
   let liveOrders = 0;
   let todayOrders = 0;
 
   try {
-    const { data: countsData, error: rpcError } = await supabase
-      .rpc("dashboard_counts", {
-        p_venue_id: normalizedVenueId,
-        p_tz: venueTz,
-        p_live_window_mins: 30,
-      })
-      .single();
-
-    if (rpcError) {
-      /* Condition handled */
-    } else if (countsData) {
-      liveOrders = safeExtractNumber(countsData, "live_count", 0);
-      todayOrders = safeExtractNumber(countsData, "today_orders_count", 0);
+    if (typeof globalThis.window === "undefined") {
+      const counts = await getDashboardCounts(supabase, {
+        venueId: normalizedVenueId,
+        tz: venueTz,
+        liveWindowMins: 30,
+      });
+      liveOrders = counts.live_count;
+      todayOrders = counts.today_orders_count;
+    } else {
+      const params = new URLSearchParams({
+        venueId: normalizedVenueId,
+        tz: venueTz,
+        live_window_mins: "30",
+      });
+      const res = await fetch(`/api/dashboard/counts?${params.toString()}`, {
+        credentials: "include",
+        headers: { Accept: "application/json" },
+      });
+      if (res.ok) {
+        const body = await res.json();
+        const countsData = body?.data ?? body;
+        if (countsData) {
+          liveOrders = safeExtractNumber(countsData, "live_count", 0);
+          todayOrders = safeExtractNumber(countsData, "today_orders_count", 0);
+        }
+      }
     }
   } catch (error) {
     /* Error handled silently */

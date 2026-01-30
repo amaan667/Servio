@@ -65,18 +65,21 @@ export default function ConditionalBottomNav() {
       }
 
       try {
-        const supabase = createClient();
-        const { data, error } = await supabase
-          .rpc("dashboard_counts", {
-            p_venue_id: venueIdFromPath,
-            p_tz: "Europe/London",
-            p_live_window_mins: 30,
-          })
-          .single();
+        const params = new URLSearchParams({
+          venueId: venueIdFromPath,
+          tz: "Europe/London",
+          live_window_mins: "30",
+        });
+        const res = await fetch(`/api/dashboard/counts?${params.toString()}`, {
+          credentials: "include",
+          headers: { Accept: "application/json" },
+        });
 
         if (!isMounted) return;
 
-        if (!error && data) {
+        const body = res.ok ? await res.json() : null;
+        const data = body?.data ?? body;
+        if (data) {
           const countsData = {
             live_orders: ((data as Record<string, unknown>).live_count as number) || 0,
             total_orders: ((data as Record<string, unknown>).today_orders_count as number) || 0,
@@ -84,7 +87,6 @@ export default function ConditionalBottomNav() {
           };
           setCounts(countsData);
 
-          // Cache the result
           if (data && typeof data === "object") {
             setCachedCounts(
               venueIdFromPath,

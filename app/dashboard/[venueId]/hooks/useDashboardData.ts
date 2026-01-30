@@ -96,19 +96,21 @@ export function useDashboardData(
         const supabase = createClient();
         const normalizedVenueId = normalizeVenueId(venueId) ?? venueId;
 
-        // Fetch dashboard counts using RPC
-        const { data: countsData, error: countsError } = await supabase
-          .rpc("dashboard_counts", {
-            p_venue_id: normalizedVenueId,
-            p_tz: venueTz,
-            p_live_window_mins: 30,
-          })
-          .single();
-
-        if (countsError) {
+        // Fetch dashboard counts from API (no RPC dependency)
+        const params = new URLSearchParams({
+          venueId: normalizedVenueId,
+          tz: venueTz,
+          live_window_mins: "30",
+        });
+        const res = await fetch(`/api/dashboard/counts?${params.toString()}`, {
+          credentials: "include",
+          headers: { Accept: "application/json" },
+        });
+        if (!res.ok) {
           setError("Failed to fetch dashboard counts");
           return;
         }
+        const countsData = await res.json().then((b) => b?.data ?? b);
 
         // Batch fetch table-related data in parallel for better performance
         const now = new Date();

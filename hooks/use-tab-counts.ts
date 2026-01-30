@@ -1,4 +1,3 @@
-import { supabaseBrowser as createClient } from "@/lib/supabase";
 import { useState, useEffect, useCallback } from "react";
 
 import { getCachedCounts, setCachedCounts } from "@/lib/cache/count-cache";
@@ -48,25 +47,26 @@ export function useTabCounts(venueId: string, tz: string, liveWindowMins = 30) {
       setError(null);
 
       try {
-        const supabase = createClient();
-        const { data: result, error: rpcError } = await supabase
-          .rpc("dashboard_counts", {
-            p_venue_id: venueId,
-            p_tz: tz,
-            p_live_window_mins: liveWindowMins,
-          })
-          .single();
+        const params = new URLSearchParams({
+          venueId,
+          tz,
+          live_window_mins: String(liveWindowMins),
+        });
+        const res = await fetch(`/api/dashboard/counts?${params.toString()}`, {
+          credentials: "include",
+          headers: { Accept: "application/json" },
+        });
 
-        if (rpcError) {
-          setError(rpcError.message);
-          // Don't clear data on error - keep showing cached data
+        if (!res.ok) {
+          setError("Failed to fetch counts");
           return;
         }
 
+        const body = await res.json();
+        const result = body?.data ?? body;
         if (result) {
           const counts = result as TabCounts;
           setData(counts);
-          // Cache the result
           setCachedCounts(venueId, counts);
         }
       } catch (_err) {
