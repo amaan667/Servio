@@ -56,6 +56,12 @@ export function success<T>(
 
   const headers: HeadersInit = {};
 
+  // Add X-Request-Id for tracing (from meta or correlationId)
+  const requestId = responseMeta?.requestId ?? correlationId;
+  if (requestId) {
+    headers["X-Request-Id"] = requestId;
+  }
+
   // Add cache headers if provided
   if (cacheOptions) {
     const directives: string[] = [];
@@ -122,7 +128,11 @@ export function error(
     }
   }
 
-  return NextResponse.json<ApiResponse>(response as ApiResponse, { status });
+  const headers: HeadersInit = {};
+  if (correlationId) {
+    headers["X-Request-Id"] = correlationId;
+  }
+  return NextResponse.json<ApiResponse>(response as ApiResponse, { status, headers });
 }
 
 /**

@@ -1,12 +1,9 @@
 import { NextResponse } from "next/server";
 
-// Ultra-minimal health check for Railway - instant response
-// MUST work even before build completes
-// Deployment force: 2025-11-26 14:20:00 UTC
+// Ultra-minimal liveness check for Railway / load balancer - instant response.
+// For readiness (DB, Redis, Stripe) use GET /api/ready instead. See INCIDENT.md.
 export async function GET() {
-  // Return plain text "ok" - fastest possible response
-  // No edge runtime (needs build first), no dependencies
-  // Force rebuild: changed response format
+  // Return plain text "ok" - fastest possible response; no dependencies
   return new NextResponse("ok", {
     status: 200,
     headers: {

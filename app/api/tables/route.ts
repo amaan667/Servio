@@ -8,12 +8,22 @@ import { NextResponse } from "next/server";
 export const runtime = "nodejs";
 
 /**
- * GET: Fetch all tables with their current runtime state
+ * GET: Fetch tables with their current runtime state.
+ * Optional pagination: ?limit=50&offset=0 (default limit 500, offset 0; existing clients unchanged).
  */
 export const GET = createUnifiedHandler(
-  async (_req, context) => {
-    const tables = await tableService.getTablesWithState(context.venueId);
-    return { tables };
+  async (req, context) => {
+    const limit = Math.min(
+      Math.max(1, parseInt(req.nextUrl.searchParams.get("limit") || "500", 10)),
+      500
+    );
+    const offset = Math.max(0, parseInt(req.nextUrl.searchParams.get("offset") || "0", 10));
+    const allTables = await tableService.getTablesWithState(context.venueId);
+    const tables = allTables.slice(offset, offset + limit);
+    return {
+      tables,
+      pagination: { limit, offset, total: allTables.length },
+    };
   },
   {
     requireVenueAccess: true,
