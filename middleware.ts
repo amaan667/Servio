@@ -3,17 +3,32 @@ import type { NextRequest } from "next/server";
 import { createServerClient, type CookieOptions } from "@supabase/ssr";
 
 // Paths that require authentication - middleware does ALL auth; routes read x-user-id only
+// IMPORTANT: All API routes that need auth should be listed here to ensure
+// middleware sets x-user-id header from either cookies OR Authorization header
 const protectedPaths = [
   "/dashboard",
   "/api/catalog",
   "/api/kds", // KDS: middleware auth only; KDS rate limit on routes - no auth/rate-limit errors
   "/api/orders", // Live orders serve/complete, etc. - require auth so x-user-id is set
   "/api/tables",
+  "/api/table-sessions",
   "/api/inventory",
   "/api/staff",
   "/api/ai",
   "/api/feedback",
   "/api/qr",
+  "/api/stripe", // Subscription management
+  "/api/subscription",
+  "/api/signup", // Signup flows that need auth context
+  "/api/organization",
+  "/api/cleanup", // Admin cleanup endpoints
+  "/api/reservations",
+  "/api/menu-items",
+  "/api/live-orders",
+  "/api/receipts",
+  "/api/pay", // Payment endpoints
+  "/api/daily-reset",
+  "/api/setup-kds",
 ];
 
 export async function middleware(request: NextRequest) {
@@ -92,14 +107,34 @@ export async function middleware(request: NextRequest) {
   // getUser() authenticates the data by contacting the Supabase Auth server
   // It also automatically refreshes the session if needed
 
-  // First, log incoming cookies for debugging
-  const cookieHeader = request.headers.get("cookie") || "";
-  const hasAuthCookies = cookieHeader.includes("sb-") && cookieHeader.includes("auth-token");
+  // Check for Authorization header (client may send Bearer token from localStorage)
+  // This handles the case where client session was refreshed but cookies haven't been updated
+  const authHeader = request.headers.get("Authorization");
+  let userFromAuthHeader: { id: string; email?: string } | null = null;
+
+  if (authHeader?.startsWith("Bearer ")) {
+    const token = authHeader.slice(7);
+    try {
+      // Verify the JWT token with Supabase
+      const { data: userData, error: tokenError } = await supabase.auth.getUser(token);
+      if (userData?.user && !tokenError) {
+        userFromAuthHeader = userData.user;
+      }
+    } catch {
+      // Token verification failed, fall back to cookie-based auth
+    }
+  }
 
   let {
     data: { user },
     error: authError,
   } = await supabase.auth.getUser();
+
+  // If cookie-based auth failed but Authorization header had valid token, use that
+  if ((!user || authError) && userFromAuthHeader) {
+    user = userFromAuthHeader as typeof user;
+    authError = null;
+  }
 
   // If getUser() fails, try to refresh the session
   // This handles stale sessions where the access token expired but refresh token is valid

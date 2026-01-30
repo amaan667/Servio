@@ -65,7 +65,7 @@ export interface TierCheckResult {
 
 /**
  * Get authenticated user from request
- * Uses middleware-set header or falls back to session from cookies
+ * Uses middleware-set header or falls back to Authorization header verification
  */
 export async function getAuthUserFromRequest(
   request: NextRequest
@@ -88,8 +88,38 @@ export async function getAuthUserFromRequest(
     };
   }
 
-  // No fallback - middleware must set headers
-  // All routes should go through middleware which calls RPC once
+  // Fallback: Check Authorization header directly
+  // This handles edge cases where middleware didn't process the route
+  const authHeader = request.headers.get("Authorization");
+  if (authHeader?.startsWith("Bearer ")) {
+    try {
+      const token = authHeader.slice(7);
+      const { createServerClient } = await import("@supabase/ssr");
+
+      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+      const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+      if (supabaseUrl && supabaseAnonKey) {
+        const supabase = createServerClient(supabaseUrl, supabaseAnonKey, {
+          cookies: {
+            getAll: () => [],
+            setAll: () => {},
+          },
+        });
+
+        const { data: userData, error: tokenError } = await supabase.auth.getUser(token);
+        if (userData?.user && !tokenError) {
+          return {
+            user: userData.user,
+            error: null,
+          };
+        }
+      }
+    } catch {
+      // Token verification failed
+    }
+  }
+
   return { user: null, error: "Not authenticated" };
 }
 

@@ -419,11 +419,34 @@ async function hasValidAuthCookies(): Promise<boolean> {
 }
 
 // Get authenticated user (server-side)
+// Checks: 1) x-user-id header from middleware, 2) cookies
 export async function getAuthenticatedUser() {
   try {
-    const { cookies } = await import("next/headers");
+    const { cookies, headers } = await import("next/headers");
+    const headerStore = await headers();
     const cookieStore = await cookies();
 
+    // First, check if middleware already verified auth and set x-user-id header
+    // This handles the case where Authorization header had a valid token but cookies were stale
+    const middlewareUserId = headerStore.get("x-user-id");
+    const middlewareEmail = headerStore.get("x-user-email");
+
+    if (middlewareUserId) {
+      // Middleware already verified the user - trust it
+      return {
+        user: {
+          id: middlewareUserId,
+          email: middlewareEmail || undefined,
+          app_metadata: {},
+          user_metadata: {},
+          aud: "authenticated",
+          created_at: new Date().toISOString(),
+        },
+        error: null,
+      };
+    }
+
+    // No middleware header - fall back to cookie-based auth
     const supabase = supabaseServer({
       get: (name) => {
         // Guard against undefined cookie names
