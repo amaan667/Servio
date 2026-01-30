@@ -25,7 +25,9 @@ export function useTableManagement() {
       setError(null);
 
       const { apiClient } = await import("@/lib/api-client");
-      const response = await apiClient.post("/api/tables", params);
+      const response = await apiClient.post("/api/tables", params, {
+        params: params.venue_id ? { venueId: params.venue_id } : undefined,
+      });
       const data = await response.json();
 
       if (!response.ok) {

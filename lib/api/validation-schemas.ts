@@ -128,8 +128,8 @@ export const updateMenuItemSchema = menuItemSchema.partial().extend({
  * Table schemas
  */
 export const createTableSchema = z.object({
-  venue_id: uuid.optional(),
-  table_number: z.union([z.string(), z.number()]),
+  venue_id: venueId.optional(),
+  table_number: z.union([z.string(), z.number()]).optional(),
   label: z.string().optional().nullable(),
   capacity: z.number().int().positive().optional().nullable(),
   seat_count: z.number().int().positive().optional().nullable(),
