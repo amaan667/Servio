@@ -64,8 +64,9 @@ export interface TierCheckResult {
 // ============================================================================
 
 /**
- * Get authenticated user from request
- * Uses middleware-set header or falls back to Authorization header verification
+ * Get authenticated user from request.
+ * Middleware runs for all /api/* (except health/ping/ready) and /dashboard/*, so x-user-id
+ * is set when the user has a session (cookies or Bearer). Routes read from here only.
  */
 export async function getAuthUserFromRequest(
   request: NextRequest

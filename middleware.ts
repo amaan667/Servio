@@ -2,34 +2,17 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { createServerClient, type CookieOptions } from "@supabase/ssr";
 
-// Paths that require authentication - middleware does ALL auth; routes read x-user-id only
-// IMPORTANT: All API routes that need auth should be listed here to ensure
-// middleware sets x-user-id header from either cookies OR Authorization header
-const protectedPaths = [
-  "/dashboard",
-  "/api/catalog",
-  "/api/kds", // KDS: middleware auth only; KDS rate limit on routes - no auth/rate-limit errors
-  "/api/orders", // Live orders serve/complete, etc. - require auth so x-user-id is set
-  "/api/tables",
-  "/api/table-sessions",
-  "/api/inventory",
-  "/api/staff",
-  "/api/ai",
-  "/api/feedback",
-  "/api/qr",
-  "/api/stripe", // Subscription management
-  "/api/subscription",
-  "/api/signup", // Signup flows that need auth context
-  "/api/organization",
-  "/api/cleanup", // Admin cleanup endpoints
-  "/api/reservations",
-  "/api/menu-items",
-  "/api/live-orders",
-  "/api/receipts",
-  "/api/pay", // Payment endpoints
-  "/api/daily-reset",
-  "/api/setup-kds",
-];
+// Public API paths: no auth headers needed (middleware skips auth for these only)
+// Every other /api/* and /dashboard/* gets middleware auth so x-user-id is always set when the user has a session.
+// This ensures we never return 401 due to "middleware didn't run" - only when the user is genuinely not authenticated.
+const PUBLIC_API_PATHS = new Set(["/api/health", "/api/ping", "/api/ready"]);
+
+function shouldRunAuth(pathname: string): boolean {
+  if (PUBLIC_API_PATHS.has(pathname)) return false;
+  if (pathname.startsWith("/api/")) return true;
+  if (pathname.startsWith("/dashboard")) return true;
+  return false;
+}
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
@@ -41,13 +24,10 @@ export async function middleware(request: NextRequest) {
   request.headers.delete("x-user-role");
   request.headers.delete("x-venue-id");
 
-  // Skip middleware for health check and public paths
-  if (pathname === "/api/health" || !protectedPaths.some((path) => pathname.startsWith(path))) {
-    // Pass the request with STRIPPED headers
+  // Only skip auth for explicit public paths; all other /api/* and /dashboard/* get auth
+  if (!shouldRunAuth(pathname)) {
     return NextResponse.next({
-      request: {
-        headers: request.headers,
-      },
+      request: { headers: request.headers },
     });
   }
 
