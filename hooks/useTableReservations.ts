@@ -52,15 +52,18 @@ export function useTableGrid(venueId: string, leadTimeMinutes: number = 30) {
     placeholderData: () =>
       getCachedQueryData<TableGridItem[]>(["tables", "grid", venueId, String(leadTimeMinutes)]),
     queryFn: async () => {
-      // First, get the table data from the main tables table (which has merged_with_table_id)
+      // First, get the table data from the main tables table
       const { data: tableData, error: tableError } = await supabase
         .from("tables")
         .select("*")
         .eq("venue_id", venueId)
         .eq("is_active", true)
-        .is("merged_with_table_id", null) // Filter out merged tables
-        .order("label");
+        .order("table_number", { ascending: true, nullsFirst: false });
       if (tableError) throw tableError;
+      // Filter out merged tables in JS if column exists (avoids DB schema dependency)
+      const tablesFiltered = (tableData ?? []).filter(
+        (t: Record<string, unknown>) => t.merged_with_table_id == null
+      );
 
       // Get all active table sessions for this venue (including FREE and OCCUPIED status)
       const { data: tableSessions, error: sessionsError } = await supabase
@@ -104,7 +107,7 @@ export function useTableGrid(venueId: string, leadTimeMinutes: number = 30) {
       }
 
       // Transform the data to match the expected TableGridItem interface
-      return tableData.map((item: Record<string, unknown>) => {
+      return tablesFiltered.map((item: Record<string, unknown>) => {
         // Find active table session for this table
         const activeSession = tableSessions.find(
           (s: unknown) => (s as TableSession).table_id === item.id

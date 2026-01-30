@@ -46,7 +46,7 @@ export class TableService extends BaseService {
           .select("*")
           .eq("venue_id", venueId)
           .eq("is_active", true)
-          .order("table_number", { ascending: true });
+          .order("table_number", { ascending: true, nullsFirst: false });
 
         if (error) throw error;
         return data || [];
@@ -177,13 +177,13 @@ export class TableService extends BaseService {
   > {
     const supabase = await createSupabaseClient();
 
-    // 1. Fetch all active tables
+    // 1. Fetch all active tables (order by table_number so we don't depend on label column)
     const { data: tables, error: tablesError } = await supabase
       .from("tables")
       .select("*")
       .eq("venue_id", venueId)
       .eq("is_active", true)
-      .order("label", { ascending: true });
+      .order("table_number", { ascending: true, nullsFirst: false });
 
     if (tablesError) throw tablesError;
     if (!tables || tables.length === 0) return [];
