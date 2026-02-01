@@ -1,58 +1,30 @@
 /**
- * Auto-generated test for health
- * Generated: 2025-11-23T00:14:32.210Z
+ * @fileoverview Unit tests for health check API endpoint
  */
 
-import { describe, it, expect, vi } from "vitest";
-import { createMockRequest } from "../helpers/api-test-helpers";
-import { GET as getGET } from "@/app/api/health/route";
+import { describe, it, expect } from "vitest";
+import { GET } from "@/app/api/health/route";
 
-// Mock dependencies
-vi.mock("@/lib/supabase", () => ({
-  createAdminClient: vi.fn(() => ({
-    from: vi.fn(() => ({
-      select: vi.fn(() => Promise.resolve({ data: [], error: null })),
-      insert: vi.fn(() => Promise.resolve({ data: [{ id: "test-id" }], error: null })),
-      update: vi.fn(() => Promise.resolve({ data: [], error: null })),
-      delete: vi.fn(() => Promise.resolve({ data: [], error: null })),
-    })),
-  })),
-  createServerSupabase: vi.fn(() =>
-    Promise.resolve({
-      from: vi.fn(() => ({
-        select: vi.fn(() => Promise.resolve({ data: [], error: null })),
-      })),
-      auth: {
-        getUser: vi.fn(() => Promise.resolve({ data: { user: { id: "user-123" } }, error: null })),
-      },
-    })
-  ),
-}));
+describe("GET /api/health", () => {
+  it("should return 200 status with 'ok' text", async () => {
+    const response = await GET();
 
-vi.mock("@/lib/api-auth", () => ({
-  authenticateRequest: vi.fn(async () => ({
-    success: true,
-    user: { id: "user-123" },
-    supabase: {
-      from: vi.fn(() => ({
-        select: vi.fn(() => Promise.resolve({ data: [], error: null })),
-      })),
-    },
-  })),
-  verifyVenueAccess: vi.fn(() => Promise.resolve(true)),
-}));
+    expect(response.status).toBe(200);
+    expect(response.headers.get("Content-Type")).toBe("text/plain");
+  });
 
-describe("Health API", () => {
-  describe("GET health", () => {
-    it("should handle get request", async () => {
-      const request = createMockRequest("GET", "http://localhost:3000/apihealth");
+  it("should return 'ok' as response body", async () => {
+    const response = await GET();
+    const text = await response.text();
 
-      const response = await getGET(request);
-      expect([200, 400, 401, 403, 404, 500]).toContain(response.status);
-    });
+    expect(text).toBe("ok");
+  });
 
-    it("should validate request parameters", async () => {
-      /* Intentionally empty */
-    });
+  it("should include deploy time header", async () => {
+    const response = await GET();
+    const deployTime = response.headers.get("X-Deploy-Time");
+
+    expect(deployTime).toBeTruthy();
+    expect(deployTime).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/);
   });
 });

@@ -1,28 +1,197 @@
+# Dependabot Configuration
+# Automated dependency updates for Servio
+
 version: 2
 updates:
-  # Enable version updates for npm
+  # Enable version updates for all dependencies
+  - package-ecosystem: "npm"
+
+  # Maintain dependencies for weekly updates
   - package-ecosystem: "npm"
     directory: "/"
     schedule:
       interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: "UTC"
+    open-pull-requests-limit: 10
+    reviewers:
+      - "amaan667"
+    assignees:
+      - "amaan667"
+    commit-message:
+      prefix: "chore(deps)"
+      include: "scope"
+    labels:
+      - "dependencies"
+      - "automated"
+    versioning-strategy: increase
+    allow:
+      - dependency-type: direct
+      - dependency-type: peer
+      - dependency-type: development
+
+  # Security updates for production dependencies
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "daily"
+      time: "06:00"
+      timezone: "UTC"
     open-pull-requests-limit: 5
+    reviewers:
+      - "amaan667"
+    labels:
+      - "security"
+      - "automated"
+    commit-message:
+      prefix: "security(deps)"
+      include: "scope"
+    versioning-strategy: increase
+    allow:
+      - dependency-type: direct
+      - dependency-type: peer
     groups:
-      production-dependencies:
-        patterns:
-          - "@*/*"
-          - "next"
-          - "react"
-          - "react-dom"
-          - "typescript"
-        update-types:
-          - "minor"
-          - "patch"
-      dev-dependencies:
-        patterns:
-          - "vitest"
-          - "playwright"
-          - "eslint"
-          - "prettier"
-        update-types:
-          - "minor"
-          - "patch"
+      # Security-critical dependencies
+      - dependency-name-pattern: "react*"
+        update-types: ["version-update:semver-major", "version-update:semver-minor", "version-update:semver-patch"]
+      - dependency-name-pattern: "next*"
+        update-types: ["version-update:semver-major", "version-update:semver-minor", "version-update:semver-patch"]
+      - dependency-name-pattern: "@supabase/*"
+        update-types: ["version-update:semver-major", "version-update:semver-minor", "version-update:semver-patch"]
+      - dependency-name-pattern: "stripe*"
+        update-types: ["version-update:semver-major", "version-update:semver-minor", "version-update:semver-patch"]
+
+  # Development dependencies (less frequent updates)
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "monthly"
+      day: 1
+      time: "09:00"
+      timezone: "UTC"
+    open-pull-requests-limit: 5
+    reviewers:
+      - "amaan667"
+    labels:
+      - "dependencies"
+      - "automated"
+      - "dev-deps"
+    commit-message:
+      prefix: "chore(deps-dev)"
+      include: "scope"
+    versioning-strategy: increase
+    allow:
+      - dependency-type: development
+      - dependency-type: peer
+
+  # Ignore certain dependencies
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    allow:
+      # Ignore specific packages
+      - dependency-name: "typescript"
+      - dependency-name: "eslint"
+      - dependency-name: "prettier"
+      - dependency-name: "vitest"
+      - dependency-name: "playwright"
+      - dependency-name: "@types/*"
+      # Ignore packages that are pinned to specific versions
+      - dependency-name: "next"
+        update-types: ["version-update:semver-patch"]
+      - dependency-name: "react"
+        update-types: ["version-update:semver-patch"]
+
+# Configure commit limits
+commit-message:
+  prefix: "chore(deps)"
+  include: "scope"
+
+# Pull request settings
+pull-requests:
+  # Limit the number of open pull requests
+  open-pull-requests-limit: 10
+
+  # Automatically close stale PRs
+  stale-pr:
+    days: 7
+    labels: ["stale"]
+
+# Group dependencies to reduce noise
+groups:
+  # Production dependencies
+  - dependency-name-pattern: "*"
+    patterns:
+      - "*"
+    exclude-patterns:
+      - "*-dev"
+      - "*-test"
+      - "@types/*"
+
+  # Development dependencies
+  - dependency-name-pattern: "*-dev"
+    patterns:
+      - "*-dev"
+
+# Security alerts
+security-updates:
+  # Enable security vulnerability scanning
+  enabled: true
+
+  # Automatically create PRs for security updates
+  open-pull-requests-limit: 5
+
+  # Labels for security PRs
+  labels:
+    - "security"
+    - "vulnerability"
+    - "automated"
+
+# Versioning strategy
+versioning-strategy: increase
+
+# Allow configuration
+allow:
+  # Allow updates for direct dependencies
+  - dependency-type: "direct"
+
+  # Allow updates for peer dependencies
+  - dependency-type: "peer"
+
+  # Allow updates for development dependencies
+  - dependency-type: "development"
+
+  # Allow major version updates
+  - update-types: ["version-update:semver-major"]
+
+  # Allow minor version updates
+  - update-types: ["version-update:semver-minor"]
+
+  # Allow patch version updates
+  - update-types: ["version-update:semver-patch"]
+
+# Ignore configuration
+ignore:
+  # Ignore specific dependencies
+  - dependency-name: "typescript"
+  - dependency-name: "@types/*"
+
+  # Ignore dependencies by pattern
+  - dependency-name-pattern: "*-test"
+  - dependency-name-pattern: "*-example"
+
+  # Ignore dev dependencies in production updates
+  - dependency-name-pattern: "*-dev"
+    update-types: ["version-update:semver-major", "version-update:semver-minor"]
+
+# Reviewers
+reviewers:
+  # Default reviewers for all PRs
+  - "amaan667"
+
+# Assignees
+assignees:
+  # Default assignees for all PRs
+  - "amaan667"
