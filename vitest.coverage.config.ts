@@ -30,12 +30,12 @@ export default defineConfig({
         "app/**/error.tsx",
         "app/**/not-found.tsx",
       ],
-      // Coverage thresholds - aim for 70%+
+      // Coverage thresholds - aim for 80%+
       thresholds: {
-        lines: 70,
-        functions: 70,
-        branches: 65,
-        statements: 70,
+        lines: 80,
+        functions: 80,
+        branches: 75,
+        statements: 80,
       },
     },
   },
