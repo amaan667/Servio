@@ -1,5 +1,5 @@
 # Dockerfile for Servio Development
-# Multi-stage build for optimized image size
+# Multi-stage build for optimized image size (deploy trigger)
 # Uses Debian slim - canvas has prebuilt binaries for glibc (Alpine/musl fails to compile)
 
 # Stage 1: Dependencies
