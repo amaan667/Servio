@@ -5,6 +5,21 @@
 FROM node:20-alpine AS deps
 WORKDIR /app
 
+# Install Python and build dependencies for canvas
+RUN apk add --no-cache \
+    python3 \
+    make \
+    g++ \
+    cairo-dev \
+    jpeg-dev \
+    pango-dev \
+    musl-dev \
+    giflib-dev \
+    pixman-dev \
+    pangomm-dev \
+    libxxf86vm-dev \
+    libxrandr-dev
+
 # Copy package files
 COPY package.json pnpm-lock.yaml ./
 
