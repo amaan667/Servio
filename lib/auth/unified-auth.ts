@@ -565,16 +565,42 @@ export function withUnifiedAuth(
       // Auth successful (context.venueId is already normalized from requireAuthAndVenueAccess)
       const context = { ...authResult.context, venueId: normalizedVenueId };
 
-      // Feature check
+      // Feature check - use tier from context instead of making another RPC call
       if (options?.requireFeature) {
-        // IMPORTANT: Feature access is based on the venue owner's subscription tier.
+        // IMPORTANT: Feature access is based on the venue's subscription tier.
         // Staff users should inherit the venue's plan.
-        const featureCheck = await enforceFeatureAccess(
-          context.venue.owner_user_id,
-          options.requireFeature
-        );
-        if (!featureCheck.allowed) {
-          return featureCheck.response;
+        // Use the tier from context (already retrieved from verifyVenueAccess) instead of making another RPC call
+        const tierLimits = TIER_LIMITS[context.tier] ?? TIER_LIMITS.starter;
+        const featureValue = tierLimits.features[options.requireFeature];
+
+        // Check if feature is available for this tier
+        let allowed = false;
+        if (typeof featureValue === "boolean") {
+          allowed = featureValue;
+        } else if (featureValue !== false) {
+          // For tier-based features (kds, analytics, branding, supportLevel), allow if not false
+          allowed = true;
+        }
+
+        if (!allowed) {
+          // Find the minimum tier that has this feature
+          let requiredTier = "enterprise";
+          const proLimits = TIER_LIMITS.pro;
+          const proValue = proLimits.features[options.requireFeature];
+          if (typeof proValue === "boolean" && proValue) {
+            requiredTier = "pro";
+          }
+
+          return NextResponse.json(
+            {
+              error: "Feature not available",
+              message: `This feature requires ${requiredTier} tier. Current tier: ${context.tier}`,
+              currentTier: context.tier,
+              requiredTier,
+              upgradeRequired: true,
+            },
+            { status: 403 }
+          );
         }
       }
 
