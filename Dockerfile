@@ -43,7 +43,9 @@ COPY --from=deps /app/pnpm-lock.yaml ./pnpm-lock.yaml
 # Copy source code
 COPY . .
 
-# Build application
+# Build application (increase memory for Next.js; Railway injects real env vars)
+ENV NODE_OPTIONS="--max-old-space-size=4096"
+ENV NEXT_TELEMETRY_DISABLED=1
 RUN pnpm build
 
 # Stage 3: Production
