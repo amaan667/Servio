@@ -195,6 +195,15 @@ const nextConfig = {
       };
     }
 
+    // Ignore optional packages (not installed) - avoids "Module not found" at build time
+    if (isServer) {
+      config.plugins.push(
+        new webpack.IgnorePlugin({ resourceRegExp: /^dd-trace$/ }),
+        new webpack.IgnorePlugin({ resourceRegExp: /^newrelic$/ }),
+        new webpack.IgnorePlugin({ resourceRegExp: /^twilio$/ })
+      );
+    }
+
     // Only for client-side builds: ignore playwright-core
     if (!isServer) {
       config.plugins.push(
@@ -202,7 +211,7 @@ const nextConfig = {
           resourceRegExp: /^playwright-core$/,
         })
       );
-      
+
       // Add fallback for modules not found in browser
       config.resolve.fallback = {
         ...config.resolve.fallback,
