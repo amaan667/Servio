@@ -56,6 +56,10 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
         this.state.error?.message?.includes("session") ||
         this.state.error?.message?.includes("token");
 
+      const isConfigError =
+        this.state.error?.message?.includes("NEXT_PUBLIC_SUPABASE") ||
+        this.state.error?.message?.includes("Supabase configuration");
+
       return (
         <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
           <div className="max-w-md w-full bg-white rounded-lg shadow-lg p-6 text-center">
@@ -75,11 +79,22 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
                   />
                 </svg>
               </div>
-              <h1 className="text-xl font-semibold text-gray-900 mb-2">Something went wrong</h1>
+              <h1 className="text-xl font-semibold text-gray-900 mb-2">
+                {isConfigError ? "Configuration required" : "Something went wrong"}
+              </h1>
               <p className="text-gray-900 mb-4">
-                {isAuthError
-                  ? "There was an authentication error. This might be due to a session issue."
-                  : "An unexpected error occurred. Please try again."}
+                {isConfigError ? (
+                  <>
+                    Supabase environment variables are not set. Add{" "}
+                    <code className="text-sm bg-gray-100 px-1">NEXT_PUBLIC_SUPABASE_URL</code> and{" "}
+                    <code className="text-sm bg-gray-100 px-1">NEXT_PUBLIC_SUPABASE_ANON_KEY</code> in
+                    Railway Variables, then redeploy.
+                  </>
+                ) : isAuthError ? (
+                  "There was an authentication error. This might be due to a session issue."
+                ) : (
+                  "An unexpected error occurred. Please try again."
+                )}
               </p>
 
               {process.env.NODE_ENV === "development" && this.state.error && (
@@ -103,6 +118,14 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
             </div>
 
             <div className="space-y-3">
+              {isConfigError && (
+                <Button
+                  onClick={() => (window.location.href = "/env-check")}
+                  className="w-full bg-blue-600 hover:bg-blue-700 text-white"
+                >
+                  Check Environment Variables
+                </Button>
+              )}
               {isAuthError && (
                 <Button
                   onClick={this.handleClearAuth}
