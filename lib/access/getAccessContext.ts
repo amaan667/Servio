@@ -1,16 +1,23 @@
 /**
  * Unified Access Context - Single RPC call for auth/tier/role
  * Replaces scattered per-page checks with a single database call
+ *
+ * MOBILE: getAccessContextWithRequest(venueId, request) uses Bearer token when
+ * cookies are not sent (e.g. mobile Safari/fetch), so API routes work the same as desktop.
  */
 
 import { cache } from "react";
+import type { NextRequest } from "next/server";
 import {
   type AccessContext,
   type Tier,
   type FeatureKey,
   hasFeatureAccess,
 } from "@/lib/tier-limits";
-import { createServerSupabaseReadOnly } from "@/lib/supabase";
+import {
+  createServerSupabaseReadOnly,
+  createServerSupabaseWithToken,
+} from "@/lib/supabase";
 import { normalizeVenueId } from "@/lib/utils/venueId";
 
 /**
@@ -94,6 +101,50 @@ export const getAccessContext = cache(
     }
   }
 );
+
+/**
+ * Get access context using request's Bearer token when cookies are empty (e.g. mobile).
+ * Use this in API routes so KDS/analytics work the same on mobile as desktop.
+ */
+export async function getAccessContextWithRequest(
+  venueId: string | null | undefined,
+  request: NextRequest
+): Promise<AccessContext | null> {
+  const normalizedVenueId = normalizeVenueId(venueId);
+  const contextFromCookies = await getAccessContext(venueId);
+  if (contextFromCookies) return contextFromCookies;
+
+  const authHeader = request.headers.get("Authorization");
+  const token = authHeader?.startsWith("Bearer ") ? authHeader.slice(7) : null;
+  if (!token) return null;
+
+  try {
+    const supabase = createServerSupabaseWithToken(token);
+    const { data: userData, error: userError } = await supabase.auth.getUser(token);
+    if (userError || !userData?.user) return null;
+
+    const { data, error: rpcError } = await supabase.rpc("get_access_context", {
+      p_venue_id: normalizedVenueId,
+    });
+
+    if (rpcError || !data) return null;
+
+    const context = data as AccessContext;
+    if (!context.user_id || !context.role) return null;
+
+    const tier = (context.tier?.toLowerCase().trim() || "starter") as Tier;
+    const validTier = ["starter", "pro", "enterprise"].includes(tier)
+      ? tier
+      : ("starter" as Tier);
+
+    return {
+      ...context,
+      tier: validTier,
+    };
+  } catch {
+    return null;
+  }
+}
 
 /**
  * Get access context with feature access helper

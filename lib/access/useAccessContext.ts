@@ -8,6 +8,8 @@ import type { UserRole } from "@/lib/permissions";
 import type { AccessContext, Tier, FeatureKey } from "@/lib/tier-limits";
 import { hasFeatureAccess } from "@/lib/tier-limits";
 
+const VALID_ROLES: UserRole[] = ["owner", "manager", "staff", "kitchen", "server", "cashier"];
+
 interface UseAccessContextReturn {
   context: AccessContext | null;
   loading: boolean;
@@ -111,10 +113,32 @@ function getMobileStorage() {
   };
 }
 
+/** Build AccessContext from server-injected __PLATFORM_AUTH__ when RPC fails (e.g. mobile). */
+function getPlatformAuthFallback(venueId?: string | null): AccessContext | null {
+  if (typeof window === "undefined") return null;
+  const win = window as Window & { __PLATFORM_AUTH__?: { userId?: string; tier?: string; role?: string; venueId?: string } };
+  const auth = win.__PLATFORM_AUTH__;
+  if (!auth?.userId || !auth?.role) return null;
+  const role = auth.role as UserRole;
+  if (!VALID_ROLES.includes(role)) return null;
+  const normalizedVenueId = normalizeVenueId(venueId ?? auth.venueId);
+  const tier = (auth.tier?.toLowerCase().trim() || "starter") as Tier;
+  const validTier = ["starter", "pro", "enterprise"].includes(tier) ? tier : ("starter" as Tier);
+  return {
+    user_id: auth.userId,
+    venue_id: normalizedVenueId || null,
+    role,
+    tier: validTier,
+    venue_ids: normalizedVenueId ? [normalizedVenueId] : [],
+    permissions: {},
+  };
+}
+
 /**
  * Unified client-side access context hook
  * Uses get_access_context RPC - single database call for all auth/tier/role checks
  * Replaces all duplicate venues/user_venue_roles queries
+ * MOBILE: Falls back to __PLATFORM_AUTH__ when RPC fails so KDS/analytics work the same as desktop.
  */
 export function useAccessContext(venueId?: string | null): UseAccessContextReturn {
   const [context, setContext] = useState<AccessContext | null>(null);
@@ -138,12 +162,23 @@ export function useAccessContext(venueId?: string | null): UseAccessContextRetur
 
       if (rpcError) {
         setError(rpcError.message);
-        setContext(null);
+        const platformFallback = getPlatformAuthFallback(venueId);
+        if (platformFallback) {
+          setContext(platformFallback);
+          setError(null);
+        } else {
+          setContext(null);
+        }
         return;
       }
 
       if (!data) {
-        setContext(null);
+        const platformFallback = getPlatformAuthFallback(venueId);
+        if (platformFallback) {
+          setContext(platformFallback);
+        } else {
+          setContext(null);
+        }
         return;
       }
 
@@ -184,7 +219,9 @@ export function useAccessContext(venueId?: string | null): UseAccessContextRetur
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to fetch access context");
-      setContext(null);
+      const platformFallback = getPlatformAuthFallback(venueId);
+      if (platformFallback) setContext(platformFallback);
+      else setContext(null);
     } finally {
       setLoading(false);
     }
@@ -225,6 +262,13 @@ export function useAccessContext(venueId?: string | null): UseAccessContextRetur
         } catch {
           // Invalid cache, fetch fresh
         }
+      }
+
+      // No cache: use server-injected __PLATFORM_AUTH__ for instant context on mobile
+      const platformFallback = getPlatformAuthFallback(venueId);
+      if (platformFallback) {
+        setContext(platformFallback);
+        setLoading(false);
       }
     }
 

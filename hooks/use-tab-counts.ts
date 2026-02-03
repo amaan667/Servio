@@ -52,9 +52,9 @@ export function useTabCounts(venueId: string, tz: string, liveWindowMins = 30) {
           tz,
           live_window_mins: String(liveWindowMins),
         });
-        const res = await fetch(`/api/dashboard/counts?${params.toString()}`, {
-          credentials: "include",
-          headers: { Accept: "application/json" },
+        const { apiClient } = await import("@/lib/api-client");
+        const res = await apiClient.get(`/api/dashboard/counts`, {
+          params: { venueId, tz, live_window_mins: String(liveWindowMins) },
         });
 
         if (!res.ok) {

@@ -377,6 +377,28 @@ export async function createServerSupabaseReadOnly() {
   });
 }
 
+/**
+ * Server Supabase client authenticated via Bearer token only (no cookies).
+ * Used when cookies are not sent (e.g. mobile fetch) so API routes work the same as desktop.
+ * Global headers ensure RPC and DB requests are authenticated.
+ */
+export function createServerSupabaseWithToken(accessToken: string) {
+  return createSSRServerClient(getSupabaseUrl(), getSupabaseAnonKey(), {
+    cookies: {
+      getAll: () => [],
+      setAll: () => {},
+    },
+    global: {
+      headers: {
+        Accept: "application/json",
+        "Content-Type": "application/json",
+        Prefer: "return=representation",
+        Authorization: `Bearer ${accessToken}`,
+      },
+    },
+  });
+}
+
 // Alias for backward compatibility
 export async function createSupabaseClient() {
   return createServerSupabase();

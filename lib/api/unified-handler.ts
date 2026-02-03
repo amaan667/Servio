@@ -241,10 +241,13 @@ export function createUnifiedHandler<TBody = unknown, TResponse = unknown>(
         let role = req.headers.get("x-user-role");
         const headerVenueId = req.headers.get("x-venue-id");
 
-        // If tier/role headers missing, call RPC (for API routes that middleware didn't process)
+        // If tier/role headers missing, call RPC (for API routes that middleware didn't process).
+        // Use getAccessContextWithRequest so Bearer token is used when cookies aren't sent (e.g. mobile).
         if (!tier || !role || headerVenueId !== venueId) {
-          const { getAccessContext } = await import("@/lib/access/getAccessContext");
-          const accessContext = await getAccessContext(venueId);
+          const { getAccessContextWithRequest } = await import(
+            "@/lib/access/getAccessContext"
+          );
+          const accessContext = await getAccessContextWithRequest(venueId, req);
 
           if (
             !accessContext ||
@@ -268,8 +271,8 @@ export function createUnifiedHandler<TBody = unknown, TResponse = unknown>(
           req.headers.set("x-venue-id", venueId);
         }
 
-        // Verify venue access (this will use headers we just set)
-        const access = await verifyVenueAccess(venueId, user.id);
+        // Verify venue access (pass request so Bearer token is used when cookies empty, e.g. mobile)
+        const access = await verifyVenueAccess(venueId, user.id, req);
 
         if (!access) {
           perf.end();
@@ -315,8 +318,8 @@ export function createUnifiedHandler<TBody = unknown, TResponse = unknown>(
 
         authContext = { ...access, venueId } as AuthContext;
       } else if (venueId && user) {
-        // Optional venue access - try to get context if venueId provided
-        const access = await verifyVenueAccess(venueId, user.id);
+        // Optional venue access - try to get context if venueId provided (pass req for mobile Bearer)
+        const access = await verifyVenueAccess(venueId, user.id, req);
         if (access) {
           authContext = { ...access, venueId };
         } else {

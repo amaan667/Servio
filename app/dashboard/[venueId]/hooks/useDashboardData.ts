@@ -102,9 +102,9 @@ export function useDashboardData(
           tz: venueTz,
           live_window_mins: "30",
         });
-        const res = await fetch(`/api/dashboard/counts?${params.toString()}`, {
-          credentials: "include",
-          headers: { Accept: "application/json" },
+        const { apiClient } = await import("@/lib/api-client");
+        const res = await apiClient.get(`/api/dashboard/counts`, {
+          params: { venueId: normalizedVenueId, tz: venueTz, live_window_mins: "30" },
         });
         if (!res.ok) {
           setError("Failed to fetch dashboard counts");

@@ -5,7 +5,10 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { createSupabaseClient } from "@/lib/supabase";
+import {
+  createSupabaseClient,
+  createServerSupabaseWithToken,
+} from "@/lib/supabase";
 import { getAuthenticatedUser as getAuthUser } from "@/lib/supabase";
 import { normalizeVenueId } from "@/lib/utils/venueId";
 
@@ -47,36 +50,34 @@ export interface AuthorizedContext {
 /**
  * Verify user has access to venue (owner or staff)
  * Single path: get_access_context RPC for role/tier (dashboard and API routes).
+ * When request is provided with Bearer token, uses token when cookies are empty (e.g. mobile).
  */
 export async function verifyVenueAccess(
   venueId: string,
-  userId: string
+  userId: string,
+  request?: NextRequest
 ): Promise<VenueAccess | null> {
-  try {
-    const normalizedVenueId = normalizeVenueId(venueId) ?? venueId;
-    const supabase = await createSupabaseClient();
+  const normalizedVenueId = normalizeVenueId(venueId) ?? venueId;
+
+  const tryWithSupabase = async (
+    supabase: Awaited<ReturnType<typeof createSupabaseClient>>
+  ): Promise<VenueAccess | null> => {
     const { data: venue, error: venueError } = await supabase
       .from("venues")
       .select("*")
       .eq("venue_id", normalizedVenueId)
       .single();
 
-    if (venueError || !venue) {
-      return null;
-    }
+    if (venueError || !venue) return null;
 
     const { data: ctx, error: rpcError } = await supabase.rpc("get_access_context", {
       p_venue_id: normalizedVenueId,
     });
 
-    if (rpcError || !ctx) {
-      return null;
-    }
+    if (rpcError || !ctx) return null;
 
     const rpc = ctx as { user_id?: string; role?: string; tier?: string };
-    if (!rpc.user_id || !rpc.role || rpc.user_id !== userId) {
-      return null;
-    }
+    if (!rpc.user_id || !rpc.role || rpc.user_id !== userId) return null;
 
     return {
       venue,
@@ -85,7 +86,25 @@ export async function verifyVenueAccess(
       tier: (rpc.tier?.toLowerCase()?.trim() || "starter") as string,
       venue_ids: [],
     };
-  } catch (error) {
+  };
+
+  try {
+    const supabase = await createSupabaseClient();
+    const result = await tryWithSupabase(supabase);
+    if (result) return result;
+
+    // Cookie-based auth failed (e.g. mobile). Try Bearer token if provided.
+    if (request) {
+      const authHeader = request.headers.get("Authorization");
+      const token = authHeader?.startsWith("Bearer ") ? authHeader.slice(7) : null;
+      if (token) {
+        const tokenSupabase = createServerSupabaseWithToken(token);
+        return tryWithSupabase(tokenSupabase);
+      }
+    }
+
+    return null;
+  } catch {
     return null;
   }
 }

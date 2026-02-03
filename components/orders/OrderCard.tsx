@@ -61,14 +61,10 @@ export function OrderCard({
 
     try {
       setCheckingTickets(true);
-      const response = await fetch("/api/kds/tickets/check-bumped", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({
-          order_id: order.id,
-          venue_id: venueId,
-        }),
+      const { apiClient } = await import("@/lib/api-client");
+      const response = await apiClient.post("/api/kds/tickets/check-bumped", {
+        order_id: order.id,
+        venue_id: venueId,
       });
       if (response.ok) {
         const data = await response.json();
