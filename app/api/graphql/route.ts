@@ -70,7 +70,7 @@ export async function POST(request: NextRequest) {
  */
 async function executeGraphQL(
   query: string,
-  variables: Record<string, unknown> | undefined,
+  _variables: Record<string, unknown> | undefined,
   _operationName: string | undefined,
   _context: { supabase: SupabaseClient; userId?: string }
 ) {
