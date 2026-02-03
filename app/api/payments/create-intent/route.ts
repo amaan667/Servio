@@ -1,13 +1,8 @@
 import { NextRequest } from "next/server";
 import Stripe from "stripe";
 import { stripe } from "@/lib/stripe-client";
-
-import { withUnifiedAuth } from "@/lib/auth/unified-auth";
-import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
-import { isDevelopment } from "@/lib/env";
-import { success, apiErrors, isZodError, handleZodError } from "@/lib/api/standard-response";
+import { createUnifiedHandler } from "@/lib/api/unified-handler";
 import { z } from "zod";
-import { validateBody } from "@/lib/api/validation-schemas";
 import { getCorrelationIdFromRequest } from "@/lib/middleware/correlation-id";
 
 export const runtime = "nodejs";
@@ -33,94 +28,64 @@ const createIntentSchema = z.object({
   receiptEmail: z.string().email("Invalid email address").optional(),
 });
 
-export const POST = withUnifiedAuth(
+export const POST = createUnifiedHandler(
   async (req: NextRequest, context) => {
     const correlationId = getCorrelationIdFromRequest(req);
+    const body = context.body as z.infer<typeof createIntentSchema>;
+    const finalVenueId = context.venueId || body.venueId;
 
-    try {
-      // STEP 1: Rate limiting (ALWAYS FIRST)
-      const rateLimitResult = await rateLimit(req, RATE_LIMITS.GENERAL);
-      if (!rateLimitResult.success) {
-        return apiErrors.rateLimit(Math.ceil((rateLimitResult.reset - Date.now()) / 1000));
-      }
-
-      // STEP 2: Validate input
-      const body = await validateBody(createIntentSchema, await req.json());
-      const finalVenueId = context.venueId || body.venueId;
-
-      if (!finalVenueId) {
-        return apiErrors.badRequest("venueId is required");
-      }
-
-      // STEP 3: Business logic
-      const { cartId, tableNumber, items, totalAmount, customerName, customerPhone, receiptEmail } =
-        body;
-
-      // Cart data stored in metadata
-      const itemsSummary = items.map((item) => `${item.name} x${item.quantity}`).join(", ");
-
-      // Create payment intent with idempotency key
-      // CRITICAL: Include correlation_id in metadata for traceability
-      const paymentIntentParams: Stripe.PaymentIntentCreateParams = {
-        amount: totalAmount,
-        currency: "gbp",
-        automatic_payment_methods: { enabled: true },
-        metadata: {
-          cart_id: cartId,
-          venue_id: finalVenueId,
-          table_number: tableNumber.toString(),
-          customer_name: customerName,
-          customer_phone: customerPhone,
-          item_count: items.length.toString(),
-          items_summary: itemsSummary.substring(0, 500), // Limit metadata size
-          total_amount: totalAmount.toString(),
-          correlation_id: correlationId, // CRITICAL: For tracing payments to orders
-        },
-        description: `Order for ${customerName} at table ${tableNumber}`,
-      };
-
-      // Add receipt email if provided - Stripe will automatically send digital receipts
-      if (receiptEmail && receiptEmail.trim() !== "") {
-        paymentIntentParams.receipt_email = receiptEmail.trim();
-      }
-
-      const paymentIntent = await stripe.paymentIntents.create(paymentIntentParams, {
-        idempotencyKey: `pi_${cartId}`,
-      });
-
-      // STEP 4: Return success response
-      return success({
-        clientSecret: paymentIntent.client_secret,
-        paymentIntentId: paymentIntent.id,
-      });
-    } catch (error) {
-      if (isZodError(error)) {
-        return handleZodError(error);
-      }
-
-      if (error instanceof Stripe.errors.StripeError) {
-        return apiErrors.badRequest(error.message);
-      }
-
-      return apiErrors.internal(
-        "Failed to create payment intent",
-        isDevelopment() ? error : undefined
-      );
+    if (!finalVenueId) {
+      throw new Error("venueId is required");
     }
+
+    const { cartId, tableNumber, items, totalAmount, customerName, customerPhone, receiptEmail } = body;
+
+    // Cart data stored in metadata
+    const itemsSummary = items.map((item) => `${item.name} x${item.quantity}`).join(", ");
+
+    // Create payment intent with idempotency key
+    // CRITICAL: Include correlation_id in metadata for traceability
+    const paymentIntentParams: Stripe.PaymentIntentCreateParams = {
+      amount: totalAmount,
+      currency: "gbp",
+      automatic_payment_methods: { enabled: true },
+      metadata: {
+        cart_id: cartId,
+        venue_id: finalVenueId,
+        table_number: tableNumber.toString(),
+        customer_name: customerName,
+        customer_phone: customerPhone,
+        item_count: items.length.toString(),
+        items_summary: itemsSummary.substring(0, 500), // Limit metadata size
+        total_amount: totalAmount.toString(),
+        correlation_id: correlationId, // CRITICAL: For tracing payments to orders
+      },
+      description: `Order for ${customerName} at table ${tableNumber}`,
+    };
+
+    // Add receipt email if provided - Stripe will automatically send digital receipts
+    if (receiptEmail && receiptEmail.trim() !== "") {
+      paymentIntentParams.receipt_email = receiptEmail.trim();
+    }
+
+    const paymentIntent = await stripe.paymentIntents.create(paymentIntentParams, {
+      idempotencyKey: `pi_${cartId}`,
+    });
+
+    return {
+      clientSecret: paymentIntent.client_secret,
+      paymentIntentId: paymentIntent.id,
+    };
   },
   {
-    // Extract venueId from body
-    extractVenueId: async (req) => {
-      try {
-        const body = await req.json().catch(() => ({}));
-        return (
-          (body as { venueId?: string; venue_id?: string })?.venueId ||
-          (body as { venueId?: string; venue_id?: string })?.venue_id ||
-          null
-        );
-      } catch {
-        return null;
-      }
+    schema: createIntentSchema,
+    requireAuth: true,
+    requireVenueAccess: true,
+    venueIdSource: "body",
+    enforceIdempotency: true, // Critical for payment operations to prevent double-charging
+    rateLimit: {
+      window: 60, // 60 seconds (1 minute)
+      limit: 20, // 20 requests per minute
     },
   }
 );

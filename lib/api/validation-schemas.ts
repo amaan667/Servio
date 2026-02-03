@@ -193,6 +193,12 @@ export const createPaymentIntentSchema = z.object({
   payment_method: z.enum(["card", "cash", "pay_later"]).optional(),
 });
 
+export const processStripePaymentSchema = z.object({
+  order_id: uuid,
+  payment_intent_id: z.string().optional(),
+  venue_id: venueId,
+});
+
 /**
  * Feedback schemas
  */
