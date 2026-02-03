@@ -139,7 +139,7 @@ export function createEdgeCacheHeaders(config: EdgeFunctionConfig): EdgeResponse
 /**
  * Edge function wrapper
  */
-export function withEdgeFunction<T>(
+export function withEdgeFunction(
   handler: (context: EdgeContext) => Promise<NextResponse>,
   config: EdgeFunctionConfig = {}
 ) {
