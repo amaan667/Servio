@@ -5,7 +5,7 @@
  * This is the ONLY place to create Supabase clients. Import from here everywhere.
  * - Browser clients: Use `supabaseBrowser()` for client-side code
  * - Server clients: Use `createClient()` for server components and API routes
- * - Mobile Safari optimizations included for cookie/storage handling
+ * - Unified storage (localStorage + cookie fallback) for all browsers
  */
 
 import { createServerClient as createSSRServerClient, type CookieOptions } from "@supabase/ssr";
@@ -92,18 +92,10 @@ export function supabaseBrowser() {
     });
   }
 
-  // Client-side: use singleton
+  // Client-side: use singleton with same storage for all devices (no device branching)
   if (!browserClient) {
     const projectRef = url.match(/https:\/\/([^.]+)\.supabase\.co/)?.[1] || "default";
 
-    // Detect mobile Safari - it has stricter cookie/storage policies
-    const isMobileSafari =
-      typeof navigator !== "undefined" &&
-      /iPhone|iPad|iPod/.test(navigator.userAgent) &&
-      /Safari/.test(navigator.userAgent) &&
-      !/Chrome|CriOS|FxiOS|EdgiOS/.test(navigator.userAgent);
-
-    // Test if storage is actually available (private browsing can block it)
     const isStorageAvailable = () => {
       try {
         const testKey = "__supabase_storage_test__";
@@ -115,53 +107,40 @@ export function supabaseBrowser() {
       }
     };
 
-    // Custom storage implementation for mobile Safari that handles restrictions
-    const createMobileSafariStorage = () => {
-      const storageAvailable = isStorageAvailable();
-
-      return {
-        getItem: (key: string) => {
-          try {
-            if (storageAvailable) {
-              return localStorage.getItem(key);
-            }
-            // Fallback to cookies if localStorage unavailable
-            const cookies = document.cookie.split(";");
-            const cookie = cookies.find((c) => c.trim().startsWith(`${key}=`));
-            if (!cookie) return null;
-            const parts = cookie.split("=");
-            const v = parts[1];
-            return v ? decodeURIComponent(v) : null;
-          } catch {
-            return null;
+    const createUnifiedStorage = () => ({
+      getItem: (key: string) => {
+        try {
+          if (isStorageAvailable()) return localStorage.getItem(key);
+          const cookies = document.cookie.split(";");
+          const cookie = cookies.find((c) => c.trim().startsWith(`${key}=`));
+          if (!cookie) return null;
+          const v = cookie.split("=")[1];
+          return v ? decodeURIComponent(v) : null;
+        } catch {
+          return null;
+        }
+      },
+      setItem: (key: string, value: string) => {
+        try {
+          if (isStorageAvailable()) {
+            localStorage.setItem(key, value);
+          } else {
+            const expires = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toUTCString();
+            document.cookie = `${key}=${encodeURIComponent(value)}; expires=${expires}; path=/; secure; samesite=lax`;
           }
-        },
-        setItem: (key: string, value: string) => {
-          try {
-            if (storageAvailable) {
-              localStorage.setItem(key, value);
-            } else {
-              // Fallback to cookies with extended expiry
-              const expires = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toUTCString();
-              document.cookie = `${key}=${encodeURIComponent(value)}; expires=${expires}; path=/; secure; samesite=lax`;
-            }
-          } catch {
-            // Silent error handling
-          }
-        },
-        removeItem: (key: string) => {
-          try {
-            if (storageAvailable) {
-              localStorage.removeItem(key);
-            }
-            // Also remove from cookies
-            document.cookie = `${key}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/`;
-          } catch {
-            // Silent error handling
-          }
-        },
-      };
-    };
+        } catch {
+          // Silent
+        }
+      },
+      removeItem: (key: string) => {
+        try {
+          if (isStorageAvailable()) localStorage.removeItem(key);
+          document.cookie = `${key}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/`;
+        } catch {
+          // Silent
+        }
+      },
+    });
 
     // Validate that we have both URL and key before creating client
     if (!url || !anonKey) {
@@ -187,11 +166,9 @@ export function supabaseBrowser() {
         persistSession: true,
         detectSessionInUrl: true,
         autoRefreshToken: true,
-        flowType: "pkce", // PKCE is required for Supabase OAuth
-        // Mobile Safari: Use custom storage that handles private browsing/restrictions
-        // Desktop: Let Supabase use default storage
-        storage: isMobileSafari ? createMobileSafariStorage() : undefined,
-        storageKey: isMobileSafari ? `sb-${projectRef}-auth-token` : undefined,
+        flowType: "pkce",
+        storage: createUnifiedStorage(),
+        storageKey: `sb-${projectRef}-auth-token`,
       },
       global: {
         headers: {
@@ -330,8 +307,8 @@ export async function createServerSupabase() {
                 ...options,
                 httpOnly: false, // Must be false for Supabase to read from client
                 sameSite: "lax",
-                secure: true, // Always use secure in production - critical for mobile Safari
-                maxAge: options.maxAge || 60 * 60 * 24 * 7, // 7 days default for mobile persistence
+                secure: true,
+                maxAge: options.maxAge || 60 * 60 * 24 * 7,
                 path: "/",
               });
             }
@@ -379,7 +356,7 @@ export async function createServerSupabaseReadOnly() {
 
 /**
  * Server Supabase client authenticated via Bearer token only (no cookies).
- * Used when cookies are not sent (e.g. mobile fetch) so API routes work the same as desktop.
+ * Used when cookies are not sent so API routes work the same on all devices.
  * Global headers ensure RPC and DB requests are authenticated.
  */
 export function createServerSupabaseWithToken(accessToken: string) {
@@ -546,8 +523,8 @@ export async function getSession() {
           cookieStore.set(name, value, {
             ...options,
             sameSite: "lax",
-            secure: true, // Always use secure - critical for mobile Safari
-            maxAge: options.maxAge || 60 * 60 * 24 * 7, // 7 days default for mobile persistence
+            secure: true,
+            maxAge: options.maxAge || 60 * 60 * 24 * 7,
             httpOnly: false,
             path: "/",
           });

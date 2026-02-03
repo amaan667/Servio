@@ -134,8 +134,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   // Get the actual session from the server efficiently using secure method
   let session = null;
   try {
-    // Resolve auth for first paint so mobile/desktop render same (no flash).
-    // Try getSession() first (fast from cookies); then validate with getUser() with longer timeout for mobile.
+    // Resolve auth for first paint (no flash). getSession() first, then validate with getUser().
     const supabase = await createServerSupabaseReadOnly();
 
     const { data: sessionData } = await supabase.auth.getSession();

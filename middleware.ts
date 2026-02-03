@@ -71,20 +71,14 @@ export async function middleware(request: NextRequest) {
           // Set on request for downstream reads in this request
           request.cookies.set(name, value);
           
-          // MOBILE FIX: Use secure based on actual protocol, not just NODE_ENV
-          // This ensures cookies work correctly on mobile browsers
           const isSecure = request.url.startsWith("https://") || process.env.NODE_ENV === "production";
-          
-          // Set on response to persist to browser
-          // MOBILE FIX: Use more permissive cookie settings for mobile browsers
           response.cookies.set(name, value, {
             ...options,
-            httpOnly: false, // Must be false for Supabase to read from client
-            sameSite: "lax", // Use lax for better mobile compatibility
-            secure: isSecure, // Use secure based on actual protocol
+            httpOnly: false,
+            sameSite: "lax",
+            secure: isSecure,
             path: "/",
-            // MOBILE FIX: Add maxAge to ensure cookies persist on mobile
-            maxAge: options.maxAge || 60 * 60 * 24 * 7, // 7 days default
+            maxAge: options.maxAge || 60 * 60 * 24 * 7,
           });
         });
       },
@@ -231,7 +225,7 @@ export async function middleware(request: NextRequest) {
       requestHeaders.set("x-user-id", verifyUser.id);
       requestHeaders.set("x-user-email", session.user.email || "");
 
-      // When cookie-based RPC fails (e.g. mobile), retry with access_token so tier/role are correct
+      // When cookie-based RPC fails, retry with session access_token so tier/role are correct
       let ctx: { user_id?: string; venue_id?: string | null; role?: string; tier?: string } | null =
         data as typeof data;
       if (rpcErr || !data) {

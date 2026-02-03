@@ -2,8 +2,8 @@
  * Unified Access Context - Single RPC call for auth/tier/role
  * Replaces scattered per-page checks with a single database call
  *
- * MOBILE: getAccessContextWithRequest(venueId, request) uses Bearer token when
- * cookies are not sent (e.g. mobile Safari/fetch), so API routes work the same as desktop.
+ * getAccessContextWithRequest(venueId, request) uses Bearer token when cookies
+ * are not sent, so API routes work the same regardless of device.
  */
 
 import { cache } from "react";
@@ -27,7 +27,6 @@ import { normalizeVenueId } from "@/lib/utils/venueId";
  */
 export const getAccessContext = cache(
   async (venueId?: string | null): Promise<AccessContext | null> => {
-    // MOBILE FIX: Declare user outside try block so it's accessible in catch
     let user: { id: string } | null = null;
     
     try {
@@ -87,8 +86,7 @@ export const getAccessContext = cache(
         tier,
       };
     } catch (error) {
-      // MOBILE FIX: Return default context instead of null to prevent access denied on mobile
-      // This ensures basic functionality works even if RPC fails
+      // Return default context when RPC fails so pages still load
       const normalizedVenueId = normalizeVenueId(venueId);
       return {
         user_id: user?.id || "",
@@ -103,8 +101,8 @@ export const getAccessContext = cache(
 );
 
 /**
- * Get access context using request's Bearer token when cookies are empty (e.g. mobile).
- * Use this in API routes so KDS/analytics work the same on mobile as desktop.
+ * Get access context using request's Bearer token when cookies are empty.
+ * Use this in API routes so auth works the same on all devices.
  */
 export async function getAccessContextWithRequest(
   venueId: string | null | undefined,

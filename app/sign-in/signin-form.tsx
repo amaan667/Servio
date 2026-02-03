@@ -79,7 +79,6 @@ export default function SignInForm({
 
       if (!response.ok) {
         const msg = data.error || "Sign-in failed. Please try again.";
-        // If we hit rate limits, place a longer cooldown for mobile
         if (/rate limit/i.test(msg)) {
           const waitMs = 60_000; // 60s cooldown
           setCooldownUntil(Date.now() + waitMs);
@@ -114,13 +113,8 @@ export default function SignInForm({
             return;
           }
 
-          // CRITICAL: Wait for Safari to persist cookies
-          // Mobile Safari needs MORE time than desktop Safari to persist cookies
-          const isMobileSafari =
-            /iPhone|iPad|iPod/.test(navigator.userAgent) && /Safari/.test(navigator.userAgent);
-          const cookieDelay = isMobileSafari ? 1500 : 500;
-
-          await new Promise((resolve) => setTimeout(resolve, cookieDelay));
+          // Wait for session to persist (same delay for all devices)
+          await new Promise((resolve) => setTimeout(resolve, 1000));
 
           // Double-check session is set
           const {

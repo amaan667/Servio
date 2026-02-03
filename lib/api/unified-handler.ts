@@ -242,7 +242,7 @@ export function createUnifiedHandler<TBody = unknown, TResponse = unknown>(
         const headerVenueId = req.headers.get("x-venue-id");
 
         // If tier/role headers missing, call RPC (for API routes that middleware didn't process).
-        // Use getAccessContextWithRequest so Bearer token is used when cookies aren't sent (e.g. mobile).
+        // Use getAccessContextWithRequest so Bearer token is used when cookies aren't sent.
         if (!tier || !role || headerVenueId !== venueId) {
           const { getAccessContextWithRequest } = await import(
             "@/lib/access/getAccessContext"
@@ -271,7 +271,7 @@ export function createUnifiedHandler<TBody = unknown, TResponse = unknown>(
           req.headers.set("x-venue-id", venueId);
         }
 
-        // Verify venue access (pass request so Bearer token is used when cookies empty, e.g. mobile)
+        // Verify venue access (pass request so Bearer token is used when cookies empty)
         const access = await verifyVenueAccess(venueId, user.id, req);
 
         if (!access) {
@@ -318,7 +318,7 @@ export function createUnifiedHandler<TBody = unknown, TResponse = unknown>(
 
         authContext = { ...access, venueId } as AuthContext;
       } else if (venueId && user) {
-        // Optional venue access - try to get context if venueId provided (pass req for mobile Bearer)
+        // Optional venue access - try to get context if venueId provided
         const access = await verifyVenueAccess(venueId, user.id, req);
         if (access) {
           authContext = { ...access, venueId };

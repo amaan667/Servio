@@ -50,7 +50,7 @@ export interface AuthorizedContext {
 /**
  * Verify user has access to venue (owner or staff)
  * Single path: get_access_context RPC for role/tier (dashboard and API routes).
- * When request is provided with Bearer token, uses token when cookies are empty (e.g. mobile).
+ * When request is provided with Bearer token, uses token when cookies are empty.
  */
 export async function verifyVenueAccess(
   venueId: string,
@@ -93,7 +93,7 @@ export async function verifyVenueAccess(
     const result = await tryWithSupabase(supabase);
     if (result) return result;
 
-    // Cookie-based auth failed (e.g. mobile). Try Bearer token if provided.
+    // Cookie-based auth failed. Try Bearer token if provided.
     if (request) {
       const authHeader = request.headers.get("Authorization");
       const token = authHeader?.startsWith("Bearer ") ? authHeader.slice(7) : null;

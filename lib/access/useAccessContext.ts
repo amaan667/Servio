@@ -21,10 +21,10 @@ interface UseAccessContextReturn {
 }
 
 /**
- * Mobile-safe storage helper
- * Handles sessionStorage/localStorage failures on mobile browsers (especially private browsing)
+ * Storage helper with cookie fallback when sessionStorage/localStorage unavailable.
+ * Same behavior on all devices.
  */
-function getMobileStorage() {
+function getUnifiedStorage() {
   if (typeof window === "undefined") {
     return null;
   }
@@ -113,7 +113,7 @@ function getMobileStorage() {
   };
 }
 
-/** Build AccessContext from server-injected __PLATFORM_AUTH__ when RPC fails (e.g. mobile). */
+/** Build AccessContext from server-injected __PLATFORM_AUTH__ when RPC fails. */
 function getPlatformAuthFallback(venueId?: string | null): AccessContext | null {
   if (typeof window === "undefined") return null;
   const win = window as Window & { __PLATFORM_AUTH__?: { userId?: string; tier?: string; role?: string; venueId?: string } };
@@ -138,13 +138,13 @@ function getPlatformAuthFallback(venueId?: string | null): AccessContext | null 
  * Unified client-side access context hook
  * Uses get_access_context RPC - single database call for all auth/tier/role checks
  * Replaces all duplicate venues/user_venue_roles queries
- * MOBILE: Falls back to __PLATFORM_AUTH__ when RPC fails so KDS/analytics work the same as desktop.
+ * Falls back to __PLATFORM_AUTH__ when RPC fails so auth is consistent.
  */
 export function useAccessContext(venueId?: string | null): UseAccessContextReturn {
   const [context, setContext] = useState<AccessContext | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const storageRef = typeof window !== "undefined" ? getMobileStorage() : null;
+  const storageRef = typeof window !== "undefined" ? getUnifiedStorage() : null;
 
   const fetchContext = useCallback(async () => {
     try {
@@ -203,7 +203,7 @@ export function useAccessContext(venueId?: string | null): UseAccessContextRetur
 
       setContext(finalContext);
 
-      // Cache context using mobile-safe storage
+      // Cache context
       if (storageRef) {
         const cacheKey = normalizedVenueId
           ? `access_context_${normalizedVenueId}`
@@ -230,7 +230,7 @@ export function useAccessContext(venueId?: string | null): UseAccessContextRetur
   useEffect(() => {
     const normalizedVenueId = normalizeVenueId(venueId);
 
-    // Try cache first for instant response using mobile-safe storage
+    // Try cache first for instant response
     if (storageRef) {
       const cacheKey = normalizedVenueId
         ? `access_context_${normalizedVenueId}`
@@ -264,7 +264,7 @@ export function useAccessContext(venueId?: string | null): UseAccessContextRetur
         }
       }
 
-      // No cache: use server-injected __PLATFORM_AUTH__ for instant context on mobile
+      // No cache: use server-injected __PLATFORM_AUTH__ for instant context
       const platformFallback = getPlatformAuthFallback(venueId);
       if (platformFallback) {
         setContext(platformFallback);
