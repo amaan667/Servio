@@ -11,6 +11,33 @@ export interface FetchOptions extends RequestInit {
 }
 
 /**
+ * Get auth token with robust session handling for mobile browsers
+ */
+async function getAuthToken(): Promise<string | null> {
+  const supabase = supabaseBrowser();
+  
+  // First try getSession (fastest)
+  const { data: sessionData } = await supabase.auth.getSession();
+  if (sessionData?.session?.access_token) {
+    return sessionData.session.access_token;
+  }
+  
+  // If no session, try to get user (this might trigger a session refresh)
+  const { data: userData } = await supabase.auth.getUser();
+  if (userData?.user) {
+    return userData.user.id;
+  }
+  
+  // If still no session, try to refresh
+  const { data: refreshData, error: refreshError } = await supabase.auth.refreshSession();
+  if (refreshData?.session?.access_token && !refreshError) {
+    return refreshData.session.access_token;
+  }
+  
+  return null;
+}
+
+/**
  * Authenticated fetch - automatically includes auth token
  */
 export async function fetchWithAuth(
@@ -19,12 +46,7 @@ export async function fetchWithAuth(
     /* Empty */
   }
 ): Promise<Response> {
-  const supabase = supabaseBrowser();
-
-  // Get the current session
-  const {
-    data: { session },
-  } = await supabase.auth.getSession();
+  const token = await getAuthToken();
 
   // Build headers
   const headers: Record<string, string> = {
@@ -33,8 +55,8 @@ export async function fetchWithAuth(
   };
 
   // Add auth token if available
-  if (session?.access_token) {
-    headers["Authorization"] = `Bearer ${session.access_token}`;
+  if (token) {
+    headers["Authorization"] = `Bearer ${token}`;
   }
 
   // Build URL with query params

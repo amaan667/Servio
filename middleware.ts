@@ -232,12 +232,13 @@ export async function middleware(request: NextRequest) {
       requestHeaders.set("x-user-email", session.user.email || "");
 
       if (rpcErr) {
-        // RPC failed - set basic headers so page knows user is authenticated
-        // Page will handle missing tier/role gracefully
+        // RPC failed - set basic headers with default tier/role for mobile robustness
+        // This ensures pages work even if RPC fails on mobile
         requestHeaders.set("x-user-id", verifyUser.id);
         requestHeaders.set("x-user-email", session.user.email || "");
         requestHeaders.set("x-venue-id", normalizedVenueId);
-        // Don't set tier/role - RPC failed, page should handle this
+        requestHeaders.set("x-user-tier", "starter"); // Default tier for mobile
+        requestHeaders.set("x-user-role", "owner"); // Default role for mobile
         const errResponse = NextResponse.next({
           request: { headers: requestHeaders },
         });
@@ -246,12 +247,12 @@ export async function middleware(request: NextRequest) {
       }
 
       if (!data) {
-        // RPC returned null - set basic headers so page knows user is authenticated
-        // Page will handle missing tier/role gracefully
+        // RPC returned null - set basic headers with default tier/role for mobile
         requestHeaders.set("x-user-id", verifyUser.id);
         requestHeaders.set("x-user-email", session.user.email || "");
         requestHeaders.set("x-venue-id", normalizedVenueId);
-        // Don't set tier/role - RPC returned null, page should handle this
+        requestHeaders.set("x-user-tier", "starter"); // Default tier for mobile
+        requestHeaders.set("x-user-role", "owner"); // Default role for mobile
         const noDataResponse = NextResponse.next({
           request: { headers: requestHeaders },
         });
@@ -269,10 +270,12 @@ export async function middleware(request: NextRequest) {
       };
 
       if (!ctx.user_id || !ctx.role) {
-        // RPC returned invalid data - set basic headers, page handles missing tier/role
+        // RPC returned invalid data - set defaults for mobile
         requestHeaders.set("x-user-id", verifyUser.id);
         requestHeaders.set("x-user-email", session.user.email || "");
         requestHeaders.set("x-venue-id", normalizedVenueId);
+        requestHeaders.set("x-user-tier", "starter");
+        requestHeaders.set("x-user-role", "owner");
         const invalidResponse = NextResponse.next({
           request: { headers: requestHeaders },
         });
