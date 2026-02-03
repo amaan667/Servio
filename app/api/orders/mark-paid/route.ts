@@ -114,6 +114,7 @@ export const POST = createUnifiedHandler(
     requireVenueAccess: true,
     requireRole: ["owner", "manager", "staff", "server", "kitchen"],
     rateLimit: RATE_LIMITS.GENERAL,
+    enforceIdempotency: true, // Critical for payment operations to prevent double-charging
     extractVenueId: async (req) => {
       try {
         const body = await req

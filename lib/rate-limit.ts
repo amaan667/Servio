@@ -7,6 +7,7 @@
 import { NextRequest } from "next/server";
 
 import { env } from "@/lib/env";
+import { logger } from "@/lib/monitoring/structured-logger";
 
 export interface RateLimitConfig {
   limit: number; // Maximum number of requests
@@ -40,7 +41,16 @@ async function getRedisClient() {
   redisInitialized = true;
   const redisUrl = env("REDIS_URL");
 
+  // SECURITY: Redis is required for production deployments
+  // In-memory fallback is disabled to prevent distributed rate limit bypass
   if (!redisUrl) {
+    if (process.env.NODE_ENV === "production") {
+      throw new Error(
+        "REDIS_URL is required in production. Rate limiting requires Redis for distributed deployments. " +
+        "Set REDIS_URL environment variable or deploy with Redis enabled."
+      );
+    }
+    // Development: allow in-memory fallback for local testing
     return null;
   }
 
@@ -61,7 +71,38 @@ async function getRedisClient() {
 
     return client;
   } catch (error) {
+    if (process.env.NODE_ENV === "production") {
+      throw new Error(
+        `Failed to connect to Redis: ${error instanceof Error ? error.message : String(error)}. ` +
+        "Redis is required for production rate limiting."
+      );
+    }
+    // Development: allow fallback on connection errors
     return null;
+  }
+}
+
+/**
+ * Check Redis connection health
+ * Returns true if Redis is available and responsive
+ */
+export async function checkRedisHealth(): Promise<{ healthy: boolean; latency?: number; error?: string }> {
+  try {
+    const redis = await getRedisClient();
+    if (!redis) {
+      return { healthy: false, error: "Redis not available" };
+    }
+
+    const start = Date.now();
+    await redis.ping();
+    const latency = Date.now() - start;
+
+    logger.info("Redis health check passed", { latency, type: "redis_health" });
+    return { healthy: true, latency };
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    logger.error("Redis health check failed", { error: errorMessage, type: "redis_health" }, error instanceof Error ? error : undefined);
+    return { healthy: false, error: errorMessage };
   }
 }
 
@@ -123,20 +164,24 @@ export async function rateLimit(
       await redis.expire(bucketKey, options.window * 2); // Keep for 2 windows
 
       if (count > options.limit) {
-        return {
+        const result: RateLimitResult = {
           success: false,
           remaining: 0,
           reset,
           limit: options.limit,
         };
+        recordRateLimitMetrics(req.nextUrl.pathname, identifier, result);
+        return result;
       }
 
-      return {
+      const result: RateLimitResult = {
         success: true,
         remaining: Math.max(0, options.limit - count),
         reset,
         limit: options.limit,
       };
+      recordRateLimitMetrics(req.nextUrl.pathname, identifier, result);
+      return result;
     } catch (error) {
       // Redis error - fall back to in-memory
     }
@@ -148,35 +193,40 @@ export async function rateLimit(
   if (!current || current.reset < now) {
     // First request or window expired
     rateLimitStore.set(key, { count: 1, reset });
-    return {
+    const result: RateLimitResult = {
       success: true,
       remaining: options.limit - 1,
       reset,
       limit: options.limit,
     };
+    recordRateLimitMetrics(req.nextUrl.pathname, identifier, result);
+    return result;
   }
 
   if (current.count >= options.limit) {
     // Rate limit exceeded
-
-    return {
+    const result: RateLimitResult = {
       success: false,
       remaining: 0,
       reset: current.reset,
       limit: options.limit,
     };
+    recordRateLimitMetrics(req.nextUrl.pathname, identifier, result);
+    return result;
   }
 
   // Increment count
   current.count++;
   rateLimitStore.set(key, current);
 
-  return {
+  const result: RateLimitResult = {
     success: true,
     remaining: options.limit - current.count,
     reset: current.reset,
     limit: options.limit,
   };
+  recordRateLimitMetrics(req.nextUrl.pathname, identifier, result);
+  return result;
 }
 
 /**
@@ -228,3 +278,100 @@ export const RATE_LIMITS = {
   MENU_PUBLIC: { limit: 60, window: 60 }, // 60 requests per minute
   STRICT: { limit: 5, window: 60 }, // 5 requests per minute
 } as const;
+
+/**
+ * Rate limit metrics for monitoring
+ * Tracks rate limit hits, misses, and rejections
+ */
+interface RateLimitMetrics {
+  endpoint: string;
+  identifier: string;
+  limit: number;
+  remaining: number;
+  reset: number;
+  success: boolean;
+  timestamp: number;
+}
+
+// In-memory metrics store (in production, this should be exported to APM)
+const metricsStore: Map<string, RateLimitMetrics[]> = new Map();
+
+/**
+ * Record rate limit metrics
+ */
+export function recordRateLimitMetrics(
+  endpoint: string,
+  identifier: string,
+  result: RateLimitResult
+): void {
+  const metrics: RateLimitMetrics = {
+    endpoint,
+    identifier,
+    limit: result.limit,
+    remaining: result.remaining,
+    reset: result.reset,
+    success: result.success,
+    timestamp: Date.now(),
+  };
+
+  const key = `${endpoint}:${identifier}`;
+  if (!metricsStore.has(key)) {
+    metricsStore.set(key, []);
+  }
+
+  const history = metricsStore.get(key)!;
+  history.push(metrics);
+
+  // Keep only last 100 entries per endpoint:identifier
+  if (history.length > 100) {
+    history.shift();
+  }
+
+  // Log to structured logger for APM integration
+  if (!result.success) {
+    logger.warn("Rate limit exceeded", {
+      endpoint,
+      identifier,
+      limit: result.limit,
+      remaining: result.remaining,
+      type: "rate_limit_exceeded",
+    });
+  } else if (result.remaining < result.limit * 0.1) {
+    // Alert when approaching limit (less than 10% remaining)
+    logger.info("Rate limit approaching threshold", {
+      endpoint,
+      identifier,
+      remaining: result.remaining,
+      limit: result.limit,
+      type: "rate_limit_warning",
+    });
+  }
+}
+
+/**
+ * Get rate limit metrics for monitoring
+ */
+export function getRateLimitMetrics(endpoint?: string): RateLimitMetrics[] {
+  if (endpoint) {
+    const allMetrics: RateLimitMetrics[] = [];
+    for (const [key, history] of metricsStore.entries()) {
+      if (key.startsWith(endpoint)) {
+        allMetrics.push(...history);
+      }
+    }
+    return allMetrics;
+  }
+
+  const allMetrics: RateLimitMetrics[] = [];
+  for (const history of metricsStore.values()) {
+    allMetrics.push(...history);
+  }
+  return allMetrics;
+}
+
+/**
+ * Clear rate limit metrics (useful for testing)
+ */
+export function clearRateLimitMetrics(): void {
+  metricsStore.clear();
+}

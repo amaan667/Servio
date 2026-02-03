@@ -1,205 +1,245 @@
-# Developer Onboarding Guide
+# Engineer Onboarding Guide
 
-Welcome to the Servio development team! This guide will help you get set up and familiar with the codebase.
+Welcome to the Servio team! This guide will help you get up to speed with our codebase, development workflow, and best practices.
 
 ## Table of Contents
 
-1. [Prerequisites](#prerequisites)
-2. [Getting Started](#getting-started)
+1. [Quick Start](#quick-start)
+2. [Development Environment Setup](#development-environment-setup)
 3. [Project Structure](#project-structure)
-4. [Development Workflow](#development-workflow)
-5. [Common Tasks](#common-tasks)
+4. [Key Concepts](#key-concepts)
+5. [Development Workflow](#development-workflow)
 6. [Testing](#testing)
-7. [Debugging](#debugging)
-8. [Deployment](#deployment)
-9. [Resources](#resources)
+7. [Deployment](#deployment)
+8. [Common Tasks](#common-tasks)
+9. [Troubleshooting](#troubleshooting)
+10. [Resources](#resources)
 
-## Prerequisites
+---
 
-### Required Software
+## Quick Start
 
-- **Node.js**: Version 20 or higher
-  ```bash
-  node --version  # Should be v20.x.x or higher
-  ```
+### Prerequisites
 
-- **pnpm**: Version 9 or higher
-  ```bash
-  npm install -g pnpm@latest
-  pnpm --version  # Should be 9.x.x or higher
-  ```
+- Node.js 20.x or higher
+- pnpm 9.x or higher
+- Git
+- VS Code (recommended) with extensions
 
-- **Git**: Latest version
-  ```bash
-  git --version
-  ```
+### Initial Setup
 
-### Required Accounts
+1. **Clone the repository**:
+   ```bash
+   git clone https://github.com/your-org/servio-mvp.git
+   cd servio-mvp
+   ```
 
-- **Supabase**: Create account at [supabase.com](https://supabase.com)
-- **Stripe**: Create account at [stripe.com](https://stripe.com) (for payment features)
-- **GitHub**: For code collaboration
+2. **Install dependencies**:
+   ```bash
+   pnpm install
+   ```
 
-### Recommended Tools
+3. **Set up environment variables**:
+   ```bash
+   cp .env.example .env.local
+   # Edit .env.local with your local values
+   ```
 
-- **VS Code**: Recommended IDE with extensions:
-  - ESLint
-  - Prettier
-  - TypeScript Vue Plugin (Volar)
-  - Tailwind CSS IntelliSense
+4. **Start development server**:
+   ```bash
+   pnpm dev
+   ```
 
-- **Postman** or **Insomnia**: For API testing
+5. **Open in browser**:
+   - Navigate to http://localhost:3000
+   - Sign up or sign in
 
-## Getting Started
+---
 
-### 1. Clone the Repository
+## Development Environment Setup
 
-```bash
-git clone https://github.com/amaan667/Servio.git
-cd Servio
-```
+### Required Environment Variables
 
-### 2. Install Dependencies
-
-```bash
-pnpm install
-```
-
-### 3. Set Up Environment Variables
-
-Copy the example environment file:
-
-```bash
-cp .env.example .env.local
-```
-
-Edit `.env.local` and add your credentials:
+Copy `.env.example` to `.env.local` and configure:
 
 ```bash
 # Supabase (Required)
 NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key-here
-SUPABASE_SERVICE_ROLE_KEY=your-service-role-key-here
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
+SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
 
 # Stripe (Required for payments)
-STRIPE_SECRET_KEY=sk_test_your-secret-key-here
-STRIPE_WEBHOOK_SECRET=whsec_your-webhook-secret-here
-NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_test_your-publishable-key-here
+STRIPE_SECRET_KEY=sk_test_your-secret-key
+STRIPE_WEBHOOK_SECRET=whsec_your-webhook-secret
+NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_test_your-publishable-key
+
+# Redis (Optional for development, Required for production)
+REDIS_URL=redis://localhost:6379
 
 # Application URLs
 NEXT_PUBLIC_APP_URL=http://localhost:3000
-NEXT_PUBLIC_SITE_URL=http://localhost:3000
-
-# Optional: Redis (for production rate limiting)
-# REDIS_URL=redis://localhost:6379
-
-# Optional: OpenAI (for AI features)
-# OPENAI_API_KEY=sk-your-openai-key-here
-
-# Optional: Sentry (for error tracking)
-# SENTRY_DSN=https://your-sentry-dsn@sentry.io/project-id
 ```
 
-### 4. Start Development Server
+### Recommended VS Code Extensions
 
-```bash
-pnpm dev
+- **ESLint**: Built-in linting
+- **Prettier**: Code formatting
+- **TypeScript**: Built-in TypeScript support
+- **GitLens**: Git supercharged
+- **Error Lens**: Error diagnostics
+- **Thunder Client**: GraphQL client (if needed)
+
+### VS Code Settings
+
+Create `.vscode/settings.json`:
+
+```json
+{
+  "editor.formatOnSave": true,
+  "editor.defaultFormatter": "esbenp.prettier-vscode",
+  "editor.codeActionsOnSave": {
+    "source.fixAll.eslint": true
+  },
+  "typescript.tsdk": "latest",
+  "typescript.enablePromptUseWorkspaceTsdk": true
+}
 ```
 
-The application will be available at [http://localhost:3000](http://localhost:3000)
-
-### 5. Verify Setup
-
-1. Open [http://localhost:3000](http://localhost:3000)
-2. Check that the page loads without errors
-3. Open browser console - should see no errors
-4. Run health check: [http://localhost:3000/api/health](http://localhost:3000/api/health)
+---
 
 ## Project Structure
 
+### Directory Overview
+
 ```
 servio-mvp/
-├── app/                      # Next.js App Router pages
-│   ├── api/                 # API routes (209 endpoints)
-│   ├── dashboard/            # Admin dashboard pages
-│   ├── order/               # Customer ordering flow
-│   └── auth/               # Authentication pages
-├── components/               # Reusable React components (182 components)
-│   ├── ui/                 # shadcn/ui components
-│   ├── orders/              # Order-related components
-│   ├── menu/                # Menu-related components
-│   └── ...                 # Other feature components
-├── lib/                     # Core business logic
-│   ├── services/            # Domain services (Order, Menu, etc.)
-│   ├── repositories/        # Database access layer
-│   ├── api/                # API utilities and handlers
-│   ├── auth/               # Authentication utilities
-│   ├── cache/              # Caching layer
-│   ├── monitoring/          # Error tracking and performance
-│   └── ...                # Other utilities
-├── hooks/                   # Custom React hooks
-├── types/                   # TypeScript type definitions
-├── __tests__/              # Test files
-├── docs/                   # Documentation
-├── public/                  # Static assets
-└── scripts/                 # Utility scripts
+├── app/                    # Next.js App Router
+│   ├── api/               # API routes
+│   ├── dashboard/          # Dashboard pages
+│   └── auth/              # Authentication pages
+├── components/             # Reusable React components
+├── hooks/                 # Custom React hooks
+├── lib/                   # Core business logic
+│   ├── services/           # Service layer (OrderService, etc.)
+│   ├── ai/                # AI assistant logic
+│   ├── monitoring/         # Logging and error tracking
+│   └── supabase/          # Supabase client factory
+├── types/                 # TypeScript type definitions
+├── __tests__/             # Test files
+├── docs/                  # Documentation
+└── scripts/               # Utility scripts
 ```
 
-### Key Directories Explained
+### Key Files to Know
 
-#### `app/`
-Contains all Next.js pages and API routes using the App Router.
+- **`lib/supabase/index.ts`**: Supabase client factory - ONLY place to create Supabase clients
+- **`lib/api/unified-handler.ts`**: Unified API handler with auth, rate limiting, validation
+- **`lib/services/`**: Service layer for business logic
+- **`middleware.ts`**: Request middleware for auth and headers
+- **`tsconfig.json`**: TypeScript configuration
 
-- **API Routes**: `app/api/*` - All backend endpoints
-- **Dashboard**: `app/dashboard/*` - Admin interface
-- **Order Flow**: `app/order/*` - Customer ordering experience
+---
 
-#### `components/`
-Reusable React components organized by feature.
+## Key Concepts
 
-- **UI Components**: `components/ui/*` - Base UI components (buttons, inputs, etc.)
-- **Feature Components**: Organized by domain (orders, menu, tables, etc.)
+### Multi-Tenancy
 
-#### `lib/`
-Core application logic and utilities.
+Servio is a multi-tenant SaaS where each venue is a separate tenant:
 
-- **Services**: Business logic for each domain
-- **Repositories**: Database access abstraction
-- **API**: Request/response handling, validation
-- **Auth**: Authentication and authorization
-- **Cache**: Caching strategies
-- **Monitoring**: Error tracking, performance
+- **Venue**: A restaurant/location with its own data
+- **Organization**: Groups venues under one billing account
+- **RLS (Row Level Security)**: Database-level tenant isolation
+- **Role-Based Access**: Owner, Manager, Staff, Kitchen, Server, Cashier
 
-#### `hooks/`
-Custom React hooks for reusable stateful logic.
+**Critical Rule**: Never use `createAdminClient` in non-admin code. It bypasses RLS and exposes all tenant data.
 
-#### `types/`
-TypeScript type definitions for the entire application.
+### Authentication Flow
+
+1. User signs in via Supabase Auth
+2. Middleware validates session and sets headers:
+   - `x-user-id`: Authenticated user ID
+   - `x-user-email`: User email
+   - `x-user-role`: User role for venue
+   - `x-user-tier`: Subscription tier
+   - `x-venue-id`: Current venue ID
+3. API routes use unified handler for auth checks
+4. RLS policies enforce tenant isolation at database level
+
+### Service Layer Pattern
+
+Services extend `BaseService` and provide:
+
+- **Caching**: Automatic caching with TTL
+- **Error Handling**: Consistent error handling
+- **Type Safety**: Full TypeScript support
+
+Example:
+```typescript
+import { OrderService } from '@/lib/services/OrderService';
+
+const orderService = new OrderService();
+const orders = await orderService.getOrders(venueId);
+```
+
+### Rate Limiting
+
+- **Redis Required**: Production deployments require Redis
+- **Per-Endpoint Limits**: Different limits for different endpoints
+- **Metrics Export**: Rate limit metrics for monitoring
+
+---
 
 ## Development Workflow
 
-### Code Style
+### Branch Strategy
 
-We use ESLint and Prettier for consistent code style:
+- **`main`**: Production code
+- **`develop`**: Integration branch
+- **`feature/*`**: Feature branches
+- **`bugfix/*`**: Bug fix branches
+- **`hotfix/*`**: Urgent production fixes
 
-```bash
-# Lint code
-pnpm lint
+### Commit Convention
 
-# Fix linting issues
-pnpm lint:fix
+```
+<type>(<scope>): <subject>
 
-# Format code
-pnpm format
+<body>
+
+<footer>
 ```
 
-### Type Checking
+Examples:
+- `feat(order): add order cancellation`
+- `fix(auth): resolve session timeout issue`
+- `docs(readme): update onboarding guide`
 
-TypeScript strict mode is enabled. Always check types before committing:
+### Pull Request Process
 
-```bash
-pnpm typecheck
-```
+1. Create feature branch from `develop`
+2. Make changes with clear commits
+3. Run tests: `pnpm test`
+4. Run linting: `pnpm lint`
+5. Run type checking: `pnpm typecheck`
+6. Create pull request to `develop`
+7. Request review from at least one team member
+8. Update PR based on feedback
+
+### Code Review Checklist
+
+- [ ] Code follows project conventions
+- [ ] TypeScript types are correct
+- [ ] No `createAdminClient` in non-admin code
+- [ ] Tests added for new features
+- [ ] Documentation updated
+- [ ] No console.log in production code
+- [ ] Error handling is consistent
+- [ ] Rate limiting is appropriate
+- [ ] RLS policies are respected
+
+---
+
+## Testing
 
 ### Running Tests
 
@@ -220,387 +260,259 @@ pnpm test:e2e
 pnpm test:integration
 ```
 
-### Pre-commit Hooks
+### Test Structure
 
-Husky runs pre-commit hooks automatically:
-
-1. Lint staged files
-2. Format staged files
-3. Run type checking
-
-If hooks fail, fix the issues and try again.
-
-### Git Workflow
-
-1. Create a feature branch:
-   ```bash
-   git checkout -b feature/your-feature-name
-   ```
-
-2. Make your changes
-
-3. Commit with descriptive messages:
-   ```bash
-   git add .
-   git commit -m "feat: add order cancellation feature"
-   ```
-
-4. Push and create pull request:
-   ```bash
-   git push origin feature/your-feature-name
-   ```
-
-### Commit Message Convention
-
-Follow conventional commits:
-
-- `feat:` New feature
-- `fix:` Bug fix
-- `docs:` Documentation changes
-- `style:` Code style changes (formatting)
-- `refactor:` Code refactoring
-- `test:` Adding or updating tests
-- `chore:` Maintenance tasks
-
-Examples:
 ```
-feat: add bulk order completion
-fix: resolve payment webhook timeout
-docs: update API documentation
-test: add unit tests for OrderService
+__tests__/
+├── api/              # API route tests
+├── services/          # Service layer tests
+├── components/        # Component tests
+├── integration/       # Integration tests
+└── e2e/             # End-to-end tests
 ```
 
-## Common Tasks
+### Writing Tests
 
-### Adding a New API Endpoint
+Follow these patterns:
 
-1. Create route file in `app/api/`:
+1. **Arrange-Act-Assert**:
    ```typescript
-   // app/api/venues/:venueId/custom/route.ts
-   import { createUnifiedHandler } from "@/lib/api/unified-handler";
-   import { z } from "zod";
-
-   const schema = z.object({
-     name: z.string(),
+   describe('OrderService', () => {
+     it('should create order', async () => {
+       // Arrange
+       const venueId = 'venue-123';
+       const orderData = { ... };
+       
+       // Act
+       const order = await orderService.createOrder(venueId, orderData);
+       
+       // Assert
+       expect(order).toBeDefined();
+       expect(order.venue_id).toBe(venueId);
+     });
    });
-
-   export const POST = createUnifiedHandler(
-     async (req, { body, venueId }) => {
-       // Your logic here
-       return { success: true };
-     },
-     {
-       schema,
-       requireAuth: true,
-       requireVenueAccess: true,
-     }
-   );
    ```
 
-2. Test the endpoint
-3. Add documentation to `docs/API.md`
-
-### Adding a New Service
-
-1. Create service file in `lib/services/`:
+2. **Mock external dependencies**:
    ```typescript
-   // lib/services/CustomService.ts
-   import { BaseService } from "./BaseService";
-
-   export class CustomService extends BaseService {
-     async getCustomData(venueId: string) {
-       const cacheKey = this.getCacheKey("custom", venueId);
-       return this.withCache(cacheKey, async () => {
-         // Your logic here
-       });
-     }
-   }
-
-   export const customService = new CustomService();
+   vi.mock('@/lib/supabase', () => ({
+     createAdminClient: vi.fn(),
+     createServerSupabase: vi.fn(),
+   }));
    ```
 
-2. Add tests in `__tests__/services/`
-3. Export from `lib/services/index.ts`
-
-### Adding a New Component
-
-1. Create component file in `components/`:
+3. **Test error cases**:
    ```typescript
-   // components/custom/CustomComponent.tsx
-   import { Button } from "@/components/ui/button";
-
-   export function CustomComponent() {
-     return (
-       <div>
-         <Button>Click me</Button>
-       </div>
-     );
-   }
+   it('should handle duplicate order', async () => {
+     await expect(
+       orderService.createOrder(venueId, duplicateData)
+     ).rejects.toThrow('Order already exists');
+   });
    ```
 
-2. Add tests in `__tests__/components/`
-3. Export from appropriate index file
-
-### Adding Database Migration
-
-1. Create migration file in `supabase/migrations/`:
-   ```sql
-   -- supabase/migrations/20240101000000_add_custom_table.sql
-   CREATE TABLE custom_table (
-     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-     venue_id UUID NOT NULL REFERENCES venues(id),
-     name TEXT NOT NULL,
-     created_at TIMESTAMPTZ DEFAULT NOW()
-   );
-
-   -- Add RLS policy
-   ALTER TABLE custom_table ENABLE ROW LEVEL SECURITY;
-
-   CREATE POLICY "Users can view their venue's data"
-     ON custom_table
-     FOR SELECT
-     USING (venue_id IN (
-       SELECT venue_id FROM venue_users
-       WHERE user_id = auth.uid()
-     ));
-   ```
-
-2. Run migration:
-   ```bash
-   pnpm migrate
-   ```
-
-## Testing
-
-### Unit Tests
-
-Unit tests test individual functions and classes in isolation.
-
-```typescript
-// __tests__/services/OrderService.test.ts
-import { describe, it, expect, beforeEach, vi } from "vitest";
-import { OrderService } from "@/lib/services/OrderService";
-
-describe("OrderService", () => {
-  it("should create an order", async () => {
-    // Test implementation
-  });
-});
-```
-
-### Integration Tests
-
-Integration tests test multiple components working together.
-
-```typescript
-// __tests__/integration/order-flow.test.ts
-import { describe, it, expect } from "vitest";
-
-describe("Order Flow", () => {
-  it("should complete full order flow", async () => {
-    // Test implementation
-  });
-});
-```
-
-### E2E Tests
-
-E2E tests test the application from the user's perspective.
-
-```typescript
-// __tests__/e2e/ordering.spec.ts
-import { test, expect } from "@playwright/test";
-
-test("customer can place an order", async ({ page }) => {
-  await page.goto("/order/venue-1");
-  await page.click('[data-testid="add-to-cart"]');
-  await page.click('[data-testid="checkout"]');
-  await expect(page.locator('[data-testid="order-success"]')).toBeVisible();
-});
-```
-
-### Test Coverage
-
-Generate coverage report:
-
-```bash
-pnpm test:coverage
-```
-
-View coverage at `coverage/index.html`.
-
-## Debugging
-
-### VS Code Debugging
-
-1. Create `.vscode/launch.json`:
-   ```json
-   {
-     "version": "0.2.0",
-     "configurations": [
-       {
-         "name": "Next.js: debug server-side",
-         "type": "node-terminal",
-         "request": "launch",
-         "command": "pnpm dev"
-       },
-       {
-         "name": "Next.js: debug client-side",
-         "type": "chrome",
-         "request": "launch",
-         "url": "http://localhost:3000"
-       }
-     ]
-   }
-   ```
-
-2. Set breakpoints in your code
-3. Press F5 or use the debug panel
-
-### Browser DevTools
-
-1. Open Chrome DevTools (F12)
-2. Use Console for client-side logging
-3. Use Network tab for API requests
-4. Use React DevTools for component inspection
-
-### Server-Side Logging
-
-Logs are structured and sent to Sentry in production. In development:
-
-```typescript
-import { logger } from "@/lib/monitoring/structured-logger";
-
-logger.info("Order created", { orderId: "123", venueId: "venue-1" });
-logger.error("Payment failed", { orderId: "123" }, error);
-```
+---
 
 ## Deployment
 
-### Railway (Recommended)
+### Pre-Deployment Checklist
 
-1. Connect GitHub repository to Railway
-2. Set environment variables in Railway dashboard
-3. Deploy automatically on push to `main`
+- [ ] All tests passing
+- [ ] No linting errors
+- [ ] No TypeScript errors
+- [ ] Environment variables configured
+- [ ] Database migrations run
+- [ ] Redis configured (production)
+- [ ] Stripe webhooks configured
+- [ ] Sentry DSN configured
+- [ ] Bundle size analyzed
 
-### Vercel
+### Deployment Process
 
-1. Import project to Vercel
-2. Set environment variables
-3. Deploy
+**Railway**:
+```bash
+# Push to main
+git push origin main
 
-### Environment Variables
+# Railway auto-deploys on push
+# Monitor deployment at https://railway.app
+```
 
-Required for production:
-- `NEXT_PUBLIC_SUPABASE_URL`
-- `NEXT_PUBLIC_SUPABASE_ANON_KEY`
-- `SUPABASE_SERVICE_ROLE_KEY`
-- `STRIPE_SECRET_KEY`
-- `STRIPE_WEBHOOK_SECRET`
+**Vercel**:
+```bash
+# Push to main
+git push origin main
 
-### Health Checks
+# Vercel auto-deploys on push
+# Monitor deployment at https://vercel.com
+```
 
-- **Liveness**: `/api/health` - Returns "ok"
-- **Readiness**: `/api/ready` - Checks DB, Redis, Stripe
+### Post-Deployment Verification
 
-## Resources
+1. Check health endpoint: `curl https://app.servio.com/api/health`
+2. Check Sentry for errors
+3. Monitor rate limit metrics
+4. Test critical user flows
+5. Verify Stripe webhooks are receiving events
 
-### Documentation
+---
 
-- [Architecture](./ARCHITECTURE.md) - System architecture overview
-- [API Documentation](./API.md) - Complete API reference
-- [README](../README.md) - Project overview
+## Common Tasks
 
-### External Documentation
+### Adding a New API Route
 
-- [Next.js Docs](https://nextjs.org/docs)
-- [Supabase Docs](https://supabase.com/docs)
-- [React Query Docs](https://tanstack.com/query/latest)
-- [Tailwind CSS Docs](https://tailwindcss.com/docs)
-- [Radix UI Docs](https://www.radix-ui.com/)
+1. Create route file: `app/api/your-endpoint/route.ts`
+2. Use `createUnifiedHandler`:
+   ```typescript
+   import { createUnifiedHandler } from '@/lib/api/unified-handler';
+   
+   export const POST = createUnifiedHandler(
+     async (req, { user, body }) => {
+       // Your logic here
+       return { success: true, data: result };
+     },
+     {
+       requireAuth: true,
+       rateLimit: RATE_LIMITS.GENERAL,
+     }
+   );
+   ```
+3. Add tests in `__tests__/api/your-endpoint.test.ts`
 
-### Team Communication
+### Adding a New Service
 
-- **Slack**: #servio-dev
-- **GitHub Issues**: Report bugs and feature requests
-- **Standups**: Daily at 10 AM EST
+1. Create service file: `lib/services/YourService.ts`
+2. Extend `BaseService`:
+   ```typescript
+   import { BaseService } from './BaseService';
+   
+   export class YourService extends BaseService {
+     async getItems(venueId: string) {
+       return this.withCache(
+         this.getCacheKey('items', venueId),
+         async () => {
+           // Your logic here
+         },
+         300 // 5 minute TTL
+       );
+     }
+   }
+   ```
+3. Export singleton: `export const yourService = new YourService();`
 
-## Getting Help
+### Adding Database Migration
+
+1. Create migration file: `supabase/migrations/YYYYMMDDHHMMSS_description.sql`
+2. Write SQL migration:
+   ```sql
+   -- Add new table
+   CREATE TABLE IF NOT EXISTS your_table (
+     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+     venue_id UUID NOT NULL REFERENCES venues(venue_id),
+     created_at TIMESTAMPTZ DEFAULT NOW()
+   );
+   
+   -- Enable RLS
+   ALTER TABLE your_table ENABLE ROW LEVEL SECURITY;
+   
+   -- Add RLS policy
+   CREATE POLICY "Users can view own venue data"
+     ON your_table
+     FOR SELECT
+     TO authenticated
+     USING (
+       venue_id IN (
+         SELECT venue_id FROM venues WHERE owner_user_id = auth.uid()
+       )
+     );
+   ```
+3. Run migration: `pnpm migrate`
+
+### Adding a New Page
+
+1. Create page file: `app/dashboard/[venueId]/your-page/page.tsx`
+2. Use server components for data fetching
+3. Use client components for interactivity
+4. Add loading and error states
+
+---
+
+## Troubleshooting
 
 ### Common Issues
 
-**Issue**: Dependencies won't install
-```bash
-# Clear cache and reinstall
-rm -rf node_modules .next
-pnpm install
-```
+**Issue**: "Redis is required in production"
+- **Solution**: Set `REDIS_URL` environment variable
+- **Reference**: [Deployment Requirements](./DEPLOYMENT-REQUIREMENTS.md)
 
-**Issue**: Type errors after pulling changes
-```bash
-# Rebuild TypeScript
-rm -rf .next
-pnpm typecheck
-```
+**Issue**: "createAdminClient bypasses RLS"
+- **Solution**: Use `createServerSupabase()` or `createClient()` instead
+- **Reference**: Linting rule will catch this
 
-**Issue**: Tests failing locally
-```bash
-# Clear test cache
-rm -rf coverage
-pnpm test
-```
+**Issue**: Tests failing with "Module not found"
+- **Solution**: Run `pnpm install` to install dependencies
+- **Check**: Verify import paths are correct
 
-### Asking for Help
+**Issue**: Type errors after pulling latest changes
+- **Solution**: Run `pnpm install` to update dependencies
+- **Check**: Clear TypeScript cache: `rm -rf .next`
 
-1. Check existing documentation
-2. Search GitHub issues
-3. Ask in Slack #servio-dev
-4. Create a GitHub issue with:
-   - Clear description
-   - Steps to reproduce
-   - Expected vs actual behavior
-   - Environment details
+**Issue**: Rate limiting not working in development
+- **Solution**: Redis is optional in development
+- **Check**: Verify `NODE_ENV=development`
 
-## Best Practices
+**Issue**: Stripe webhooks not being received
+- **Solution**: Verify webhook URL is accessible from Stripe
+- **Check**: Verify webhook secret matches
+- **Reference**: [Production Runbook](./PRODUCTION-RUNBOOK.md#stripe-webhook-failures)
 
-### Code Quality
+### Getting Help
 
-- Write self-documenting code
-- Keep functions small and focused
-- Use TypeScript for type safety
-- Add tests for new features
-- Follow existing patterns
+1. **Check documentation**: Look in `docs/` folder
+2. **Search codebase**: Use VS Code search to find examples
+3. **Ask team**: Post in team chat or Slack
+4. **Create issue**: Create GitHub issue for bugs
 
-### Performance
+---
 
-- Use server components when possible
-- Implement caching for expensive operations
-- Optimize database queries
-- Lazy load components
+## Resources
 
-### Security
+### Internal Documentation
 
-- Never commit secrets
-- Validate all inputs
-- Use prepared statements
-- Follow principle of least privilege
-- Keep dependencies updated
+- [Architecture Documentation](./ARCHITECTURE.md)
+- [Deployment Requirements](./DEPLOYMENT-REQUIREMENTS.md)
+- [Production Runbook](./PRODUCTION-RUNBOOK.md)
+- [API Reference](./API.md)
+- [ADR Index](./adr/0060-index.md)
 
-### Collaboration
+### External Documentation
 
-- Review pull requests promptly
-- Provide constructive feedback
-- Document your changes
-- Share knowledge with team
+- [Next.js Documentation](https://nextjs.org/docs)
+- [Supabase Documentation](https://supabase.com/docs)
+- [Stripe Documentation](https://stripe.com/docs)
+- [TypeScript Documentation](https://www.typescriptlang.org/docs)
+
+### Tools
+
+- [pnpm](https://pnpm.io/)
+- [Vitest](https://vitest.dev/)
+- [Playwright](https://playwright.dev/)
+- [ESLint](https://eslint.org/)
+
+### Team Communication
+
+- **Slack**: [Team Slack Channel]
+- **GitHub**: [GitHub Repository]
+- **Email**: [Team Email]
+
+---
 
 ## Next Steps
 
-Now that you're set up:
+1. Complete the Quick Start section
+2. Set up your development environment
+3. Read through the Key Concepts section
+4. Explore the project structure
+5. Try running some tests
+6. Make your first commit!
 
-1. Explore the codebase
-2. Read the [Architecture](./ARCHITECTURE.md) documentation
-3. Review the [API Documentation](./API.md)
-4. Pick up a good first issue from GitHub
-5. Join the team Slack channel
-
-Welcome aboard! 🚀
+**Welcome to the team! We're excited to have you on board.** 🚀

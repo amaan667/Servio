@@ -1,10 +1,34 @@
 import { NextResponse } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
-
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import { NextRequest } from "next/server";
 import { env, isDevelopment } from "@/lib/env";
+import crypto from "crypto";
+
+// Helper function to generate idempotency key from request
+async function generateIdempotencyKey(req: NextRequest): Promise<string> {
+  const body = await req.json() as Record<string, unknown>;
+  const userId = (body?.user_id as string) || (body?.paid_by_user_id as string) || 'anonymous';
+  const timestamp = Date.now();
+  const keyData = `${userId}-${timestamp}`;
+
+  // Create SHA-256 hash for the key
+  return crypto.createHash('sha256').update(keyData).digest('hex');
+}
+
+// Helper function to generate request hash
+async function generateRequestHash(req: NextRequest): Promise<string> {
+  const body = await req.json() as Record<string, unknown>;
+  const keyData = JSON.stringify({
+    order_id: body?.order_id,
+    payment_intent_id: body?.payment_intent_id,
+    venue_id: body?.venue_id,
+    amount: body?.total_amount,
+  });
+
+  return crypto.createHash('sha256').update(keyData).digest('hex');
+}
 
 export const runtime = "nodejs";
 
@@ -24,6 +48,48 @@ export async function POST(req: NextRequest) {
 
     const body = await req.json();
     const { order_id, payment_intent_id, venue_id } = body;
+
+    // Idempotency key validation
+    const idempotencyKey = req.headers.get('x-idempotency-key');
+    const requestHash = generateRequestHash(req);
+    
+    if (idempotencyKey) {
+      // Check if this exact request was already processed
+      const cookieStore = await cookies();
+      const supabase = createServerClient(
+        env("NEXT_PUBLIC_SUPABASE_URL")!,
+        env("NEXT_PUBLIC_SUPABASE_ANON_KEY")!,
+        {
+          cookies: {
+            get(name: string) {
+              return cookieStore.get(name)?.value;
+            },
+            set(_name: string, _value: string, _options: unknown) {
+              /* Empty */
+            },
+            remove(_name: string, _options: unknown) {
+              /* Empty */
+            },
+          },
+        }
+      );
+
+      const { data: existingRecord } = await supabase
+        .rpc('check_idempotency_key')
+        .eq('idempotency_key', idempotencyKey)
+        .eq('request_hash', requestHash)
+        .single();
+
+      if (existingRecord && (existingRecord as { found?: boolean; response_data?: unknown; status_code?: number }).found) {
+        // Return cached response
+        return NextResponse.json(
+          (existingRecord as { found?: boolean; response_data?: unknown; status_code?: number }).response_data,
+          {
+            status: (existingRecord as { found?: boolean; response_data?: unknown; status_code?: number }).status_code
+          }
+        );
+      }
+    }
 
     if (!order_id) {
       return NextResponse.json(
@@ -45,38 +111,53 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const cookieStore = await cookies();
-    const supabase = createServerClient(
-      env("NEXT_PUBLIC_SUPABASE_URL")!,
-      env("SUPABASE_SERVICE_ROLE_KEY")!,
-      {
-        cookies: {
-          get(name: string) {
-            return cookieStore.get(name)?.value;
+      const cookieStore = await cookies();
+      const supabase = createServerClient(
+        env("NEXT_PUBLIC_SUPABASE_URL")!,
+        env("NEXT_PUBLIC_SUPABASE_ANON_KEY")!,
+        {
+          cookies: {
+            get(name: string) {
+              return cookieStore.get(name)?.value;
+            },
+            set(_name: string, _value: string, _options: unknown) {
+              /* Empty */
+            },
+            remove(_name: string, _options: unknown) {
+              /* Empty */
+            },
           },
-          set(_name: string, _value: string, _options: unknown) {
-            /* Empty */
-          },
-          remove(_name: string, _options: unknown) {
-            /* Empty */
-          },
-        },
+        } as { cookies: { get: (name: string) => string | undefined; set: (name: string, value: string, options?: unknown) => void; remove: (name: string, options?: unknown) => void } }
+      );
+
+    // Verify payment intent with Stripe API
+    const stripe = require('stripe')(env("STRIPE_SECRET_KEY"));
+    
+    let paymentSuccess = false;
+    let paymentError = null;
+
+    try {
+      // Verify payment intent status
+      if (payment_intent_id) {
+        const paymentIntent = await stripe.paymentIntents.retrieve(payment_intent_id);
+        
+        paymentSuccess = paymentIntent.status === 'succeeded';
+        
+        if (!paymentSuccess) {
+          paymentError = `Payment ${paymentIntent.status}: ${paymentIntent.last_payment_error?.message || 'Unknown error'}`;
+        }
       }
-    );
-
-    // In a real implementation, you would:
-    // 1. Verify the payment intent with Stripe
-    // 2. Confirm the payment was successful
-    // 3. Handle unknown failed payments
-
-    // For now, we'll simulate a successful payment
-    const paymentSuccess = true; // In production, verify with Stripe API
+    } catch (stripeError) {
+      paymentError = `Stripe verification failed: ${stripeError instanceof Error ? stripeError.message : String(stripeError)}`;
+      paymentSuccess = false;
+    }
 
     if (!paymentSuccess) {
       return NextResponse.json(
         {
           success: false,
           error: "Payment failed",
+          details: paymentError,
         },
         { status: 400 }
       );

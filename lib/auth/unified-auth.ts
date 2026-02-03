@@ -577,7 +577,7 @@ export function withUnifiedAuth(
         let allowed = false;
         if (typeof featureValue === "boolean") {
           allowed = featureValue;
-        } else if (featureValue !== false) {
+        } else if (featureValue !== undefined && featureValue !== null) {
           // For tier-based features (kds, analytics, branding, supportLevel), allow if not false
           allowed = true;
         }
