@@ -492,9 +492,3 @@ export function createUnifiedHandler<TBody = unknown, TResponse = unknown>(
     }
   };
 }
-
-/**
- * Re-export for backward compatibility
- * @deprecated Use createUnifiedHandler instead
- */
-export { createApiHandler } from "./production-handler";
