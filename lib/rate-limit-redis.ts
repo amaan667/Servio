@@ -22,12 +22,12 @@ export interface RateLimitResult {
 // Redis client type
 interface RedisClient {
   zadd: (key: string, score: number, member: string) => Promise<number>;
-  zremrangeByScore: (key: string, min: number, max: number) => Promise<number[]>;
+  zremrangebyscore: (key: string, min: number, max: number) => Promise<number>;
   zcard: (key: string) => Promise<number>;
   expire: (key: string, seconds: number) => Promise<number>;
   del: (key: string) => Promise<number>;
   keys: (pattern: string) => Promise<string[]>;
-  disconnect: () => Promise<void>;
+  disconnect: () => void;
 }
 
 // Redis client singleton
@@ -112,7 +112,7 @@ export async function rateLimit(
   if (redis) {
     try {
       const cutoff = now - windowMs;
-      await redis.zremrangeByScore(key, 0, cutoff);
+      await redis.zremrangebyscore(key, 0, cutoff);
       await redis.zadd(key, now, `${now}:${Math.random()}`);
       const count = await redis.zcard(key);
       await redis.expire(key, options.window * 2);
@@ -147,7 +147,7 @@ function rateLimitInMemory(
   identifier: string,
   options: RateLimitConfig,
   now: number,
-  windowMs: number,
+  _windowMs: number,
   reset: number
 ): RateLimitResult {
   const current = rateLimitStore.get(identifier);
@@ -255,7 +255,7 @@ export async function getRateLimitStatus(
     try {
       const key = `ratelimit:${identifier}:${limit}:${window}`;
       const cutoff = now - windowMs;
-      await redis.zremrangeByScore(key, 0, cutoff);
+      await redis.zremrangebyscore(key, 0, cutoff);
       const count = await redis.zcard(key);
       
       return {

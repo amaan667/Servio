@@ -610,7 +610,7 @@ export const mutationResolvers = {
  */
 export const subscriptionResolvers = {
   orderUpdated: {
-    subscribe: (_: unknown, { venueId }: { venueId: string }, _context: GraphQLContext) => {
+    subscribe: (_: unknown, { venueId: _venueId }: { venueId: string }, _context: GraphQLContext) => {
       // Placeholder - implement actual subscription using Supabase realtime
       return {
         async *[Symbol.asyncIterator]() {
@@ -626,7 +626,7 @@ export const subscriptionResolvers = {
   },
 
   tableUpdated: {
-    subscribe: (_: unknown, { venueId }: { venueId: string }, _context: GraphQLContext) => {
+    subscribe: (_: unknown, { venueId: _venueId }: { venueId: string }, _context: GraphQLContext) => {
       // Placeholder - implement actual subscription using Supabase realtime
       return {
         async *[Symbol.asyncIterator]() {
@@ -640,7 +640,7 @@ export const subscriptionResolvers = {
   },
 
   inventoryUpdated: {
-    subscribe: (_: unknown, { venueId }: { venueId: string }, _context: GraphQLContext) => {
+    subscribe: (_: unknown, { venueId: _venueId }: { venueId: string }, _context: GraphQLContext) => {
       // Placeholder - implement actual subscription using Supabase realtime
       return {
         async *[Symbol.asyncIterator]() {
@@ -654,7 +654,7 @@ export const subscriptionResolvers = {
   },
 
   liveOrders: {
-    subscribe: (_: unknown, { venueId }: { venueId: string }, _context: GraphQLContext) => {
+    subscribe: (_: unknown, { venueId: _venueId }: { venueId: string }, _context: GraphQLContext) => {
       // Placeholder - implement actual subscription using Supabase realtime
       return {
         async *[Symbol.asyncIterator]() {

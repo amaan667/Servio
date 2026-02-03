@@ -73,7 +73,7 @@ export class TenantConfigManager {
 
       if (error) throw error;
 
-      return data?.value ?? null;
+      return (data as { value: unknown } | null)?.value ?? null;
     } catch (error) {
       logger.error('Failed to get tenant config', { tenantId, key, error });
       return null;
@@ -93,7 +93,7 @@ export class TenantConfigManager {
       if (error) throw error;
 
       const configs: Record<string, unknown> = {};
-      for (const config of data || []) {
+      for (const config of (data || []) as Array<{ key: string; value: unknown }>) {
         configs[config.key] = config.value;
       }
 
@@ -126,7 +126,7 @@ export class TenantConfigManager {
           key,
           value,
           updated_at: new Date().toISOString(),
-        }, {
+        } as never, {
           onConflict: 'tenant_id,key',
         });
 
@@ -154,7 +154,7 @@ export class TenantConfigManager {
 
       const { error } = await this.supabase
         .from('tenant_configs')
-        .upsert(records, {
+        .upsert(records as never, {
           onConflict: 'tenant_id,key',
         });
 
