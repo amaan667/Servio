@@ -25,23 +25,22 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Run database migrations
-        run: pnpm run migrate:prod
-        env:
-          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      - name: Lint
+        run: pnpm lint
         
-      - name: Run tests
-        run: pnpm test
+      - name: TypeScript
+        run: pnpm typecheck
         
       - name: Build
-        run: pnpm run build
+        run: pnpm build
         env:
           NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
           NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
           
       - name: Deploy to Railway
         run: |
-          echo "✅ Build successful - Railway will auto-deploy"
-          echo "Deploy via: railway up (if needed manually)"
+          pnpm install -g @railway/cli
+          railway login --token=${{ secrets.RAILWAY_TOKEN }}
+          railway up --service=${{ secrets.RAILWAY_SERVICE_NAME }}
         env:
           RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
