@@ -571,7 +571,7 @@ export function withUnifiedAuth(
         // Staff users should inherit the venue's plan.
         // Use the tier from context (already retrieved from verifyVenueAccess) instead of making another RPC call
         const tierLimits = TIER_LIMITS[context.tier] ?? TIER_LIMITS.starter;
-        const featureValue = tierLimits.features[options.requireFeature];
+        const featureValue = tierLimits?.features[options.requireFeature];
 
         // Check if feature is available for this tier
         let allowed = false;
@@ -586,7 +586,7 @@ export function withUnifiedAuth(
           // Find the minimum tier that has this feature
           let requiredTier = "enterprise";
           const proLimits = TIER_LIMITS.pro;
-          const proValue = proLimits.features[options.requireFeature];
+          const proValue = proLimits?.features[options.requireFeature];
           if (typeof proValue === "boolean" && proValue) {
             requiredTier = "pro";
           }
