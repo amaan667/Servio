@@ -231,46 +231,42 @@ export async function middleware(request: NextRequest) {
       requestHeaders.set("x-user-id", verifyUser.id);
       requestHeaders.set("x-user-email", session.user.email || "");
 
-      if (rpcErr) {
-        // RPC failed - set basic headers with default tier/role for mobile robustness
-        // This ensures pages work even if RPC fails on mobile
-        requestHeaders.set("x-user-id", verifyUser.id);
-        requestHeaders.set("x-user-email", session.user.email || "");
-        requestHeaders.set("x-venue-id", normalizedVenueId);
-        requestHeaders.set("x-user-tier", "starter"); // Default tier for mobile
-        requestHeaders.set("x-user-role", "owner"); // Default role for mobile
-        const errResponse = NextResponse.next({
-          request: { headers: requestHeaders },
-        });
-        response.cookies.getAll().forEach((c) => errResponse.cookies.set(c.name, c.value));
-        return errResponse;
+      // When cookie-based RPC fails (e.g. mobile), retry with access_token so tier/role are correct
+      let ctx: { user_id?: string; venue_id?: string | null; role?: string; tier?: string } | null =
+        data as typeof data;
+      if (rpcErr || !data) {
+        const { data: sessionData } = await supabase.auth.getSession();
+        const accessToken = sessionData?.session?.access_token;
+        if (accessToken) {
+          const tokenClient = createServerClient(supabaseUrl, supabaseAnonKey, {
+            cookies: { getAll: () => [], setAll: () => {} },
+            global: {
+              headers: { Authorization: `Bearer ${accessToken}` },
+            },
+          });
+          const retry = await tokenClient.rpc("get_access_context", {
+            p_venue_id: normalizedVenueId,
+          });
+          if (!retry.error && retry.data?.user_id && retry.data?.role) {
+            ctx = retry.data as typeof ctx;
+          }
+        }
+        if (!ctx) {
+          requestHeaders.set("x-user-id", verifyUser.id);
+          requestHeaders.set("x-user-email", session.user.email || "");
+          requestHeaders.set("x-venue-id", normalizedVenueId);
+          requestHeaders.set("x-user-tier", "starter");
+          requestHeaders.set("x-user-role", "owner");
+          const fallbackResponse = NextResponse.next({
+            request: { headers: requestHeaders },
+          });
+          response.cookies.getAll().forEach((c) => fallbackResponse.cookies.set(c.name, c.value));
+          return fallbackResponse;
+        }
       }
 
-      if (!data) {
-        // RPC returned null - set basic headers with default tier/role for mobile
-        requestHeaders.set("x-user-id", verifyUser.id);
-        requestHeaders.set("x-user-email", session.user.email || "");
-        requestHeaders.set("x-venue-id", normalizedVenueId);
-        requestHeaders.set("x-user-tier", "starter"); // Default tier for mobile
-        requestHeaders.set("x-user-role", "owner"); // Default role for mobile
-        const noDataResponse = NextResponse.next({
-          request: { headers: requestHeaders },
-        });
-        response.cookies.getAll().forEach((c) => noDataResponse.cookies.set(c.name, c.value));
-        return noDataResponse;
-      }
-
-      // Validate RPC response structure
-      // Validate RPC response structure - must have user_id and role
-      const ctx = data as {
-        user_id?: string;
-        venue_id?: string | null;
-        role?: string;
-        tier?: string;
-      };
-
-      if (!ctx.user_id || !ctx.role) {
-        // RPC returned invalid data - set defaults for mobile
+      // Validate RPC response structure - must have user_id and role (ctx may be from retry)
+      if (!ctx!.user_id || !ctx!.role) {
         requestHeaders.set("x-user-id", verifyUser.id);
         requestHeaders.set("x-user-email", session.user.email || "");
         requestHeaders.set("x-venue-id", normalizedVenueId);
@@ -284,14 +280,13 @@ export async function middleware(request: NextRequest) {
       }
 
       // Validate tier is one of the valid values
-      const tier = ctx.tier?.toLowerCase().trim() || "starter";
+      const tier = ctx!.tier?.toLowerCase().trim() || "starter";
       if (!["starter", "pro", "enterprise"].includes(tier)) {
-        // Invalid tier - set basic headers with default tier, page can handle
-        requestHeaders.set("x-user-id", ctx.user_id);
+        requestHeaders.set("x-user-id", ctx!.user_id);
         requestHeaders.set("x-user-email", session.user.email || "");
-        requestHeaders.set("x-user-tier", "starter"); // Default to starter if invalid
-        requestHeaders.set("x-user-role", ctx.role);
-        requestHeaders.set("x-venue-id", ctx.venue_id ?? normalizedVenueId);
+        requestHeaders.set("x-user-tier", "starter");
+        requestHeaders.set("x-user-role", ctx!.role);
+        requestHeaders.set("x-venue-id", ctx!.venue_id ?? normalizedVenueId);
         const tierResponse = NextResponse.next({
           request: { headers: requestHeaders },
         });
@@ -299,12 +294,12 @@ export async function middleware(request: NextRequest) {
         return tierResponse;
       }
 
-      // RPC succeeded with valid data - set all headers with actual values from database
-      requestHeaders.set("x-user-id", ctx.user_id);
+      // RPC succeeded (or retry with token) - set headers with actual tier/role from database
+      requestHeaders.set("x-user-id", ctx!.user_id);
       requestHeaders.set("x-user-email", session.user.email || "");
-      requestHeaders.set("x-user-tier", tier); // Use validated tier from database
-      requestHeaders.set("x-user-role", ctx.role);
-      requestHeaders.set("x-venue-id", ctx.venue_id ?? normalizedVenueId);
+      requestHeaders.set("x-user-tier", tier);
+      requestHeaders.set("x-user-role", ctx!.role);
+      requestHeaders.set("x-venue-id", ctx!.venue_id ?? normalizedVenueId);
 
       const successResponse = NextResponse.next({
         request: { headers: requestHeaders },

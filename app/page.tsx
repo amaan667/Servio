@@ -9,20 +9,24 @@ export default async function HomePage() {
 
   try {
     const supabase = await createServerSupabaseReadOnly();
+    const { data: sessionData } = await supabase.auth.getSession();
+    const sessionUser = sessionData?.session?.user ?? null;
+
     const {
       data: { user: authUser },
       error: userError,
     } = await supabase.auth.getUser();
 
-    if (!userError && authUser) {
+    const resolvedUser = !userError && authUser ? authUser : sessionUser;
+    if (resolvedUser) {
       isSignedIn = true;
-      user = authUser;
+      user = resolvedUser;
 
       // Fetch user's venue and plan
       const { data: venues } = await supabase
         .from("venues")
         .select("organization_id")
-        .eq("owner_user_id", authUser.id)
+        .eq("owner_user_id", resolvedUser.id)
         .limit(1);
 
       if (venues && venues.length > 0) {

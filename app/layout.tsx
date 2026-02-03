@@ -7,7 +7,6 @@ import * as Sentry from "@sentry/nextjs";
 // Railway deployment trigger - premium gates removed
 import { Inter } from "next/font/google";
 import "./globals.css";
-import { cookies } from "next/headers";
 import { createServerSupabaseReadOnly } from "@/lib/supabase";
 import type { Session } from "@supabase/supabase-js";
 import AuthProvider from "@/app/auth/AuthProvider";
@@ -135,16 +134,13 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   // Get the actual session from the server efficiently using secure method
   let session = null;
   try {
-    const cookieStore = await cookies();
-    const allCookies = cookieStore.getAll();
-
-    // Always attempt to resolve the authenticated user on the server so that
-    // header/navigation can render in the correct auth state on first paint.
-    // This avoids the "public → authed" flicker during hydration.
+    // Resolve auth for first paint so mobile/desktop render same (no flash).
+    // Try getSession() first (fast from cookies); then validate with getUser() with longer timeout for mobile.
     const supabase = await createServerSupabaseReadOnly();
 
-    // Use getUser() for secure authentication (validates with Supabase Auth server)
-    // Add timeout to prevent hanging
+    const { data: sessionData } = await supabase.auth.getSession();
+    const sessionUser = sessionData?.session?.user ?? null;
+
     try {
       const {
         data: { user: authUser },
@@ -152,26 +148,26 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       } = await Promise.race([
         supabase.auth.getUser(),
         new Promise<{ data: { user: null }; error: null }>((resolve) =>
-          setTimeout(() => resolve({ data: { user: null }, error: null }), 1000)
+          setTimeout(() => resolve({ data: { user: null }, error: null }), 3500)
         ),
       ]);
 
-      if (!error && authUser) {
+      const user = !error && authUser ? authUser : sessionUser;
+      if (user) {
         // Fetch primary venue data to prevent navigation flicker
         let primaryVenueData = null;
         try {
-          // Get primary venue for immediate navigation availability
           const [venueResult, staffResult] = await Promise.all([
             supabase
               .from("venues")
               .select("venue_id")
-              .eq("owner_user_id", authUser.id)
+              .eq("owner_user_id", user.id)
               .order("created_at", { ascending: true })
               .limit(1),
             supabase
               .from("user_venue_roles")
               .select("role, venue_id")
-              .eq("user_id", authUser.id)
+              .eq("user_id", user.id)
               .limit(1)
               .single(),
           ]);
@@ -198,7 +194,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
 
         // Construct session object from authenticated user with venue data
         session = {
-          user: authUser,
+          user,
           access_token: "", // Not needed for layout, only user info is required
           refresh_token: "",
           expires_in: 0,
