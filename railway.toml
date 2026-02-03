@@ -1,10 +1,9 @@
 # Railway Configuration
-# Explicitly use NIXPACKS builder to prevent Metal builds
-# Railway will respect this and not auto-enable Metal builds
+# Use Dockerfile - Nixpacks fails on canvas (native module) on Alpine
 
 [build]
-builder = "NIXPACKS"
-buildCommand = "pnpm install --frozen-lockfile && NODE_OPTIONS='--max-old-space-size=4096' pnpm run build"
+builder = "DOCKERFILE"
+dockerfilePath = "Dockerfile"
 
 [deploy]
 startCommand = "pnpm start"
