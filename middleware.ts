@@ -70,13 +70,21 @@ export async function middleware(request: NextRequest) {
         cookiesToSet.forEach(({ name, value, options }) => {
           // Set on request for downstream reads in this request
           request.cookies.set(name, value);
+          
+          // MOBILE FIX: Use secure based on actual protocol, not just NODE_ENV
+          // This ensures cookies work correctly on mobile browsers
+          const isSecure = request.url.startsWith("https://") || process.env.NODE_ENV === "production";
+          
           // Set on response to persist to browser
+          // MOBILE FIX: Use more permissive cookie settings for mobile browsers
           response.cookies.set(name, value, {
             ...options,
             httpOnly: false, // Must be false for Supabase to read from client
-            sameSite: "lax",
-            secure: process.env.NODE_ENV === "production",
+            sameSite: "lax", // Use lax for better mobile compatibility
+            secure: isSecure, // Use secure based on actual protocol
             path: "/",
+            // MOBILE FIX: Add maxAge to ensure cookies persist on mobile
+            maxAge: options.maxAge || 60 * 60 * 24 * 7, // 7 days default
           });
         });
       },

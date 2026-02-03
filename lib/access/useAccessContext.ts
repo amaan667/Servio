@@ -19,6 +19,99 @@ interface UseAccessContextReturn {
 }
 
 /**
+ * Mobile-safe storage helper
+ * Handles sessionStorage/localStorage failures on mobile browsers (especially private browsing)
+ */
+function getMobileStorage() {
+  if (typeof window === "undefined") {
+    return null;
+  }
+  
+  // Test if sessionStorage is available
+  const testSessionStorage = () => {
+    try {
+      const testKey = "__session_storage_test__";
+      sessionStorage.setItem(testKey, "test");
+      sessionStorage.removeItem(testKey);
+      return true;
+    } catch {
+      return false;
+    }
+  };
+  
+  // Test if localStorage is available
+  const testLocalStorage = () => {
+    try {
+      const testKey = "__local_storage_test__";
+      localStorage.setItem(testKey, "test");
+      localStorage.removeItem(testKey);
+      return true;
+    } catch {
+      return false;
+    }
+  };
+  
+  const sessionWorks = testSessionStorage();
+  const localWorks = testLocalStorage();
+  
+  return {
+    getItem: (key: string): string | null => {
+      if (sessionWorks) {
+        return sessionStorage.getItem(key);
+      }
+      if (localWorks) {
+        return localStorage.getItem(key);
+      }
+      // Fallback to cookies for critical data
+      const cookies = document.cookie.split(";");
+      const cookie = cookies.find((c) => c.trim().startsWith(`${key}=`));
+      if (!cookie) return null;
+      const parts = cookie.split("=");
+      const v = parts[1];
+      return v ? decodeURIComponent(v) : null;
+    },
+    setItem: (key: string, value: string): void => {
+      const expires = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toUTCString();
+      
+      if (sessionWorks) {
+        try {
+          sessionStorage.setItem(key, value);
+        } catch {
+          // Fall through to localStorage
+        }
+      }
+      if (localWorks) {
+        try {
+          localStorage.setItem(key, value);
+        } catch {
+          // Fall through to cookies
+        }
+      }
+      // Final fallback to cookies
+      document.cookie = `${key}=${encodeURIComponent(value)}; expires=${expires}; path=/; SameSite=Lax`;
+    },
+    removeItem: (key: string): void => {
+      if (sessionWorks) {
+        try {
+          sessionStorage.removeItem(key);
+        } catch {
+          // Ignore
+        }
+      }
+      if (localWorks) {
+        try {
+          localStorage.removeItem(key);
+        } catch {
+          // Ignore
+        }
+      }
+      // Also remove from cookies
+      document.cookie = `${key}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/`;
+    },
+  };
+}
+
+/**
  * Unified client-side access context hook
  * Uses get_access_context RPC - single database call for all auth/tier/role checks
  * Replaces all duplicate venues/user_venue_roles queries
@@ -27,6 +120,7 @@ export function useAccessContext(venueId?: string | null): UseAccessContextRetur
   const [context, setContext] = useState<AccessContext | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const storageRef = typeof window !== "undefined" ? getMobileStorage() : null;
 
   const fetchContext = useCallback(async () => {
     try {
@@ -74,13 +168,13 @@ export function useAccessContext(venueId?: string | null): UseAccessContextRetur
 
       setContext(finalContext);
 
-      // Cache context in sessionStorage
-      if (typeof window !== "undefined") {
+      // Cache context using mobile-safe storage
+      if (storageRef) {
         const cacheKey = normalizedVenueId
           ? `access_context_${normalizedVenueId}`
           : `access_context_user_${accessContext.user_id}`;
 
-        sessionStorage.setItem(
+        storageRef.setItem(
           cacheKey,
           JSON.stringify({
             ...accessContext,
@@ -94,17 +188,17 @@ export function useAccessContext(venueId?: string | null): UseAccessContextRetur
     } finally {
       setLoading(false);
     }
-  }, [venueId]);
+  }, [venueId, storageRef]);
 
   useEffect(() => {
     const normalizedVenueId = normalizeVenueId(venueId);
 
-    // Try cache first for instant response
-    if (typeof window !== "undefined") {
+    // Try cache first for instant response using mobile-safe storage
+    if (storageRef) {
       const cacheKey = normalizedVenueId
         ? `access_context_${normalizedVenueId}`
         : `access_context_user`;
-      const cached = sessionStorage.getItem(cacheKey);
+      const cached = storageRef.getItem(cacheKey);
 
       if (cached) {
         try {
@@ -126,7 +220,7 @@ export function useAccessContext(venueId?: string | null): UseAccessContextRetur
             return;
           } else {
             // Invalid tier in cache, clear it
-            sessionStorage.removeItem(cacheKey);
+            storageRef.removeItem(cacheKey);
           }
         } catch {
           // Invalid cache, fetch fresh
@@ -135,7 +229,7 @@ export function useAccessContext(venueId?: string | null): UseAccessContextRetur
     }
 
     fetchContext();
-  }, [venueId, fetchContext]);
+  }, [venueId, fetchContext, storageRef]);
 
   const checkFeatureAccess = useCallback(
     (feature: FeatureKey): boolean => {

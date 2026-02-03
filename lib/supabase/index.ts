@@ -331,6 +331,7 @@ export async function createServerSupabase() {
                 httpOnly: false, // Must be false for Supabase to read from client
                 sameSite: "lax",
                 secure: true, // Always use secure in production - critical for mobile Safari
+                maxAge: options.maxAge || 60 * 60 * 24 * 7, // 7 days default for mobile persistence
                 path: "/",
               });
             }
@@ -524,6 +525,7 @@ export async function getSession() {
             ...options,
             sameSite: "lax",
             secure: true, // Always use secure - critical for mobile Safari
+            maxAge: options.maxAge || 60 * 60 * 24 * 7, // 7 days default for mobile persistence
             httpOnly: false,
             path: "/",
           });
