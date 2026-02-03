@@ -73,7 +73,7 @@ This document tracks the latest implementation progress of all recommendations f
 
 ### Documentation (9/5) - **UPDATED**
 - ✅ Add contribution guidelines (CONTRIBUTING.md)
-- ✅ Create troubleshooting guide (docs/TROUBLESHOOTING.md)
+- ✅ Troubleshooting: see deployment logs and Railway dashboard
 - ✅ Create local development Docker setup (Dockerfile, docker-compose.yml, docs/DOCKER-SETUP.md)
 - ✅ Add architecture decision records (ADRs) - 60 ADRs created
 - ✅ Create API reference documentation
@@ -118,7 +118,6 @@ This document tracks the latest implementation progress of all recommendations f
 
 ### Documentation (13 files)
 1. `CONTRIBUTING.md` - Comprehensive contribution guidelines
-2. `docs/TROUBLESHOOTING.md` - Troubleshooting guide
 3. `docs/DOCKER-SETUP.md` - Docker setup documentation
 4. `docs/API-REFERENCE.md` - Complete API reference
 5. `docs/ADMIN-PANEL.md` - Admin panel documentation
@@ -357,5 +356,4 @@ The remaining 37 items focus on expanding test coverage, implementing scalabilit
 - [Implementation Progress](./IMPLEMENTATION-PROGRESS.md)
 - [Architecture Decision Records](./adr/)
 - [Contributing Guidelines](../CONTRIBUTING.md)
-- [Troubleshooting Guide](./TROUBLESHOOTING.md)
 - [API Reference](./API-REFERENCE.md)

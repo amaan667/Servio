@@ -444,7 +444,7 @@ docker stats
 
 If you encounter issues:
 
-1. Check [troubleshooting guide](TROUBLESHOOTING.md)
+1. Check deployment logs (Railway dashboard or Docker output)
 2. Review [Docker documentation](https://docs.docker.com/)
 3. Check [Docker Compose documentation](https://docs.docker.com/compose/)
 4. Open an [issue](https://github.com/amaan667/Servio/issues)

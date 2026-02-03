@@ -21,7 +21,6 @@ We will maintain a comprehensive references document with links to all relevant 
 - [ARCHITECTURE.md](../ARCHITECTURE.md) - Detailed architecture documentation
 - [API.md](../API.md) - API documentation
 - [CONTRIBUTING.md](../CONTRIBUTING.md) - Contribution guidelines
-- [TROUBLESHOOTING.md](../TROUBLESHOOTING.md) - Troubleshooting guide
 - [PLATFORM-EVALUATION.md](../PLATFORM-EVALUATION.md) - Platform evaluation and comparison
 
 #### ADRs (Architecture Decision Records)

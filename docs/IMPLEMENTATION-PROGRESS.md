@@ -71,7 +71,7 @@ This document tracks the implementation progress of all recommendations from the
 
 ### Documentation (5/5)
 - ✅ Add contribution guidelines (CONTRIBUTING.md)
-- ✅ Create troubleshooting guide (docs/TROUBLESHOOTING.md)
+- ✅ Troubleshooting: see deployment logs and Railway dashboard
 - ✅ Create local development Docker setup (Dockerfile, docker-compose.yml, docs/DOCKER-SETUP.md)
 - ✅ Add architecture decision records (ADRs) - 60 ADRs created
 - ✅ Create API reference documentation
@@ -112,7 +112,6 @@ This document tracks the implementation progress of all recommendations from the
 
 ### Documentation
 - `CONTRIBUTING.md` - Comprehensive contribution guidelines
-- `docs/TROUBLESHOOTING.md` - Troubleshooting guide
 - `docs/DOCKER-SETUP.md` - Docker setup documentation
 - `docs/API-REFERENCE.md` - Complete API reference
 - `docs/ADMIN-PANEL.md` - Admin panel documentation
@@ -313,5 +312,4 @@ This document tracks the implementation progress of all recommendations from the
 - [Platform Evaluation](./PLATFORM-EVALUATION.md)
 - [Architecture Decision Records](./adr/)
 - [Contributing Guidelines](../CONTRIBUTING.md)
-- [Troubleshooting Guide](./TROUBLESHOOTING.md)
 - [API Reference](./API-REFERENCE.md)
