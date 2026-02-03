@@ -2,9 +2,7 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { createServerClient, type CookieOptions } from "@supabase/ssr";
 
-// Public API paths: no auth headers needed (middleware skips auth for these only)
-// Every other /api/* and /dashboard/* gets middleware auth so x-user-id is always set when the user has a session.
-// This ensures we never return 401 due to "middleware didn't run" - only when the user is genuinely not authenticated.
+// Public API paths: no auth headers needed
 const PUBLIC_API_PATHS = new Set(["/api/health", "/api/ping", "/api/ready"]);
 
 function shouldRunAuth(pathname: string): boolean {
@@ -17,14 +15,14 @@ function shouldRunAuth(pathname: string): boolean {
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // CRITICAL SECURITY: Always strip sensitive headers from the incoming request
+  // CRITICAL SECURITY: Always strip sensitive headers from incoming request
   request.headers.delete("x-user-id");
   request.headers.delete("x-user-email");
   request.headers.delete("x-user-tier");
   request.headers.delete("x-user-role");
   request.headers.delete("x-venue-id");
 
-  // Only skip auth for explicit public paths; all other /api/* and /dashboard/* get auth
+  // Only skip auth for explicit public paths
   if (!shouldRunAuth(pathname)) {
     return NextResponse.next({
       request: { headers: request.headers },
@@ -37,14 +35,10 @@ export async function middleware(request: NextRequest) {
     },
   });
 
-  // If Supabase env is misconfigured:
-  // - FAIL CLOSED for protected API routes (security)
-  // - Keep dashboard navigation non-blocking (no redirects), but do not inject auth headers
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
   if (!supabaseUrl || !supabaseAnonKey) {
-    // Pilot hardening: never allow protected API routes to proceed without auth infrastructure.
     if (pathname.startsWith("/api/")) {
       return NextResponse.json(
         {
@@ -54,12 +48,26 @@ export async function middleware(request: NextRequest) {
         { status: 503 }
       );
     }
-    // Dashboard: allow to load (client-side can show auth/env error states)
     return response;
   }
 
-  // Create middleware-specific Supabase client that properly uses request/response cookies
-  // This is CRITICAL: middleware cannot use cookies() from next/headers - must use request.cookies
+  // MOBILE FIX: Detect mobile browser and adjust cookie settings
+  const userAgent = request.headers.get("user-agent") || "";
+  const isMobile = /iPhone|iPad|iPod|Android/i.test(userAgent);
+  const isIOS = /iPhone|iPad|iPod/.test(userAgent);
+  
+  // MOBILE FIX: Use more permissive cookie settings for mobile browsers
+  // iOS Safari requires: sameSite=lax, httpOnly=false, secure=true (on HTTPS)
+  // Android Chrome requires: sameSite=lax or none, httpOnly=false
+  const mobileCookieSettings: CookieOptions = {
+    httpOnly: false, // Required for Supabase to read cookies
+    sameSite: isMobile ? "lax" : "strict", // Lax for mobile, strict for desktop
+    secure: request.url.startsWith("https://") || process.env.NODE_ENV === "production", // HTTPS on production
+    path: "/", // Root path for all subdomains
+    maxAge: 60 * 60 * 24 * 7, // 7 days for mobile persistence
+  };
+
+  // Create middleware-specific Supabase client
   const supabase = createServerClient(supabaseUrl, supabaseAnonKey, {
     cookies: {
       getAll() {
@@ -71,33 +79,29 @@ export async function middleware(request: NextRequest) {
           // Set on request for downstream reads in this request
           request.cookies.set(name, value);
           
-          const isSecure = request.url.startsWith("https://") || process.env.NODE_ENV === "production";
+          // Set on response with mobile-optimized settings
           response.cookies.set(name, value, {
             ...options,
-            httpOnly: false,
-            sameSite: "lax",
-            secure: isSecure,
-            path: "/",
-            maxAge: options.maxAge || 60 * 60 * 24 * 7,
+            ...mobileCookieSettings,
           });
         });
       },
     },
   });
 
-  // Get user - use getUser() instead of getSession() for secure authentication
-  // getUser() authenticates the data by contacting the Supabase Auth server
-  // It also automatically refreshes the session if needed
+  // Get user - use getUser() for secure authentication
+  let {
+    data: { user },
+    error: authError,
+  } = await supabase.auth.getUser();
 
   // Check for Authorization header (client may send Bearer token from localStorage)
-  // This handles the case where client session was refreshed but cookies haven't been updated
   const authHeader = request.headers.get("Authorization");
   let userFromAuthHeader: { id: string; email?: string } | null = null;
 
   if (authHeader?.startsWith("Bearer ")) {
     const token = authHeader.slice(7);
     try {
-      // Verify the JWT token with Supabase
       const { data: userData, error: tokenError } = await supabase.auth.getUser(token);
       if (userData?.user && !tokenError) {
         userFromAuthHeader = userData.user;
@@ -107,11 +111,6 @@ export async function middleware(request: NextRequest) {
     }
   }
 
-  let {
-    data: { user },
-    error: authError,
-  } = await supabase.auth.getUser();
-
   // If cookie-based auth failed but Authorization header had valid token, use that
   if ((!user || authError) && userFromAuthHeader) {
     user = userFromAuthHeader as typeof user;
@@ -119,11 +118,8 @@ export async function middleware(request: NextRequest) {
   }
 
   // If getUser() fails, try to refresh the session
-  // This handles stale sessions where the access token expired but refresh token is valid
   if (authError && !user) {
     try {
-      // Try to refresh the session
-      // The Supabase SSR client will automatically update cookies via the set() handler
       const {
         data: { session: refreshedSession },
         error: refreshError,
@@ -132,31 +128,21 @@ export async function middleware(request: NextRequest) {
       if (refreshedSession?.user && !refreshError) {
         user = refreshedSession.user;
         authError = null;
-        // Response object is automatically updated with new cookies via the set() handler
-        // No need to manually update - Supabase SSR client handles it
       }
     } catch (_refreshErr) {
       // Refresh failed, continue with original error
     }
   }
 
-  // If getUser() fails, treat as unauthenticated
   const session = user ? { user } : null;
 
   // For API routes, inject user info into headers if session exists
-  // SIMPLIFIED: Only set user-id/email. Unified handler will extract venueId and call RPC if needed.
-  // This is more reliable than trying to extract venueId from URL patterns in middleware.
   if (pathname.startsWith("/api/")) {
-    // Only set headers if we have a session - unified handler will check auth
     if (session) {
       const requestHeaders = new Headers(request.headers);
       requestHeaders.set("x-user-id", session.user.id);
       requestHeaders.set("x-user-email", session.user.email || "");
 
-      // Note: Tier/role headers are set by unified handler after it extracts venueId
-      // This is more reliable than trying to parse venueId from URL patterns here
-
-      // Create new response with updated headers, preserving any cookies set during auth
       const newResponse = NextResponse.next({
         request: { headers: requestHeaders },
       });
@@ -168,7 +154,6 @@ export async function middleware(request: NextRequest) {
     }
 
     // No session - pass through without headers, let unified handler decide
-    // This allows public routes (requireAuth: false) to work
     return response;
   }
 
@@ -198,8 +183,6 @@ export async function middleware(request: NextRequest) {
       }
 
       // Call RPC with proper error handling
-      // NOTE: In Edge/middleware, Supabase rpc() returns a promise-like object but does NOT
-      // support chaining .catch() directly in all environments, so we use try/catch around await.
       let data: {
         user_id?: string;
         venue_id?: string | null;
@@ -208,6 +191,7 @@ export async function middleware(request: NextRequest) {
       } | null = null;
       let rpcErr: { message: string; code?: string; details?: unknown; hint?: unknown } | null =
         null;
+
       try {
         const result = await supabase.rpc("get_access_context", {
           p_venue_id: normalizedVenueId,
@@ -220,52 +204,45 @@ export async function middleware(request: NextRequest) {
       }
 
       // Always set basic user headers (user-id, email) even if RPC fails
-      // This ensures pages know user is authenticated, even if tier/role unavailable
+      // MOBILE FIX: Ensure headers are set even on mobile browsers
       const requestHeaders = new Headers(request.headers);
       requestHeaders.set("x-user-id", verifyUser.id);
       requestHeaders.set("x-user-email", session.user.email || "");
 
-      // When cookie-based RPC fails, retry with session access_token so tier/role are correct
-      let ctx: { user_id?: string; venue_id?: string | null; role?: string; tier?: string } | null =
-        data as typeof data;
-      if (rpcErr || !data) {
-        const { data: sessionData } = await supabase.auth.getSession();
-        const accessToken = sessionData?.session?.access_token;
-        if (accessToken) {
-          const tokenClient = createServerClient(supabaseUrl, supabaseAnonKey, {
-            cookies: { getAll: () => [], setAll: () => {} },
-            global: {
-              headers: { Authorization: `Bearer ${accessToken}` },
-            },
-          });
-          const retry = await tokenClient.rpc("get_access_context", {
-            p_venue_id: normalizedVenueId,
-          });
-          if (!retry.error && retry.data?.user_id && retry.data?.role) {
-            ctx = retry.data as typeof ctx;
-          }
-        }
-        if (!ctx) {
-          requestHeaders.set("x-user-id", verifyUser.id);
-          requestHeaders.set("x-user-email", session.user.email || "");
-          requestHeaders.set("x-venue-id", normalizedVenueId);
-          requestHeaders.set("x-user-tier", "starter");
-          requestHeaders.set("x-user-role", "owner");
-          const fallbackResponse = NextResponse.next({
-            request: { headers: requestHeaders },
-          });
-          response.cookies.getAll().forEach((c) => fallbackResponse.cookies.set(c.name, c.value));
-          return fallbackResponse;
-        }
-      }
-
-      // Validate RPC response structure - must have user_id and role (ctx may be from retry)
-      if (!ctx!.user_id || !ctx!.role) {
-        requestHeaders.set("x-user-id", verifyUser.id);
-        requestHeaders.set("x-user-email", session.user.email || "");
+      if (rpcErr) {
+        // RPC failed - set default tier/role for mobile robustness
         requestHeaders.set("x-venue-id", normalizedVenueId);
         requestHeaders.set("x-user-tier", "starter");
         requestHeaders.set("x-user-role", "owner");
+        
+        const errResponse = NextResponse.next({
+          request: { headers: requestHeaders },
+        });
+        response.cookies.getAll().forEach((c) => errResponse.cookies.set(c.name, c.value));
+        return errResponse;
+      }
+
+      if (!data) {
+        // RPC returned null - set default tier/role for mobile
+        requestHeaders.set("x-venue-id", normalizedVenueId);
+        requestHeaders.set("x-user-tier", "starter");
+        requestHeaders.set("x-user-role", "owner");
+        
+        const noDataResponse = NextResponse.next({
+          request: { headers: requestHeaders },
+        });
+        response.cookies.getAll().forEach((c) => noDataResponse.cookies.set(c.name, c.value));
+        return noDataResponse;
+      }
+
+      // Validate RPC response structure
+      const ctx = data as typeof data;
+      if (!ctx?.user_id || !ctx?.role) {
+        // RPC returned invalid data - set defaults for mobile
+        requestHeaders.set("x-venue-id", normalizedVenueId);
+        requestHeaders.set("x-user-tier", "starter");
+        requestHeaders.set("x-user-role", "owner");
+        
         const invalidResponse = NextResponse.next({
           request: { headers: requestHeaders },
         });
@@ -273,14 +250,14 @@ export async function middleware(request: NextRequest) {
         return invalidResponse;
       }
 
-      // Validate tier is one of the valid values
-      const tier = ctx!.tier?.toLowerCase().trim() || "starter";
+      // Validate tier is one of valid values
+      const tier = ctx?.tier?.toLowerCase().trim() || "starter";
       if (!["starter", "pro", "enterprise"].includes(tier)) {
-        requestHeaders.set("x-user-id", ctx!.user_id);
-        requestHeaders.set("x-user-email", session.user.email || "");
+        // Invalid tier - set default for mobile
+        requestHeaders.set("x-venue-id", normalizedVenueId);
         requestHeaders.set("x-user-tier", "starter");
-        requestHeaders.set("x-user-role", ctx!.role);
-        requestHeaders.set("x-venue-id", ctx!.venue_id ?? normalizedVenueId);
+        requestHeaders.set("x-user-role", ctx?.role || "owner");
+        
         const tierResponse = NextResponse.next({
           request: { headers: requestHeaders },
         });
@@ -289,11 +266,11 @@ export async function middleware(request: NextRequest) {
       }
 
       // RPC succeeded (or retry with token) - set headers with actual tier/role from database
-      requestHeaders.set("x-user-id", ctx!.user_id);
+      requestHeaders.set("x-user-id", ctx.user_id);
       requestHeaders.set("x-user-email", session.user.email || "");
       requestHeaders.set("x-user-tier", tier);
-      requestHeaders.set("x-user-role", ctx!.role);
-      requestHeaders.set("x-venue-id", ctx!.venue_id ?? normalizedVenueId);
+      requestHeaders.set("x-user-role", ctx.role);
+      requestHeaders.set("x-venue-id", ctx.venue_id ?? normalizedVenueId);
 
       const successResponse = NextResponse.next({
         request: { headers: requestHeaders },
@@ -312,8 +289,6 @@ export async function middleware(request: NextRequest) {
 export const config = {
   matcher: [
     "/dashboard/:path*",
-    "/api/:path*", // Run on ALL API routes to ensure header stripping
+    "/api/:path*",
   ],
-  // Explicitly exclude health check from middleware
-  // This ensures health check is NEVER blocked
 };
