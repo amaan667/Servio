@@ -350,41 +350,61 @@ export default function AuthProvider({
   }, [initialSession]);
 
   const signOut = async () => {
+    // Store user ID before clearing session (needed for cleanup)
+    const userId = session?.user?.id;
+
+    // CRITICAL: Clear local state FIRST to prevent UI from showing stale data
+    setSession(null);
+    setUser(null);
+    setPrimaryVenueId(null);
+    setUserRole(null);
+
+    // CRITICAL: Clear the sb-auth-session from localStorage FIRST
+    // This prevents getInitialSession() from restoring stale session on page reload
+    if (typeof window !== "undefined") {
+      // Clear the cached session that getInitialSession() reads
+      safeRemoveItem(localStorage, "sb-auth-session");
+
+      // Clear user-specific cached data
+      if (userId) {
+        safeRemoveItem(localStorage, `user_role_${userId}`);
+        safeRemoveItem(localStorage, `venue_id_${userId}`);
+      }
+
+      // Clear all user role/venue caches from localStorage
+      const localKeys = Object.keys(localStorage);
+      localKeys.forEach((key) => {
+        if (
+          key.startsWith("user_role_") ||
+          key.startsWith("venue_id_") ||
+          key.startsWith("dashboard_user_") ||
+          key.startsWith("dashboard_venue_")
+        ) {
+          safeRemoveItem(localStorage, key);
+        }
+      });
+
+      // Clear sessionStorage caches
+      const sessionKeys = Object.keys(sessionStorage);
+      sessionKeys.forEach((key) => {
+        if (
+          key.startsWith("user_role_") ||
+          key.startsWith("venue_id_") ||
+          key.startsWith("dashboard_user_") ||
+          key.startsWith("dashboard_venue_")
+        ) {
+          safeRemoveItem(sessionStorage, key);
+        }
+      });
+    }
+
     try {
+      // Call Supabase signOut to clear cookies and server session
       const supabase = supabaseBrowser();
       await supabase.auth.signOut();
-
-      // Clear local state immediately
-      setSession(null);
-      setUser(null);
-
-      // Clear all cached user data from localStorage and sessionStorage
-      if (typeof window !== "undefined") {
-        if (session?.user?.id) {
-          safeRemoveItem(localStorage, `user_role_${session.user.id}`);
-          safeRemoveItem(localStorage, `venue_id_${session.user.id}`);
-        }
-        const sessionKeys = Object.keys(sessionStorage);
-        sessionKeys.forEach((key) => {
-          if (key.startsWith("user_role_") || key.startsWith("venue_id_")) {
-            safeRemoveItem(sessionStorage, key);
-          }
-        });
-      }
     } catch {
-      // Clear local state even if there's an error
-      setSession(null);
-      setUser(null);
-
-      // Clear all cached user data from session storage even on error
-      if (typeof window !== "undefined") {
-        const keys = Object.keys(sessionStorage);
-        keys.forEach((key) => {
-          if (key.startsWith("user_role_") || key.startsWith("venue_id_")) {
-            safeRemoveItem(sessionStorage, key);
-          }
-        });
-      }
+      // Even if Supabase signOut fails, local state is already cleared
+      // The user will be signed out from this device
     }
   };
 

@@ -132,9 +132,16 @@ export default function GlobalNav() {
                       variant="outline"
                       onClick={async () => {
                         try {
+                          // Clear client state first (prevents flash of authenticated content)
                           await signOut();
+                          // Call server API to ensure cookies are cleared
+                          await fetch("/api/auth/signout", {
+                            method: "POST",
+                            credentials: "include",
+                          }).catch(() => {});
+                          // Force full page reload to clear any cached state
                           window.location.href = "/";
-                        } catch (error) {
+                        } catch {
                           window.location.href = "/";
                         }
                       }}
@@ -203,9 +210,16 @@ export default function GlobalNav() {
                       variant="outline"
                       onClick={async () => {
                         try {
+                          // Clear client state first (prevents flash of authenticated content)
                           await signOut();
+                          // Call server API to ensure cookies are cleared
+                          await fetch("/api/auth/signout", {
+                            method: "POST",
+                            credentials: "include",
+                          }).catch(() => {});
+                          // Force full page reload to clear any cached state
                           window.location.href = "/";
-                        } catch (error) {
+                        } catch {
                           window.location.href = "/";
                         }
                       }}
@@ -266,9 +280,16 @@ export default function GlobalNav() {
                       variant="outline"
                       onClick={async () => {
                         try {
+                          // Clear client state first (prevents flash of authenticated content)
                           await signOut();
+                          // Call server API to ensure cookies are cleared
+                          await fetch("/api/auth/signout", {
+                            method: "POST",
+                            credentials: "include",
+                          }).catch(() => {});
+                          // Force full page reload to clear any cached state
                           window.location.href = "/";
-                        } catch (error) {
+                        } catch {
                           window.location.href = "/";
                         }
                       }}
@@ -350,9 +371,16 @@ export default function GlobalNav() {
                       variant="outline"
                       onClick={async () => {
                         try {
+                          // Clear client state first (prevents flash of authenticated content)
                           await signOut();
+                          // Call server API to ensure cookies are cleared
+                          await fetch("/api/auth/signout", {
+                            method: "POST",
+                            credentials: "include",
+                          }).catch(() => {});
+                          // Force full page reload to clear any cached state
                           window.location.href = "/";
-                        } catch (error) {
+                        } catch {
                           window.location.href = "/";
                         }
                       }}
@@ -471,9 +499,16 @@ export default function GlobalNav() {
                       onClick={async () => {
                         setMobileMenuOpen(false);
                         try {
+                          // Clear client state first (prevents flash of authenticated content)
                           await signOut();
+                          // Call server API to ensure cookies are cleared
+                          await fetch("/api/auth/signout", {
+                            method: "POST",
+                            credentials: "include",
+                          }).catch(() => {});
+                          // Force full page reload to clear any cached state
                           window.location.href = "/";
-                        } catch (error) {
+                        } catch {
                           window.location.href = "/";
                         }
                       }}
@@ -537,9 +572,16 @@ export default function GlobalNav() {
                       onClick={async () => {
                         setMobileMenuOpen(false);
                         try {
+                          // Clear client state first (prevents flash of authenticated content)
                           await signOut();
+                          // Call server API to ensure cookies are cleared
+                          await fetch("/api/auth/signout", {
+                            method: "POST",
+                            credentials: "include",
+                          }).catch(() => {});
+                          // Force full page reload to clear any cached state
                           window.location.href = "/";
-                        } catch (error) {
+                        } catch {
                           window.location.href = "/";
                         }
                       }}
@@ -597,9 +639,16 @@ export default function GlobalNav() {
                       onClick={async () => {
                         setMobileMenuOpen(false);
                         try {
+                          // Clear client state first (prevents flash of authenticated content)
                           await signOut();
+                          // Call server API to ensure cookies are cleared
+                          await fetch("/api/auth/signout", {
+                            method: "POST",
+                            credentials: "include",
+                          }).catch(() => {});
+                          // Force full page reload to clear any cached state
                           window.location.href = "/";
-                        } catch (error) {
+                        } catch {
                           window.location.href = "/";
                         }
                       }}
@@ -645,9 +694,16 @@ export default function GlobalNav() {
                       onClick={async () => {
                         setMobileMenuOpen(false);
                         try {
+                          // Clear client state first (prevents flash of authenticated content)
                           await signOut();
+                          // Call server API to ensure cookies are cleared
+                          await fetch("/api/auth/signout", {
+                            method: "POST",
+                            credentials: "include",
+                          }).catch(() => {});
+                          // Force full page reload to clear any cached state
                           window.location.href = "/";
-                        } catch (error) {
+                        } catch {
                           window.location.href = "/";
                         }
                       }}
