@@ -75,7 +75,7 @@ export async function middleware(request: NextRequest) {
             ...options,
             httpOnly: false, // Must be false for Supabase to read from client
             sameSite: "lax",
-            secure: true,
+            secure: process.env.NODE_ENV === "production",
             path: "/",
           });
         });
