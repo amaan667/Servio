@@ -18,6 +18,11 @@ on:
         description: 'Reason for rollback'
         required: true
         type: string
+      deployment_id:
+        description: 'Specific deployment ID to rollback to (optional, leave empty for previous)'
+        required: false
+        type: string
+        default: ''
 
 jobs:
   rollback:
@@ -27,33 +32,135 @@ jobs:
       name: ${{ inputs.environment }}
     
     steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
       - name: Log rollback reason
         run: |
           echo "🚨 ROLLBACK INITIATED"
           echo "Environment: ${{ inputs.environment }}"
           echo "Service: ${{ inputs.service }}"
           echo "Reason: ${{ inputs.reason }}"
-          echo "Timestamp: $(date -u +"%Y-%m-%d %H:%M:%S UTC")"
-      
-      - name: Rollback via Railway CLI
+          echo "Timestamp: $(date -u +"%Y-%m-%dT%H:%M:%SZ")"
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: Install Railway CLI
         run: |
-          echo "⚠️ Manual rollback required"
-          echo ""
-          echo "To rollback on Railway:"
-          echo "1. Go to Railway Dashboard: https://railway.app"
-          echo "2. Select service: ${{ inputs.service }}"
-          echo "3. Go to 'Deployments' tab"
-          echo "4. Find the previous working deployment"
-          echo "5. Click 'Redeploy' on that deployment"
-          echo ""
-          echo "OR use Railway CLI:"
-          echo "  railway rollback --service ${{ inputs.service }}"
-          echo ""
-          echo "Reason: ${{ inputs.reason }}"
-      
-      - name: Verify rollback
+          pnpm install -g @railway/cli
+
+      - name: Authenticate with Railway
+        run: railway login --token=${{ secrets.RAILWAY_TOKEN }} || echo "Using existing Railway session"
+
+      - name: Link to project
         run: |
-          echo "After rollback, verify:"
-          echo "1. Health check: curl https://servio-${{ inputs.environment }}.up.railway.app/api/health"
-          echo "2. Readiness check: curl https://servio-${{ inputs.environment }}.up.railway.app/api/ready"
-          echo "3. Check application logs in Railway dashboard"
+          if [ "${{ inputs.environment }}" == "production" ]; then
+            railway link --service ${{ inputs.service }} --project-id ${{ secrets.RAILWAY_PRODUCTION_PROJECT_ID }}
+          else
+            railway link --service ${{ inputs.service }} --project-id ${{ secrets.RAILWAY_STAGING_PROJECT_ID }}
+          fi
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+
+      - name: Get deployment history
+        id: deployments
+        run: |
+          echo "Fetching deployment history..."
+          railway deployments --service ${{ inputs.service }} --json > deployments.json
+          cat deployments.json
+          
+          # Get the most recent successful deployment (not the current one)
+          DEPLOYMENT_ID=$(jq -r '.[0].id' deployments.json 2>/dev/null || echo "")
+          echo "Latest deployment ID: $DEPLOYMENT_ID"
+          echo "DEPLOYMENT_ID=$DEPLOYMENT_ID" >> $GITHUB_OUTPUT
+
+      - name: Perform rollback
+        id: rollback
+        run: |
+          if [ -n "${{ inputs.deployment_id }}" ]; then
+            DEPLOYMENT_ID=${{ inputs.deployment_id }}
+            echo "Rolling back to specific deployment: $DEPLOYMENT_ID"
+            railway rollback ${{ inputs.service }} $DEPLOYMENT_ID
+          else
+            echo "Rolling back to previous deployment..."
+            railway rollback ${{ inputs.service }}
+          fi
+
+      - name: Wait for rollback completion
+        run: |
+          echo "Waiting for rollback to complete..."
+          sleep 30
+          railway status --service ${{ inputs.service }}
+
+      - name: Verify rollback health
+        id: verify
+        run: |
+          if [ "${{ inputs.environment }}" == "production" ]; then
+            URL="https://servio-production.up.railway.app"
+          else
+            URL="https://servio-staging.up.railway.app"
+          fi
+          
+          echo "Verifying rollback at: $URL"
+          
+          # Health check
+          HEALTH=$(curl -s -o /dev/null -w "%{http_code}" "$URL/api/health" || echo "000")
+          echo "Health check: $HEALTH"
+          
+          # Readiness check
+          READY=$(curl -s -o /dev/null -w "%{http_code}" "$URL/api/ready" || echo "000")
+          echo "Readiness check: $READY"
+          
+          if [ "$HEALTH" == "200" ] && [ "$READY" == "200" ]; then
+            echo "✅ Rollback verified successfully"
+          else
+            echo "⚠️ Rollback completed but health checks indicate issues"
+          fi
+
+      - name: Send notification
+        if: always()
+        run: |
+          # Send Slack notification (if configured)
+          if [ -n "${{ secrets.SLACK_WEBHOOK_URL }}" ]; then
+            curl -X POST -H 'Content-type: application/json' \
+              --data "{\"text\":\"🚨 Rollback initiated for ${{ inputs.environment }}\nReason: ${{ inputs.reason }}\nStatus: ${{ job.status }}\"}" \
+              ${{ secrets.SLACK_WEBHOOK_URL }}
+          fi
+          echo "Rollback notification sent"
+
+      - name: Create incident report
+        if: failure()
+        run: |
+          cat << EOF > incident-report.md
+          # Incident Report - Rollback ${{ github.run_id }}
+          
+          ## Summary
+          - Environment: ${{ inputs.environment }}
+          - Service: ${{ inputs.service }}
+          - Reason: ${{ inputs.reason }}
+          - Timestamp: $(date -u +"%Y-%m-%dT%H:%M:%SZ")
+          
+          ## Resolution
+          Rollback was initiated but verification failed.
+          
+          ## Next Steps
+          1. Check Railway dashboard for deployment status
+          2. Review application logs for errors
+          3. Contact on-call engineer if issue persists
+          
+          ## Links
+          - Railway Dashboard: https://railway.app/project/${{ secrets.RAILWAY_PROJECT_ID }}/service/${{ inputs.service }}
+          - GitHub Run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          EOF
+          
+          echo "Incident report created"

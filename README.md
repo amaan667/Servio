@@ -178,3 +178,192 @@ See [.env.example](.env.example) for all available configuration options.
 ## License
 
 Private - All rights reserved.
+
+---
+
+## Operations Runbook
+
+### Service Level Indicators (SLIs) & Objectives (SLOs)
+
+| Service | Indicator | Target | Critical Threshold |
+|---------|-----------|--------|-------------------|
+| API Latency | P95 response time | < 500ms | < 1000ms |
+| API Availability | Success rate | > 99.9% | > 99.5% |
+| Database | Query latency | < 100ms | < 500ms |
+| Cache Hit Rate | Redis/memory hits | > 80% | > 60% |
+| Error Rate | 5xx errors | < 0.1% | < 1% |
+| Uptime | System availability | > 99.95% | > 99.9% |
+
+### Health Checks
+
+The platform provides the following health check endpoints:
+
+- **`/api/health`** - Basic health check (returns 200 if application is running)
+- **`/api/ready`** - Readiness check (returns 200 if application can serve traffic)
+- **`/api/ping`** - Liveness probe (returns 200 if process is alive)
+
+```bash
+# Check health
+curl https://servio-production.up.railway.app/api/health
+
+# Check readiness  
+curl https://servio-production.up.railway.app/api/ready
+
+# Check ping
+curl https://servio-production.up.railway.app/api/ping
+```
+
+### Monitoring Dashboard
+
+Access the real-time monitoring dashboard at `/dashboard/:venueId/monitoring` to view:
+- API performance metrics (requests, response times, success/failure rates)
+- Error tracking with recent error messages
+- System health (uptime, memory usage, active connections)
+
+### Deployment Rollback
+
+#### Automated Rollback via GitHub Actions
+
+1. Go to Actions → Rollback Deployment workflow
+2. Click "Run workflow"
+3. Select environment (staging/production)
+4. Enter service name and reason for rollback
+5. Click "Run"
+
+#### Manual Railway Rollback
+
+```bash
+# Install Railway CLI
+npm install -g @railway/cli
+
+# Link to project
+railway link
+
+# Rollback to previous deployment
+railway rollback --service servio-production
+
+# Or via Railway Dashboard:
+# 1. Go to https://railway.app
+# 2. Select service: servio-production
+# 3. Go to Deployments tab
+# 4. Find previous working deployment
+# 5. Click "Redeploy"
+```
+
+### Incident Response Procedures
+
+#### Severity Levels
+
+| Level | Description | Response Time |
+|-------|-------------|---------------|
+| P1 (Critical) | Complete outage, data loss | 15 minutes |
+| P2 (High) | Major feature broken | 1 hour |
+| P3 (Medium) | Minor feature degraded | 4 hours |
+| P4 (Low) | Non-critical issues | 24 hours |
+
+#### P1 (Critical) Incident Checklist
+
+1. **Acknowledge** - Confirm incident within 15 minutes
+2. **Assess** - Check `/api/health` and `/api/ready` endpoints
+3. **Check Logs** - Review Railway logs and Sentry for errors
+4. **Determine Cause** - Recent deploy? Database issue? External dependency?
+5. **Mitigate** - Roll back if caused by recent change
+6. **Communicate** - Notify stakeholders
+7. **Document** - Create incident report
+
+#### Common Issues & Solutions
+
+| Issue | Symptoms | Resolution |
+|-------|----------|------------|
+| 503 Auth Unavailable | Auth infrastructure down | Check Supabase status, verify env vars |
+| High API Latency | Slow responses | Check database connections, Redis cache |
+| Memory Exhaustion | OOM errors | Review memory usage, check for leaks |
+| Database Connection Failures | Queries timing out | Check connection pool, Redis health |
+
+### Log Aggregation
+
+Logs are aggregated from multiple sources:
+- **Application Logs**: Structured JSON logs via `lib/structured-logger.ts`
+- **Error Tracking**: Sentry for error aggregation
+- **Performance Metrics**: `/api/performance` endpoint
+- **Audit Logs**: Security events logged via `lib/monitoring/security-audit.ts`
+
+### Performance Tuning
+
+#### Database Optimization
+
+- Use connection pooling via `lib/db/connection-pool.ts`
+- Enable query optimization with `lib/db/query-optimizer.ts`
+- Implement caching for frequent queries
+
+#### Cache Strategy
+
+- **Short TTL (1 min)**: User sessions, rate limits
+- **Medium TTL (5 min)**: Menu items, venue settings
+- **Long TTL (30 min)**: Analytics data, cached computations
+- **Very Long TTL (1 hr)**: AI categorization results
+
+### Security Incident Response
+
+1. **Detect** - Review security logs, Snyk alerts, CodeQL findings
+2. **Assess** - Determine severity and impact
+3. **Contain** - Block affected endpoints if needed
+4. **Remediate** - Apply patches, update dependencies
+5. **Verify** - Run security scans to confirm fix
+6. **Document** - Create security incident report
+
+### On-Call Schedule
+
+| Week | Primary | Secondary |
+|------|---------|-----------|
+| Week 1 | On-Call Engineer 1 | On-Call Engineer 2 |
+| Week 2 | On-Call Engineer 2 | On-Call Engineer 1 |
+
+### Escalation Path
+
+1. On-Call Engineer → 
+2. Engineering Lead → 
+3. CTO → 
+4. Executive Team
+
+### Useful Commands
+
+```bash
+# Run database migrations
+pnpm migrate:prod
+
+# Clear cache
+pnpm cache:clear
+
+# Check cache statistics
+pnpm cache:stats
+
+# Run health check
+pnpm health:check
+
+# Analyze performance
+pnpm perf:analyze
+
+# Run all tests
+pnpm test:all
+
+# Lint and format
+pnpm validate
+```
+
+### Environment URLs
+
+| Environment | URL | Status |
+|-------------|-----|--------|
+| Production | https://servio-production.up.railway.app | ✅ |
+| Staging | https://servio-staging.up.railway.app | ✅ |
+| Development | localhost:3000 | Local |
+
+### Support Contacts
+
+| Issue Type | Contact |
+|------------|---------|
+| Infrastructure | DevOps Team |
+| Database | DBA Team |
+| Security | Security Team |
+| Application | Development Team |

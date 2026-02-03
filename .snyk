@@ -1,0 +1,48 @@
+# Snyk Security Policy
+# https://docs.snyk.io/scan-with-snyk/snyk-policies
+
+# This policy file defines how Snyk handles vulnerabilities
+# in our dependency tree.
+
+version: v1.25.0
+
+# Ignore rules for specific vulnerabilities
+ignore: {}
+
+# Patch rules for vulnerabilities that can be automatically patched
+patch:
+  'npm:minimatch:20160620':
+    - minimatch:
+        patched: '2020-07-06T09:00:00.000Z'
+        comment: 'Patched via npm audit fix'
+
+# Severity threshold for CI blocking
+severity-threshold:
+  high: true
+  critical: true
+
+# Exclude certain paths from scanning
+exclude:
+  - '**/node_modules/**'
+  - '**/.git/**'
+  - '**/dist/**'
+  - '**/build/**'
+  - '**/.next/**'
+  - '**/coverage/**'
+  - '**/*.test.{ts,tsx,js,jsx}'
+  - '**/*.spec.{ts,tsx,js,jsx}'
+  - '**/__tests__/**'
+  - '**/*.d.ts'
+
+# Container scanning settings (if applicable)
+container:
+  exclude-base-image-vulns: false
+
+# IAC (Infrastructure as Code) scanning
+iac:
+  exclude:
+    - '**/node_modules/**'
+    - '**/.git/**'
+    - '**/dist/**'
+    - '**/build/**'
+    - '**/.next/**'
