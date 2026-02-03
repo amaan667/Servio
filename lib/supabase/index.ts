@@ -606,38 +606,110 @@ export async function getSessionSafe(supabase: Awaited<ReturnType<typeof createS
 export const supabase = (() => supabaseBrowser())();
 
 // Clear authentication storage (client-side only)
+// MOBILE FIX: Comprehensive clearing for all browsers including iOS Safari
 export function clearAuthStorage() {
   if (typeof window === "undefined") {
     return;
   }
 
-  // Clear localStorage
-  localStorage.removeItem("supabase.auth.token");
-  localStorage.removeItem("sb-auth-token");
-  localStorage.removeItem("sb-auth-session");
+  // Get the project ref for Supabase storage key
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
+  const projectRef = supabaseUrl.match(/https:\/\/([^.]+)\.supabase\.co/)?.[1] || "default";
 
-  // Clear sessionStorage - including all dashboard caches
-  sessionStorage.removeItem("supabase.auth.token");
-  sessionStorage.removeItem("sb-auth-token");
+  // Clear localStorage - all auth-related keys
+  const localStorageKeysToRemove = [
+    "supabase.auth.token",
+    "sb-auth-token",
+    "sb-auth-session",
+    `sb-${projectRef}-auth-token`, // Supabase unified storage key
+    `sb-${projectRef}-auth-token-code-verifier`, // PKCE code verifier
+  ];
 
-  // Clear all dashboard-related caches
-  Object.keys(sessionStorage).forEach((key) => {
-    if (
-      key.startsWith("dashboard_user_") ||
-      key.startsWith("dashboard_venue_") ||
-      key.startsWith("user_role_") ||
-      key.startsWith("venue_id_")
-    ) {
-      sessionStorage.removeItem(key);
+  localStorageKeysToRemove.forEach((key) => {
+    try {
+      localStorage.removeItem(key);
+    } catch {
+      // Ignore errors
     }
   });
 
-  // Clear cookies
-  document.cookie.split(";").forEach((c) => {
-    document.cookie = c
-      .replace(/^ +/, "")
-      .replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/");
-  });
+  // Clear all keys matching auth-related patterns from localStorage
+  try {
+    const localKeys = Object.keys(localStorage);
+    localKeys.forEach((key) => {
+      if (
+        key.startsWith("sb-") ||
+        key.startsWith("supabase") ||
+        key.startsWith("dashboard_user_") ||
+        key.startsWith("dashboard_venue_") ||
+        key.startsWith("user_role_") ||
+        key.startsWith("venue_id_")
+      ) {
+        localStorage.removeItem(key);
+      }
+    });
+  } catch {
+    // Ignore errors (e.g., in private browsing)
+  }
+
+  // Clear sessionStorage - all auth-related keys
+  try {
+    sessionStorage.removeItem("supabase.auth.token");
+    sessionStorage.removeItem("sb-auth-token");
+
+    const sessionKeys = Object.keys(sessionStorage);
+    sessionKeys.forEach((key) => {
+      if (
+        key.startsWith("sb-") ||
+        key.startsWith("supabase") ||
+        key.startsWith("dashboard_user_") ||
+        key.startsWith("dashboard_venue_") ||
+        key.startsWith("user_role_") ||
+        key.startsWith("venue_id_")
+      ) {
+        sessionStorage.removeItem(key);
+      }
+    });
+  } catch {
+    // Ignore errors
+  }
+
+  // Clear all auth-related cookies
+  // MOBILE FIX: Use more thorough cookie clearing for iOS Safari
+  const cookiePatterns = ["sb-", "supabase", "auth-token", "refresh-token"];
+  try {
+    document.cookie.split(";").forEach((c) => {
+      const cookie = c.trim();
+      const cookieParts = cookie.split("=");
+      const cookieName = cookieParts[0];
+
+      // Skip if no cookie name
+      if (!cookieName) return;
+
+      // Check if this is an auth-related cookie
+      const isAuthCookie = cookiePatterns.some((pattern) => cookieName.includes(pattern));
+
+      if (isAuthCookie || cookie.includes("auth") || cookie.includes("token")) {
+        // Clear with multiple path variations to ensure removal
+        const paths = ["/", "", window.location.pathname];
+        const domains = ["", window.location.hostname, `.${window.location.hostname}`];
+
+        paths.forEach((path) => {
+          domains.forEach((domain) => {
+            const domainPart = domain ? `; domain=${domain}` : "";
+            document.cookie = `${cookieName}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=${path}${domainPart}`;
+            document.cookie = `${cookieName}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=${path}${domainPart}; secure`;
+            document.cookie = `${cookieName}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=${path}${domainPart}; secure; samesite=lax`;
+          });
+        });
+      }
+    });
+  } catch {
+    // Ignore cookie errors
+  }
+
+  // Reset the singleton browser client to force re-initialization on next access
+  browserClient = null;
 }
 
 // Alias for backward compatibility
