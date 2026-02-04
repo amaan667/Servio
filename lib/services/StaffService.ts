@@ -4,7 +4,7 @@
  */
 
 import { BaseService } from "./BaseService";
-import { createSupabaseClient, createAdminClient } from "@/lib/supabase";
+import { createSupabaseClient, createClient } from "@/lib/supabase";
 
 export interface StaffMember {
   id: string;
@@ -86,7 +86,7 @@ export class StaffService extends BaseService {
    * Toggle staff active status (uses admin client to satisfy RLS; caller must enforce venue access)
    */
   async toggleStaffStatus(staffId: string, venueId: string, active: boolean): Promise<void> {
-    const supabase = createAdminClient();
+    const supabase = await createClient();
     const { error } = await supabase
       .from("staff")
       .update({ active })
@@ -106,7 +106,7 @@ export class StaffService extends BaseService {
     role: string,
     invitedBy: string
   ): Promise<Record<string, unknown>> {
-    const supabase = createAdminClient();
+    const supabase = await createClient();
     const { data, error } = await supabase
       .from("staff_invitations")
       .insert({
@@ -129,7 +129,7 @@ export class StaffService extends BaseService {
    * Add staff member (uses admin client to satisfy RLS; caller must enforce venue access)
    */
   async addStaff(venueId: string, data: { name: string; role?: string }): Promise<StaffMember> {
-    const supabase = createAdminClient();
+    const supabase = await createClient();
     const { data: staff, error } = await supabase
       .from("staff")
       .insert({

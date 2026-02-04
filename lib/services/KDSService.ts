@@ -4,7 +4,7 @@
  */
 
 import { BaseService } from "./BaseService";
-import { createSupabaseClient, createAdminClient } from "@/lib/supabase";
+import { createSupabaseClient, createClient } from "@/lib/supabase";
 import { createKDSTicketsWithAI } from "@/lib/orders/kds-tickets-unified";
 import { trackOrderError } from "@/lib/monitoring/error-tracking";
 
@@ -109,7 +109,7 @@ export class KDSService extends BaseService {
    * Auto-backfill missing KDS tickets for open orders
    */
   async autoBackfill(venueId: string): Promise<number> {
-    const adminSupabase = createAdminClient();
+    const adminSupabase = await createClient();
 
     // 1. Get open orders
     const { data: openOrders } = await adminSupabase

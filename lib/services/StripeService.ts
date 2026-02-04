@@ -8,7 +8,7 @@ import { stripe } from "@/lib/stripe-client";
 import { env } from "@/lib/env";
 import Stripe from "stripe";
 import { trackPaymentError } from "@/lib/monitoring/error-tracking";
-import { createAdminClient } from "@/lib/supabase";
+import { createClient } from "@/lib/supabase";
 
 export class StripeService extends BaseService {
   /**
@@ -181,7 +181,7 @@ export class StripeService extends BaseService {
    * Log and check if a Stripe webhook event has already been processed
    */
   async checkWebhookEvent(eventId: string): Promise<{ processed: boolean; status?: string }> {
-    const supabase = createAdminClient();
+    const supabase = await createClient();
     const { data } = await supabase
       .from("stripe_webhook_events")
       .select("status")
@@ -198,7 +198,7 @@ export class StripeService extends BaseService {
    * Record a Stripe webhook event as processing
    */
   async recordWebhookProcessing(event: Stripe.Event): Promise<void> {
-    const supabase = createAdminClient();
+    const supabase = await createClient();
     await supabase.from("stripe_webhook_events").upsert(
       {
         event_id: event.id,
@@ -219,7 +219,7 @@ export class StripeService extends BaseService {
     status: "succeeded" | "failed",
     error?: Error
   ): Promise<void> {
-    const supabase = createAdminClient();
+    const supabase = await createClient();
     await supabase
       .from("stripe_webhook_events")
       .update({
@@ -235,7 +235,7 @@ export class StripeService extends BaseService {
    * Handle order payment success (QR orders)
    */
   async handleOrderPaymentSucceeded(session: Stripe.Checkout.Session): Promise<void> {
-    const supabase = createAdminClient();
+    const supabase = await createClient();
     const orderId = session.metadata?.orderId;
     const venueId = session.metadata?.venueId;
 
@@ -273,7 +273,7 @@ export class StripeService extends BaseService {
    * Handle subscription changes (Organization level)
    */
   private async handleSubscriptionChange(subscription: Stripe.Subscription): Promise<void> {
-    const supabase = createAdminClient();
+    const supabase = await createClient();
     const orgId = subscription.metadata?.organization_id;
     if (!orgId) return;
 
@@ -303,7 +303,7 @@ export class StripeService extends BaseService {
           const orgId = session.metadata?.organization_id;
           const tier = session.metadata?.tier;
           if (orgId && tier) {
-            const supabase = createAdminClient();
+            const supabase = await createClient();
             await supabase
               .from("organizations")
               .update({
