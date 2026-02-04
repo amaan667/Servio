@@ -3,7 +3,7 @@
  * All guards return standardized API errors and enforce business rules
  */
 
-import { createAdminClient } from "@/lib/supabase";
+import { createClient } from "@/lib/supabase";
 
 import { z } from "zod";
 import type { VenueEntitlements, MaxCountCheckResult, Tier } from "@/types/entitlements";
@@ -43,7 +43,7 @@ const VenueEntitlementsSchema = z
  */
 export async function getVenueEntitlements(venueId: string): Promise<VenueEntitlements | null> {
   try {
-    const supabase = createAdminClient();
+    const supabase = await createClient();
     const { data, error } = await supabase.rpc("get_venue_entitlements", {
       p_venue_id: venueId,
     });

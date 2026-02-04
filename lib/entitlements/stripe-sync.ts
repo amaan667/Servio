@@ -3,7 +3,7 @@
  * Handles tier changes, add-on management, and downgrade safety
  */
 
-import { createAdminClient } from "@/lib/supabase";
+import { createClient } from "@/lib/supabase";
 
 import { Tier } from "@/types/entitlements";
 
@@ -26,7 +26,7 @@ export async function syncEntitlementsFromSubscription(
   },
   organizationId: string
 ): Promise<void> {
-  const supabase = createAdminClient();
+  const supabase = await createClient();
 
   // Get tier from subscription
   const newTier = await getTierFromStripeSubscription(subscription);
@@ -108,7 +108,7 @@ async function syncOrganizationTier(
   subscriptionStatus: string,
   subscriptionId: string
 ): Promise<void> {
-  const supabase = createAdminClient();
+  const supabase = await createClient();
 
   const { error } = await supabase
     .from("organizations")
@@ -129,7 +129,7 @@ async function syncOrganizationTier(
  * Sync venue tier (derived from organization)
  */
 async function syncVenueTier(venueId: string): Promise<void> {
-  const supabase = createAdminClient();
+  const supabase = await createClient();
 
   // Get organization's subscription tier
   const { data: venueData, error: fetchError } = await supabase
@@ -178,7 +178,7 @@ async function syncVenueAddons(
   venueId: string,
   subscriptionItems: Array<{ price: { id: string }; id: string }>
 ): Promise<void> {
-  const supabase = createAdminClient();
+  const supabase = await createClient();
 
   // Get current add-ons for this venue
   const { data: currentAddons, error: fetchError } = await supabase
