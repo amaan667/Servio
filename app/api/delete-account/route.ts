@@ -1,5 +1,5 @@
 import { NextRequest } from "next/server";
-import { createAdminClient } from "@/lib/supabase";
+import { createClient } from "@/lib/supabase";
 import { createUnifiedHandler } from "@/lib/api/unified-handler";
 import { RATE_LIMITS } from "@/lib/rate-limit";
 import { success, apiErrors } from "@/lib/api/standard-response";
@@ -22,7 +22,7 @@ export const POST = createUnifiedHandler(
     }
 
     // Business logic
-    const supabase = createAdminClient();
+    const supabase = await createClient();
 
     // Delete venue and related data if venueId provided
     if (venueId) {

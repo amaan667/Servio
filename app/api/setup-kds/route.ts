@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { createAdminClient } from "@/lib/supabase";
+import { createClient } from "@/lib/supabase";
 
 import { withUnifiedAuth } from "@/lib/auth/unified-auth";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
@@ -35,7 +35,7 @@ export const POST = withUnifiedAuth(
       // STEP 5: Security - Verify venue access (already done by withUnifiedAuth)
 
       // STEP 6: Business logic
-      const supabaseAdmin = createAdminClient();
+      const supabaseAdmin = await createClient();
 
       // Create KDS Stations table
       const createStationsTable = `

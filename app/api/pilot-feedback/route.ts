@@ -1,5 +1,5 @@
 import { NextRequest } from "next/server";
-import { createAdminClient } from "@/lib/supabase";
+import { createClient } from "@/lib/supabase";
 
 import { createUnifiedHandler } from "@/lib/api/unified-handler";
 import { RATE_LIMITS } from "@/lib/rate-limit";
@@ -26,7 +26,7 @@ export const POST = createUnifiedHandler(
     }
 
     // Business logic
-    const supabase = createAdminClient();
+    const supabase = await createClient();
 
     // Store feedback in database
     const { error } = await supabase.from("feedback").insert({

@@ -1,4 +1,4 @@
-import { createAdminClient } from "@/lib/supabase";
+import { createClient } from "@/lib/supabase";
 import { createOrderSchema } from "@/lib/api/validation-schemas";
 import { createKDSTicketsWithAI } from "@/lib/orders/kds-tickets-unified";
 import { orderService } from "@/lib/services/OrderService";
@@ -58,7 +58,7 @@ export const POST = createUnifiedHandler(
 
     // 2. Async KDS Ticket Creation (Non-blocking)
     try {
-      const supabase = createAdminClient();
+      const supabase = await createClient();
       const paymentMethod = (body.payment_method || "PAY_NOW").toUpperCase();
       const paymentStatus = (body.payment_status || "UNPAID").toUpperCase();
 
