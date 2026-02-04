@@ -278,8 +278,8 @@ export async function performHealthCheck(): Promise<{
 
   // Check database connectivity
   try {
-    const { createAdminClient } = await import("./supabase");
-    const supabase = createAdminClient();
+    const { createClient } = await import("./supabase");
+    const supabase = await createClient();
     const { error } = await supabase.from("venues").select("id").limit(1);
     checks.database = !error;
 

@@ -3,7 +3,7 @@
  * Learns from user corrections to improve AI matching accuracy
  */
 
-import { createAdminClient } from "./supabase";
+import { createClient } from "./supabase";
 
 interface MatchCorrection {
   venueId: string;
@@ -31,7 +31,7 @@ interface CategoryCorrection {
  */
 export async function recordMatchCorrection(correction: MatchCorrection) {
   try {
-    const supabase = createAdminClient();
+    const supabase = await createClient();
 
     const correctionType =
       correction.wasMatched === correction.shouldMatch
@@ -67,7 +67,7 @@ export async function recordMatchCorrection(correction: MatchCorrection) {
  */
 export async function recordCategoryCorrection(correction: CategoryCorrection) {
   try {
-    const supabase = createAdminClient();
+    const supabase = await createClient();
 
     const wasCorrect = correction.aiSuggestedCategory === correction.userAssignedCategory;
 
@@ -100,7 +100,7 @@ export async function getAdaptiveMatchingThreshold(
   defaultThreshold: number = 0.5
 ): Promise<number> {
   try {
-    const supabase = createAdminClient();
+    const supabase = await createClient();
 
     // Get false negatives (items that should have matched but didn't)
     const { data: falseNegatives } = await supabase
@@ -136,7 +136,7 @@ export async function getAdaptiveMatchingThreshold(
  */
 export async function getAIAccuracyMetrics(venueId?: string, days: number = 30) {
   try {
-    const supabase = createAdminClient();
+    const supabase = await createClient();
 
     const { data, error } = await supabase.rpc("get_ai_accuracy_rate", {
       p_venue_id: venueId || null,
@@ -165,7 +165,7 @@ export async function recordAIPerformanceMetric(
   metadata?: Record<string, unknown>
 ) {
   try {
-    const supabase = createAdminClient();
+    const supabase = await createClient();
 
     // Get or create today's metric
     const today = new Date().toISOString().split("T")[0];
