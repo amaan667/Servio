@@ -1,7 +1,7 @@
 // Servio AI Assistant - Table Management Tools
 // Table availability, creation, merging, and queries
 
-import { createAdminClient } from "@/lib/supabase";
+import { createClient } from "@/lib/supabase";
 
 import type { SupabaseClient } from "@supabase/supabase-js";
 
@@ -56,7 +56,7 @@ interface TablesWithOrdersResult {
  * Get available and occupied tables
  */
 export async function getTableAvailability(venueId: string): Promise<TableAvailabilityResult> {
-  const supabase = createAdminClient();
+  const supabase = await createClient();
 
   // Get all tables
   const { data: tables, error: tablesError } = await supabase
@@ -133,7 +133,7 @@ export async function createTable(
   tableLabel: string,
   seats: number = 4
 ): Promise<TableCreationResult> {
-  const supabase = createAdminClient();
+  const supabase = await createClient();
 
   // Check if table already exists
   const { data: existingTable } = await supabase
@@ -184,7 +184,7 @@ export async function mergeTables(
   tableIds: string[],
   mergedLabel?: string
 ): Promise<TableMergeResult> {
-  const supabase = createAdminClient();
+  const supabase = await createClient();
 
   if (tableIds.length < 2) {
     throw new Error("At least 2 tables are required for merging.");
@@ -266,7 +266,7 @@ async function performTableMerge(
  * Get tables with active orders
  */
 export async function getTablesWithActiveOrders(venueId: string): Promise<TablesWithOrdersResult> {
-  const supabase = createAdminClient();
+  const supabase = await createClient();
 
   const { data: orders, error } = await supabase
     .from("orders")
@@ -338,7 +338,7 @@ export async function getRevenueByTable(venueId: string): Promise<{
   }>;
   summary: string;
 }> {
-  const supabase = createAdminClient();
+  const supabase = await createClient();
 
   const startOfDay = new Date();
   startOfDay.setHours(0, 0, 0, 0);

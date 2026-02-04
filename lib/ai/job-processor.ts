@@ -1,7 +1,7 @@
 // Servio AI Assistant - Async Job Processor
 // Handles long-running tasks to prevent timeouts
 
-import { createAdminClient } from "@/lib/supabase";
+import { createClient } from "@/lib/supabase";
 
 interface JobStatus {
   jobId: string;
@@ -21,7 +21,7 @@ export async function createJob(
   jobType: string,
   params: Record<string, unknown>
 ): Promise<string> {
-  const supabase = createAdminClient();
+  const supabase = await createClient();
   const jobId = `${jobType}_${venueId}_${Date.now()}`;
 
   const { error } = await supabase.from("ai_jobs").insert({
@@ -51,7 +51,7 @@ export async function createJob(
  * Get job status
  */
 export async function getJobStatus(jobId: string): Promise<JobStatus | null> {
-  const supabase = createAdminClient();
+  const supabase = await createClient();
 
   const { data, error } = await supabase
     .from("ai_jobs")
@@ -82,7 +82,7 @@ export async function updateJobProgress(
   total: number,
   status?: "pending" | "running" | "completed" | "failed"
 ): Promise<void> {
-  const supabase = createAdminClient();
+  const supabase = await createClient();
 
   const updateData: Record<string, unknown> = {
     progress,
@@ -107,7 +107,7 @@ export async function updateJobProgress(
  * Mark job as completed
  */
 export async function completeJob(jobId: string, result: unknown): Promise<void> {
-  const supabase = createAdminClient();
+  const supabase = await createClient();
 
   await supabase
     .from("ai_jobs")
@@ -125,7 +125,7 @@ export async function completeJob(jobId: string, result: unknown): Promise<void>
  * Mark job as failed
  */
 export async function failJob(jobId: string, error: string): Promise<void> {
-  const supabase = createAdminClient();
+  const supabase = await createClient();
 
   await supabase
     .from("ai_jobs")
@@ -181,7 +181,7 @@ async function processMenuTranslation(
   venueId: string,
   params: Record<string, unknown>
 ): Promise<void> {
-  const supabase = createAdminClient();
+  const supabase = await createClient();
   const targetLanguage = params.targetLanguage as string;
   const categories = (params.categories as string[]) || null;
 
@@ -262,7 +262,7 @@ async function processBulkMenuUpdate(
   venueId: string,
   params: Record<string, unknown>
 ): Promise<void> {
-  const supabase = createAdminClient();
+  const supabase = await createClient();
 
   const operation = params.operation as string;
   const itemIds = (params.itemIds as string[]) || [];
@@ -308,7 +308,7 @@ async function processInventoryReorder(
   venueId: string,
   _params: Record<string, unknown>
 ): Promise<void> {
-  const supabase = createAdminClient();
+  const supabase = await createClient();
 
   // Get low stock items
   const { data: items } = await supabase
@@ -345,7 +345,7 @@ async function processInventoryReorder(
  * Cancel a running job
  */
 export async function cancelJob(jobId: string): Promise<void> {
-  const supabase = createAdminClient();
+  const supabase = await createClient();
 
   await supabase
     .from("ai_jobs")

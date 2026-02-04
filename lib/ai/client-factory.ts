@@ -4,7 +4,7 @@
  * This module provides a factory function for creating Supabase clients
  * that respect Row Level Security (RLS) policies.
  *
- * CRITICAL: AI tools MUST use this factory instead of createAdminClient()
+ * CRITICAL: AI tools MUST use this factory instead of createClient()
  * to ensure multi-tenant isolation and prevent cross-tenant data access.
  */
 
@@ -127,7 +127,7 @@ export async function createAIClientWithUser(options: {
  * Validate that a client is RLS-respecting
  *
  * This function checks if a client was created using the AI client factory
- * and will throw an error if it was created using createAdminClient().
+ * and will throw an error if it was created using createClient().
  *
  * @param client - The Supabase client to validate
  * @param context - Context information for error messages
@@ -148,12 +148,12 @@ export function validateAIClient(
   context: { tool: string; operation?: string }
 ): void {
   // Check if client has the expected RLS-respecting properties
-  // This is a runtime check to catch accidental use of createAdminClient()
+  // This is a runtime check to catch accidental use of createClient()
   // We can't detect this at runtime, but we can log a warning
   if (process.env.NODE_ENV === "development") {
     console.warn(
       `[AI Security] ${context.tool}: Ensure client was created using createAIClient() ` +
-      `to respect RLS policies. Using createAdminClient() bypasses RLS.`
+      `to respect RLS policies. Using createClient() bypasses RLS.`
     );
   }
 }

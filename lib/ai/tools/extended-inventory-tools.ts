@@ -1,7 +1,7 @@
 // Servio AI Assistant - Extended Inventory Tools
 // Stock adjustments and inventory management
 
-import { createAdminClient } from "@/lib/supabase";
+import { createClient } from "@/lib/supabase";
 
 interface StockAdjustmentResult {
   success: boolean;
@@ -35,7 +35,7 @@ export async function adjustInventoryStock(
   adjustment: number,
   reason?: string
 ): Promise<StockAdjustmentResult> {
-  const supabase = createAdminClient();
+  const supabase = await createClient();
 
   // Find ingredient by name
   const { data: ingredient, error: fetchError } = await supabase
@@ -93,7 +93,7 @@ export async function adjustInventoryStock(
  * Get items that are low in stock
  */
 export async function getLowStockItems(venueId: string): Promise<LowStockResult> {
-  const supabase = createAdminClient();
+  const supabase = await createClient();
 
   const { data: items, error } = await supabase
     .from("v_stock_levels")
@@ -181,7 +181,7 @@ export async function getInventoryLevels(venueId: string): Promise<{
   outOfStock: number;
   summary: string;
 }> {
-  const supabase = createAdminClient();
+  const supabase = await createClient();
 
   const { data: items, error } = await supabase
     .from("v_stock_levels")

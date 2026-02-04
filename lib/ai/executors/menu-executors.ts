@@ -1,4 +1,4 @@
-import { createAdminClient } from "@/lib/supabase";
+import { createClient } from "@/lib/supabase";
 
 import {
   MenuUpdatePricesParams,
@@ -19,7 +19,7 @@ export async function executeMenuUpdatePrices(
 ): Promise<AIPreviewDiff | AIExecutionResult> {
   let supabase;
   try {
-    supabase = createAdminClient();
+    supabase = await createClient();
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
 
@@ -172,7 +172,7 @@ export async function executeMenuToggleAvailability(
 ): Promise<AIPreviewDiff | AIExecutionResult> {
   let supabase;
   try {
-    supabase = createAdminClient();
+    supabase = await createClient();
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
 
@@ -230,7 +230,7 @@ export async function executeMenuCreateItem(
 ): Promise<AIPreviewDiff | AIExecutionResult> {
   let supabase;
   try {
-    supabase = createAdminClient();
+    supabase = await createClient();
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
 
@@ -376,7 +376,7 @@ export async function executeMenuDeleteItem(
 ): Promise<AIPreviewDiff | AIExecutionResult> {
   let supabase;
   try {
-    supabase = createAdminClient();
+    supabase = await createClient();
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
 

@@ -1,7 +1,7 @@
 // Servio AI Assistant - QR Code Management Tools
 // Generate, manage, and export QR codes for tables and counters
 
-import { createAdminClient } from "@/lib/supabase";
+import { createClient } from "@/lib/supabase";
 
 interface QRCodeGenerationResult {
   success: boolean;
@@ -123,7 +123,7 @@ export async function generateCounterQRCode(
  * List all QR codes for a venue
  */
 export async function listAllQRCodes(venueId: string): Promise<QRCodeListResult> {
-  const supabase = createAdminClient();
+  const supabase = await createClient();
 
   const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "https://servio.uk";
 
@@ -180,7 +180,7 @@ export async function prepareQRCodePDFData(venueId: string): Promise<{
   message: string;
 }> {
   const qrData = await listAllQRCodes(venueId);
-  const supabase = createAdminClient();
+  const supabase = await createClient();
 
   const { data: venue } = await supabase
     .from("venues")

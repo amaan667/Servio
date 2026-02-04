@@ -1,7 +1,7 @@
 // Servio AI Assistant - Staff Management Tools
 // List staff, invite members, query roles, and schedules
 
-import { createAdminClient } from "@/lib/supabase";
+import { createClient } from "@/lib/supabase";
 
 interface StaffListResult {
   staff: Array<{
@@ -49,7 +49,7 @@ interface StaffScheduleResult {
  * Get all staff members for a venue
  */
 export async function getAllStaff(venueId: string): Promise<StaffListResult> {
-  const supabase = createAdminClient();
+  const supabase = await createClient();
 
   // Get owner
   const { data: venue } = await supabase
@@ -134,7 +134,7 @@ export async function inviteStaffMember(
   role: "manager" | "server",
   name?: string
 ): Promise<StaffInviteResult> {
-  const supabase = createAdminClient();
+  const supabase = await createClient();
 
   // Validate role
   if (!["manager", "server"].includes(role)) {
@@ -210,7 +210,7 @@ export async function inviteStaffMember(
  * Get staff roles and permissions breakdown
  */
 export async function getStaffRoles(venueId: string): Promise<StaffRolesResult> {
-  const supabase = createAdminClient();
+  const supabase = await createClient();
 
   const { data: staffRoles } = await supabase
     .from("user_venue_roles")
@@ -268,7 +268,7 @@ export async function getStaffRoles(venueId: string): Promise<StaffRolesResult> 
  * Note: This is a placeholder - full scheduling system would need to be built
  */
 export async function getTodayStaffSchedule(venueId: string): Promise<StaffScheduleResult> {
-  const supabase = createAdminClient();
+  const supabase = await createClient();
 
   // Get all active staff
   const staffList = await getAllStaff(venueId);
@@ -308,7 +308,7 @@ export async function getStaffPerformance(
   }>;
   summary: string;
 }> {
-  const supabase = createAdminClient();
+  const supabase = await createClient();
 
   const startDate = new Date();
   if (timeRange === "week") {
