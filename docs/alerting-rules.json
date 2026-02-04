@@ -1,0 +1,197 @@
+{
+  "groups": [
+    {
+      "name": "servio-critical",
+      "interval": "30s",
+      "rules": [
+        {
+          "alert": "HighErrorRate",
+          "expr": "rate(http_requests_total{status=~\"5..\"}[5m]) / rate(http_requests_total[5m]) > 0.05",
+          "for": "2m",
+          "labels": {
+            "severity": "critical",
+            "team": "platform"
+          },
+          "annotations": {
+            "summary": "High error rate detected",
+            "description": "Error rate is {{ $value | humanizePercentage }} (threshold: 5%)",
+            "runbook_url": "https://wiki.servio.run/runbooks/high-error-rate"
+          }
+        },
+        {
+          "alert": "DatabaseConnectionExhaustion",
+          "expr": "supabase_db_connections_waiting > 10",
+          "for": "2m",
+          "labels": {
+            "severity": "critical",
+            "team": "platform"
+          },
+          "annotations": {
+            "summary": "Database connection pool exhaustion",
+            "description": "{{ $value }} connections waiting (threshold: 10)",
+            "runbook_url": "https://wiki.servio.run/runbooks/db-connections"
+          }
+        },
+        {
+          "alert": "CircuitBreakerOpen",
+          "expr": "circuit_breaker_state{state=\"OPEN\"} == 1",
+          "for": "1m",
+          "labels": {
+            "severity": "critical",
+            "team": "platform"
+          },
+          "annotations": {
+            "summary": "Circuit breaker OPEN: {{ $labels.name }}",
+            "description": "Circuit breaker for {{ $labels.name }} is open - requests are failing fast",
+            "runbook_url": "https://wiki.servio.run/runbooks/circuit-breaker"
+          }
+        },
+        {
+          "alert": "PaymentProcessingFailure",
+          "expr": "rate(payment_intents_failed[5m]) > 0.1",
+          "for": "5m",
+          "labels": {
+            "severity": "critical",
+            "team": "payments"
+          },
+          "annotations": {
+            "summary": "Payment processing failures",
+            "description": "{{ $value }} failures/min (threshold: 0.1/min)",
+            "runbook_url": "https://wiki.servio.run/runbooks/payment-failures"
+          }
+        },
+        {
+          "alert": "WebhookVerificationFailure",
+          "expr": "rate(webhook_verification_failures_total[5m]) > 0.01",
+          "for": "5m",
+          "labels": {
+            "severity": "critical",
+            "team": "security"
+          },
+          "annotations": {
+            "summary": "Webhook verification failures detected",
+            "description": "{{ $value }} failures/min - possible attack or misconfiguration",
+            "runbook_url": "https://wiki.servio.run/runbooks/webhook-security"
+          }
+        }
+      ]
+    },
+    {
+      "name": "servio-warning",
+      "interval": "30s",
+      "rules": [
+        {
+          "alert": "HighLatencyP95",
+          "expr": "histogram_quantile(0.95, rate(http_request_duration_seconds_bucket[5m])) > 2",
+          "for": "5m",
+          "labels": {
+            "severity": "warning",
+            "team": "platform"
+          },
+          "annotations": {
+            "summary": "High P95 latency",
+            "description": "P95 latency is {{ $value }}s (threshold: 2s)"
+          }
+        },
+        {
+          "alert": "HighLatencyP99",
+          "expr": "histogram_quantile(0.99, rate(http_request_duration_seconds_bucket[5m])) > 5",
+          "for": "5m",
+          "labels": {
+            "severity": "warning",
+            "team": "platform"
+          },
+          "annotations": {
+            "summary": "High P99 latency",
+            "description": "P99 latency is {{ $value }}s (threshold: 5s)"
+          }
+        },
+        {
+          "alert": "LowCacheHitRate",
+          "expr": "rate(cache_hits_total[5m]) / (rate(cache_hits_total[5m]) + rate(cache_misses_total[5m])) < 0.7",
+          "for": "10m",
+          "labels": {
+            "severity": "warning",
+            "team": "platform"
+          },
+          "annotations": {
+            "summary": "Low cache hit rate",
+            "description": "Cache hit rate is {{ $value | humanizePercentage }} (threshold: 70%)"
+          }
+        },
+        {
+          "alert": "CircuitBreakerHalfOpen",
+          "expr": "circuit_breaker_state{state=\"HALF_OPEN\"} == 1",
+          "for": "30s",
+          "labels": {
+            "severity": "warning",
+            "team": "platform"
+          },
+          "annotations": {
+            "summary": "Circuit breaker HALF_OPEN: {{ $labels.name }}",
+            "description": "Circuit breaker for {{ $labels.name }} is half-open - testing recovery"
+          }
+        },
+        {
+          "alert": "WebhookReplayAttack",
+          "expr": "rate(webhook_verification_failures_total{error=\"SIGNATURE_TIMESTAMP_EXPIRED\"}[5m]) > 0.1",
+          "for": "5m",
+          "labels": {
+            "severity": "warning",
+            "team": "security"
+          },
+          "annotations": {
+            "summary": "Possible webhook replay attack",
+            "description": "{{ $value }} replay attempts/min",
+            "runbook_url": "https://wiki.servio.run/runbooks/webhook-security"
+          }
+        },
+        {
+          "alert": "HighIdempotencyKeyExpiry",
+          "expr": "rate(idempotency_keys_expired[1h]) > 1000",
+          "for": "10m",
+          "labels": {
+            "severity": "warning",
+            "team": "payments"
+          },
+          "annotations": {
+            "summary": "High idempotency key expiry rate",
+            "description": "{{ $value }} keys expired/hour"
+          }
+        }
+      ]
+    },
+    {
+      "name": "servio-info",
+      "interval": "60s",
+      "rules": [
+        {
+          "alert": "HighRequestVolume",
+          "expr": "rate(http_requests_total[5m]) > 1000",
+          "for": "10m",
+          "labels": {
+            "severity": "info",
+            "team": "platform"
+          },
+          "annotations": {
+            "summary": "High request volume",
+            "description": "{{ $value }} requests/min"
+          }
+        },
+        {
+          "alert": "OrderVolumeSpike",
+          "expr": "rate(orders_created[5m]) > rate(orders_created[1h]) * 2",
+          "for": "5m",
+          "labels": {
+            "severity": "info",
+            "team": "orders"
+          },
+          "annotations": {
+            "summary": "Order volume spike detected",
+            "description": "Current rate is 2x the 1h average"
+          }
+        }
+      ]
+    }
+  ]
+}

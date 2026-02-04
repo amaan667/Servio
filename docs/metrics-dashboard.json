@@ -1,0 +1,199 @@
+{
+  "dashboard": {
+    "title": "Servio Production Metrics",
+    "uid": "servio-production",
+    "timezone": "browser",
+    "refresh": "30s",
+    "time": {
+      "from": "now-6h",
+      "to": "now"
+    },
+    "panels": [
+      {
+        "title": "Request Rate (RPM)",
+        "type": "timeseries",
+        "gridPos": { "x": 0, "y": 0, "w": 12, "h": 8 },
+        "targets": [
+          {
+            "expr": "rate(http_requests_total[5m]) * 60",
+            "legendFormat": "Total RPM"
+          },
+          {
+            "expr": "rate(http_requests_total{status=~\"5..\"}[5m]) * 60",
+            "legendFormat": "Errors RPM"
+          }
+        ]
+      },
+      {
+        "title": "Latency P50/P95/P99",
+        "type": "timeseries",
+        "gridPos": { "x": 12, "y": 0, "w": 12, "h": 8 },
+        "targets": [
+          {
+            "expr": "histogram_quantile(0.50, rate(http_request_duration_seconds_bucket[5m]))",
+            "legendFormat": "P50"
+          },
+          {
+            "expr": "histogram_quantile(0.95, rate(http_request_duration_seconds_bucket[5m]))",
+            "legendFormat": "P95"
+          },
+          {
+            "expr": "histogram_quantile(0.99, rate(http_request_duration_seconds_bucket[5m]))",
+            "legendFormat": "P99"
+          }
+        ]
+      },
+      {
+        "title": "Error Rate",
+        "type": "timeseries",
+        "gridPos": { "x": 0, "y": 8, "w": 12, "h": 8 },
+        "targets": [
+          {
+            "expr": "rate(http_requests_total{status=~\"5..\"}[5m]) / rate(http_requests_total[5m]) * 100",
+            "legendFormat": "Error Rate %"
+          }
+        ]
+      },
+      {
+        "title": "Active Users",
+        "type": "timeseries",
+        "gridPos": { "x": 12, "y": 8, "w": 12, "h": 8 },
+        "targets": [
+          {
+            "expr": "sum(ga_active_users)",
+            "legendFormat": "Active Users"
+          }
+        ]
+      },
+      {
+        "title": "Database Connections",
+        "type": "timeseries",
+        "gridPos": { "x": 0, "y": 16, "w": 12, "h": 8 },
+        "targets": [
+          {
+            "expr": "supabase_db_connections_active",
+            "legendFormat": "Active"
+          },
+          {
+            "expr": "supabase_db_connections_idle",
+            "legendFormat": "Idle"
+          },
+          {
+            "expr": "supabase_db_connections_waiting",
+            "legendFormat": "Waiting"
+          }
+        ]
+      },
+      {
+        "title": "Cache Hit Rate",
+        "type": "timeseries",
+        "gridPos": { "x": 12, "y": 16, "w": 12, "h": 8 },
+        "targets": [
+          {
+            "expr": "rate(cache_hits_total[5m]) / (rate(cache_hits_total[5m]) + rate(cache_misses_total[5m])) * 100",
+            "legendFormat": "Hit Rate %"
+          }
+        ]
+      },
+      {
+        "title": "Circuit Breaker States",
+        "type": "timeseries",
+        "gridPos": { "x": 0, "y": 24, "w": 12, "h": 8 },
+        "targets": [
+          {
+            "expr": "circuit_breaker_state{state=\"OPEN\"}",
+            "legendFormat": "{{name}} OPEN"
+          },
+          {
+            "expr": "circuit_breaker_state{state=\"HALF_OPEN\"}",
+            "legendFormat": "{{name}} HALF_OPEN"
+          }
+        ]
+      },
+      {
+        "title": "Payment Success Rate",
+        "type": "timeseries",
+        "gridPos": { "x": 12, "y": 24, "w": 12, "h": 8 },
+        "targets": [
+          {
+            "expr": "rate(payment_intents_succeeded[5m]) / rate(payment_intents_total[5m]) * 100",
+            "legendFormat": "Success Rate %"
+          },
+          {
+            "expr": "rate(payment_intents_failed[5m]) / rate(payment_intents_total[5m]) * 100",
+            "legendFormat": "Failure Rate %"
+          }
+        ]
+      },
+      {
+        "title": "Order Volume",
+        "type": "timeseries",
+        "gridPos": { "x": 0, "y": 32, "w": 12, "h": 8 },
+        "targets": [
+          {
+            "expr": "rate(orders_created[5m]) * 60",
+            "legendFormat": "Orders Created/min"
+          },
+          {
+            "expr": "rate(orders_completed[5m]) * 60",
+            "legendFormat": "Orders Completed/min"
+          }
+        ]
+      },
+      {
+        "title": "Webhook Processing Time",
+        "type": "timeseries",
+        "gridPos": { "x": 12, "y": 32, "w": 12, "h": 8 },
+        "targets": [
+          {
+            "expr": "histogram_quantile(0.50, rate(webhook_processing_duration_seconds_bucket[5m]))",
+            "legendFormat": "P50"
+          },
+          {
+            "expr": "histogram_quantile(0.95, rate(webhook_processing_duration_seconds_bucket[5m]))",
+            "legendFormat": "P95"
+          }
+        ]
+      },
+      {
+        "title": "Webhook Verification Failures",
+        "type": "timeseries",
+        "gridPos": { "x": 0, "y": 40, "w": 12, "h": 8 },
+        "targets": [
+          {
+            "expr": "rate(webhook_verification_failures_total[5m])",
+            "legendFormat": "{{error_type}}"
+          }
+        ]
+      },
+      {
+        "title": "Idempotency Key Usage",
+        "type": "timeseries",
+        "gridPos": { "x": 12, "y": 40, "w": 12, "h": 8 },
+        "targets": [
+          {
+            "expr": "idempotency_keys_stored",
+            "legendFormat": "Stored Keys"
+          },
+          {
+            "expr": "idempotency_keys_expired",
+            "legendFormat": "Expired Keys"
+          }
+        ]
+      }
+    ],
+    "annotations": {
+      "list": [
+        {
+          "builtIn": 1,
+          "datasource": { "type": "grafana", "uid": "-- Grafana --" },
+          "enable": true,
+          "hide": true,
+          "iconColor": "rgba(0, 211, 255, 1)",
+          "name": "Annotations & Alerts",
+          "type": "dashboard"
+        }
+      ]
+    }
+  }
+}
