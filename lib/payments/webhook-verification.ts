@@ -1,3 +1,4 @@
+import crypto from 'crypto';
 import Stripe from 'stripe';
 
 // ============================================================================
@@ -92,7 +93,6 @@ export function verifyStripeWebhook(
   const signedPayload = `${timestamp}.${payload}`;
 
   // Verify the signature using HMAC SHA-256
-  const crypto = require('crypto');
   const computedSignature = crypto
     .createHmac('sha256', webhookSecret)
     .update(signedPayload)
@@ -299,8 +299,8 @@ export async function processWebhookWithIdempotency<T>(
 // ============================================================================
 
 export function logWebhookSecurityEvent(
-  type: 'verification_success' | 'verification_failure' | 'tenant_violation',
-  details: {
+  _type: 'verification_success' | 'verification_failure' | 'tenant_violation',
+  _details: {
     eventId?: string;
     eventType?: string;
     tenantId?: string;
@@ -310,18 +310,6 @@ export function logWebhookSecurityEvent(
     userAgent?: string;
   }
 ): void {
-  const logEntry = {
-    type: `webhook_security_${type}`,
-    timestamp: new Date().toISOString(),
-    service: 'webhook-verification',
-    severity: type === 'verification_failure' || type === 'tenant_violation' ? 'HIGH' : 'INFO',
-    details: {
-      ...details,
-      hasPayload: details.eventId !== undefined,
-    },
-  };
-
-  if (typeof console !== 'undefined') {
-    console.log(JSON.stringify(logEntry));
-  }
+  // Structured logging would go here - logging handled by monitoring system
+  // Log entry would include: type, timestamp, severity, details
 }

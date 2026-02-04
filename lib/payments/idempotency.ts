@@ -277,8 +277,7 @@ export async function initializeIdempotencyTable(): Promise<void> {
   });
 
   if (error) {
-    console.error('Failed to initialize idempotency table:', error);
-    throw error;
+    throw new Error(`Failed to initialize idempotency table: ${error.message}`);
   }
 }
 
@@ -305,7 +304,7 @@ export async function storeIdempotencyResultDb(
   );
 
   if (error) {
-    console.error('Failed to store idempotency result:', error);
+    throw new Error(`Failed to store idempotency result: ${error.message}`);
   }
 }
 
@@ -338,15 +337,24 @@ export async function getIdempotencyResultDb(
  * Cleanup expired idempotency keys (run as scheduled job)
  */
 export async function cleanupExpiredIdempotencyKeys(): Promise<number> {
-  const { error, count } = await supabase
+  // First get count of keys to be deleted
+  const { count, error: countError } = await supabase
+    .from(IDEMPOTENCY_TABLE)
+    .select('key', { count: 'exact', head: true })
+    .lt('expires_at', new Date().toISOString());
+
+  if (countError) {
+    throw new Error(`Failed to count expired idempotency keys: ${countError.message}`);
+  }
+
+  // Then delete them
+  const { error: deleteError } = await supabase
     .from(IDEMPOTENCY_TABLE)
     .delete()
-    .lt('expires_at', new Date().toISOString())
-    .select('key', { count: 'exact' });
+    .lt('expires_at', new Date().toISOString());
 
-  if (error) {
-    console.error('Failed to cleanup expired idempotency keys:', error);
-    return 0;
+  if (deleteError) {
+    throw new Error(`Failed to cleanup expired idempotency keys: ${deleteError.message}`);
   }
 
   return count ?? 0;

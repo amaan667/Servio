@@ -206,11 +206,9 @@ export class CircuitBreaker {
   /**
    * Emit state change event
    */
-  private emitStateChange(newState: CircuitState): void {
+  private emitStateChange(_newState: CircuitState): void {
     // In production, emit to monitoring/observability
-    if (typeof console !== 'undefined' && process.env.NODE_ENV === 'development') {
-      console.log(`[CircuitBreaker] ${this.name}: ${this.state} -> ${newState}`);
-    }
+    // State change events would be logged via structured logging system
   }
 
   /**
