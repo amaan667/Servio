@@ -59,7 +59,6 @@ const nextConfig = {
             value: 'public, max-age=31536000, immutable',
           },
           {
-            value: 'nosniff',
           },
         ],
       },
@@ -72,7 +71,6 @@ const nextConfig = {
             value: 'public, max-age=31536000, immutable',
           },
           {
-            value: 'nosniff',
           },
         ],
       },
@@ -85,7 +83,6 @@ const nextConfig = {
             value: 'public, max-age=31536000, immutable',
           },
           {
-            value: 'nosniff',
           },
         ],
       },
@@ -101,7 +98,6 @@ const nextConfig = {
             value: 'max-age=63072000; includeSubDomains; preload'
           },
           {
-            value: 'nosniff'
           },
           {
             key: 'X-Frame-Options',
