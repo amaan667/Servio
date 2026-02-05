@@ -429,6 +429,8 @@ async function extractFromDOM(page: import("puppeteer-core").Page): Promise<WebM
       return undefined;
     }
 
+    // DOM structure learning: auto-discover site-specific selectors by picking the selector
+    // that yields the most elements with both name and price (best for this site's markup).
     const possibleSelectors = [
       "[data-menu-item]",
       '[class*="menu-item"]',
@@ -446,13 +448,30 @@ async function extractFromDOM(page: import("puppeteer-core").Page): Promise<WebM
       'div[class*="card"]',
     ];
 
-    let elements: Element[] = [];
+    function hasNameAndPrice(el: Element): boolean {
+      const nameSelectors = ["[data-name]", '[itemprop="name"]', '[class*="name"]', '[class*="title"]', "h1", "h2", "h3", "h4", "strong", ".product-title", ".item-name"];
+      let hasName = false;
+      for (const s of nameSelectors) {
+        const n = el.querySelector(s);
+        if (n?.textContent?.trim() && n.textContent.trim().length >= 2) {
+          hasName = true;
+          break;
+        }
+      }
+      if (!hasName) return false;
+      const text = el.textContent || "";
+      return /[£$€]?\s*\d+[.,]\d{2}|\d+[.,]\d{2}\s*[£$€]/.test(text);
+    }
 
+    let elements: Element[] = [];
+    let bestValidCount = 0;
     for (const selector of possibleSelectors) {
       const found = Array.from(document.querySelectorAll(selector));
-      if (found.length > 3) {
+      if (found.length <= 3) continue;
+      const validCount = found.filter(hasNameAndPrice).length;
+      if (validCount > bestValidCount) {
+        bestValidCount = validCount;
         elements = found;
-        break;
       }
     }
 
@@ -690,15 +709,18 @@ function mergeExtractedData(
     let image_url = domMatch?.image_url;
     console.log("[MERGE] - Image from DOM match:", image_url || "none");
 
-    // If no DOM match, try to find image from all page images
+    // If no DOM match, try to find image from all page images (ensure URL/PDF images present)
     if (!image_url) {
       const itemName = visionItem.name.toLowerCase();
-      console.log(`[MERGE] - Searching allPageImages for: "${itemName}"`);
+      const itemWords = itemName.split(/\s+/).filter((w) => w.length > 2);
       for (const [key, img] of imageMap) {
-        console.log(`[MERGE] - Checking image key: "${key.substring(0, 50)}..."`);
-        if (key.includes(itemName) || itemName.includes(key.split("/").pop() || "")) {
+        const filename = key.split("/").pop() || "";
+        if (key.includes(itemName) || itemName.includes(filename)) {
           image_url = img.url;
-          console.log(`[MERGE] - Found image match: ${img.url.substring(0, 50)}...`);
+          break;
+        }
+        if (itemWords.some((w) => key.includes(w) || filename.replace(/\.[a-z]+$/i, "").includes(w))) {
+          image_url = img.url;
           break;
         }
       }

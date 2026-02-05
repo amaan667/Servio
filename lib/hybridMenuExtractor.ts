@@ -193,7 +193,9 @@ function chunkArray<T>(array: T[], chunkSize: number): T[][] {
 
 /**
  * Extract menu items from PDF images.
- * Vision returns image_region (fractions 0-1) for items with photos; we crop the page to get image_url.
+ * PDF image enhancement: Vision returns image_region (fractions 0-1) for items with photos;
+ * we crop the page to get image_url. When no URL match exists (pdf_only or hybrid unmatched),
+ * items keep this PDF-sourced image_url.
  */
 async function extractFromPDF(pdfImages: string[]): Promise<{ items: MenuItem[] }> {
   const items: MenuItem[] = [];
@@ -783,10 +785,12 @@ async function mergeWebAndPdfData(pdfItems: MenuItem[], webItems: MenuItem[]): P
     // No match found - add to unmatched list for AI fallback
     unmatchedPdfItems.push(pdfItem);
 
+    // PDF image enhancement when no URL match: keep image_url from PDF crop (extractFromPDF
+    // sets image_url via cropPageImageToDataUrl when Vision returns image_region for this item).
     return {
       ...pdfItem,
       has_web_enhancement: false,
-      has_image: false,
+      has_image: !!pdfItem.image_url,
       merge_source: "pdf_only",
       _unmatched: true, // Mark for AI fallback processing
     };

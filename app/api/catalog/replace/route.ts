@@ -3,6 +3,7 @@ import { apiErrors } from "@/lib/api/standard-response";
 import { createServerSupabase } from "@/lib/supabase";
 import { extractMenuHybrid } from "@/lib/hybridMenuExtractor";
 import { validateExtractedItems } from "@/lib/extractionValidation";
+import { applyCorrectionsToExtractedItems } from "@/lib/menu-corrections";
 
 // Import MenuItem type from hybrid extractor for extracted items
 type ExtractedMenuItem = {
@@ -264,8 +265,12 @@ export const POST = withUnifiedAuth(
       // STEP 5: Security - Verify venue access (already done by withUnifiedAuth)
 
       // STEP 6: Business logic
-      // Create authenticated Supabase client
       const supabase = await createServerSupabase();
+      let validationSummary: {
+        priceOutliers: number;
+        priceFormatInconsistent: number;
+        categoryInconsistent: number;
+      } | undefined;
 
       // Step 1: Convert file to images (PDF or direct image)
       let pdfImages: string[] | undefined;
@@ -338,14 +343,30 @@ export const POST = withUnifiedAuth(
             categoryInconsistent: inconsistentCategory,
           });
         }
+        validationSummary = {
+          priceOutliers: outliers,
+          priceFormatInconsistent: inconsistentPrice,
+          categoryInconsistent: inconsistentCategory,
+        };
       } catch (extractionError) {
         throw extractionError;
       }
 
+      // User correction flow → train the system: apply stored corrections by item name so
+      // re-extraction respects past corrections (e.g. user fixed price from $999 to $9.99).
+      const { data: corrections } = await supabase
+        .from("menu_item_corrections")
+        .select("menu_item_id, item_name, field, value_text, value_number")
+        .eq("venue_id", normalizedVenueId);
+      const extractionItems = applyCorrectionsToExtractedItems(
+        extractionResult.items,
+        corrections ?? []
+      );
+
       // Step 2.5: Post-process to fix "Menu Items" categorizations
       let existingCategories = Array.from(
         new Set(
-          extractionResult.items
+          extractionItems
             .map((item) => item.category)
             .filter((c): c is string => Boolean(c) && c !== "Menu Items")
         )
@@ -407,7 +428,7 @@ export const POST = withUnifiedAuth(
 
       // Fix "Menu Items" assignments
       let recategorizedCount = 0;
-      for (const item of extractionResult.items) {
+      for (const item of extractionItems) {
         if (item.category === "Menu Items") {
           const itemText = `${item.name} ${item.description || ""}`.toLowerCase();
           let newCategory = null;
@@ -485,8 +506,8 @@ export const POST = withUnifiedAuth(
       let finalItems;
 
       if (replaceMode) {
-        // Replace mode: just use extracted items
-        finalItems = extractionResult.items.map((item, i) => {
+        // Replace mode: just use extracted items (with user corrections applied)
+        finalItems = extractionItems.map((item, i) => {
           const itemId = uuidv4();
 
           // Convert spice level string to integer for database
@@ -515,7 +536,7 @@ export const POST = withUnifiedAuth(
         // Append mode: intelligently merge existing items with newly extracted items
         finalItems = await mergeItemsIntelligently(
           existingItems,
-          extractionResult.items,
+          extractionItems,
           normalizedVenueId
         );
       }
@@ -562,13 +583,16 @@ export const POST = withUnifiedAuth(
         /* Error handled silently */
       }
 
-      // STEP 7: Return success response
+      // STEP 7: Return success response (include cross-field validation for UI, e.g. "Possible price outlier")
       return NextResponse.json({
         ok: true,
         message: replaceMode ? "Menu replaced successfully" : "Menu items combined successfully",
         items: finalItems.length,
         mode: extractionResult.mode,
         duration: `${duration}ms`,
+        ...(validationSummary && validationSummary.priceOutliers + validationSummary.priceFormatInconsistent + validationSummary.categoryInconsistent > 0
+          ? { validation: validationSummary }
+          : {}),
       });
     } catch (_error) {
       const duration = Date.now() - startTime;

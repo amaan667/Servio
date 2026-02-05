@@ -52,7 +52,11 @@ export function detectPriceFormat(prices: number[]): PriceFormatContext {
   };
 }
 
-/** Check if a single price is an outlier (e.g. far from median). */
+/**
+ * Check if a single price is an outlier (e.g. far from median).
+ * Detects cross-field anomalies like a $999 burger when rest of menu is $10–20
+ * (IQR-based: price outside median ± 1.5*IQR is flagged).
+ */
 export function isPriceOutlier(price: number, allPrices: number[]): boolean {
   if (allPrices.length < 3) return false;
   const sorted = [...allPrices].sort((a, b) => a - b);
