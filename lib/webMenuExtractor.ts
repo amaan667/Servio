@@ -44,7 +44,6 @@ async function getChromiumPath() {
     // Return first existing path, or undefined to use bundled Chromium
     return possiblePaths.find((path) => {
       try {
-        // eslint-disable-next-line @typescript-eslint/no-require-imports
         const fs = require("fs");
         return fs.existsSync(path);
       } catch {
@@ -130,6 +129,14 @@ export async function extractMenuFromWebsite(url: string): Promise<WebMenuItem[]
 
     // Strategy 1: DOM Scraping (fast, gets images/URLs)
     const domItems = await extractFromDOM(page);
+    
+    // DEBUG: Log DOM extraction results
+    const domItemsWithImages = domItems.filter(i => i.image_url).length;
+    const domItemsWithPrices = domItems.filter(i => i.price).length;
+    console.log(`[DEBUG] DOM extraction: ${domItems.length} items found, ${domItemsWithImages} with images, ${domItemsWithPrices} with prices`);
+    if (domItems.length > 0 && domItemsWithImages === 0) {
+      console.log(`[DEBUG] WARNING: DOM found items but NO images. Website may use lazy loading or different image structure.`);
+    }
 
     // Strategy 2: Screenshot + Vision AI (accurate, handles any layout)
     const screenshot = (await page.screenshot({
@@ -140,7 +147,11 @@ export async function extractMenuFromWebsite(url: string): Promise<WebMenuItem[]
 
     const screenshotDataUrl = `data:image/png;base64,${screenshot}`;
 
-    const visionItems = await extractMenuFromImage(screenshotDataUrl);
+    const visionResult = await extractMenuFromImage(screenshotDataUrl);
+    const visionItems = visionResult.items;
+    
+    // DEBUG: Log Vision extraction results
+    console.log(`[DEBUG] Vision extraction: ${visionItems.length} items found`);
 
     // Detailed logging for URL extraction (similar to PDF extraction)
 

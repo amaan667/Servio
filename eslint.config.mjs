@@ -125,6 +125,8 @@ export default [
       "lib/monitoring/apm.ts", // APM packages require require() for initialization
       "lib/monitoring/structured-logger.ts", // Structured logging needs console
       "lib/ai/client-factory.ts", // AI security warnings need console
+      "lib/webMenuExtractor.ts", // Debug logging for extraction issues
+      "lib/hybridMenuExtractor.ts", // Debug logging for extraction issues
       "app/api/pay/stripe/route.ts", // Stripe dynamic import requires require()
     ],
     rules: {

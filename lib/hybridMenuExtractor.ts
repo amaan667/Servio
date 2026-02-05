@@ -11,6 +11,11 @@
 import { extractMenuFromImage } from "./gptVisionMenuParser";
 import { extractMenuFromWebsite } from "./webMenuExtractor";
 
+// DEBUG: Enable extraction logging
+function logExtraction(phase: string, data: Record<string, unknown>) {
+  console.log(`[EXTRACTION ${phase}]`, JSON.stringify(data, null, 2));
+}
+
 interface MenuItem {
   name: string;
   description?: string;
@@ -114,6 +119,13 @@ export async function extractMenuHybrid(
     const pdfWithImages = pdfData.items.filter((i) => i.image_url).length;
     const pdfWithDescriptions = pdfData.items.filter((i) => i.description).length;
 
+    logExtraction("PDF_ANALYSIS", {
+      totalItems: pdfData.items.length,
+      categories: pdfCategories,
+      itemsWithImages: pdfWithImages,
+      itemsWithDescriptions: pdfWithDescriptions,
+    });
+
     // URL Analysis
     const urlCategories = Array.from(new Set(webItems.map((i) => i.category).filter(Boolean)));
     const urlWithImages = webItems.filter((i) => i.image_url).length;
@@ -122,6 +134,14 @@ export async function extractMenuHybrid(
       (i) => !i.category || i.category === "Menu Items" || i.category === "Uncategorized"
     ).length;
 
+
+    logExtraction("URL_ANALYSIS", {
+      totalItems: webItems.length,
+      categories: urlCategories,
+      itemsWithImages: urlWithImages,
+      itemsWithDescriptions: urlWithDescriptions,
+      uncategorized: urlUncategorized,
+    });
     // Category breakdown comparison
     const pdfCategoryBreakdown: Record<string, number> = {};
     pdfData.items.forEach((item) => {
@@ -145,6 +165,14 @@ export async function extractMenuHybrid(
     const mergedWithImages = mergedItems.filter((i) => i.image_url).length;
     const mergedEnhanced = mergedItems.filter((i) => i.has_web_enhancement).length;
     const mergedWebOnly = mergedItems.filter((i) => i.source === "web_only").length;
+
+    logExtraction("MERGE_COMPLETE", {
+      totalItems: mergedItems.length,
+      categories: Array.from(new Set(mergedItems.map((i) => i.category).filter(Boolean))),
+      itemsWithImages: mergedItems.filter((i) => i.image_url).length,
+      itemsEnhanced: mergedItems.filter((i) => i.has_web_enhancement).length,
+      webOnlyItems: mergedWebOnly,
+    });
 
     return {
       items: mergedItems,
@@ -189,7 +217,8 @@ async function extractFromPDF(pdfImages: string[]): Promise<{ items: MenuItem[] 
   const pagePromises = pdfImages.map(async (imageUrl, i) => {
     try {
       // Extract items from page
-      const pageItems = await extractMenuFromImage(imageUrl);
+      const pageResult = await extractMenuFromImage(imageUrl);
+      const pageItems = pageResult.items;
 
       // Add page index to each item
       return pageItems.map((item) => ({

@@ -133,7 +133,8 @@ export const POST = withUnifiedAuth(
       const pdfExtractedItems: PDFMenuItem[] = [];
 
       for (let pageIndex = 0; pageIndex < pdfImages.length; pageIndex++) {
-        const extractedItems = await extractMenuFromImage(pdfImages[pageIndex]);
+        const extractedResult = await extractMenuFromImage(pdfImages[pageIndex]);
+        const extractedItems = extractedResult.items;
         pdfExtractedItems.push(...extractedItems.map((item) => ({ ...item, page: pageIndex })));
       }
 
