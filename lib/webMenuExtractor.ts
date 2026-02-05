@@ -134,8 +134,19 @@ export async function extractMenuFromWebsite(url: string): Promise<WebMenuItem[]
     const domItemsWithImages = domItems.filter(i => i.image_url).length;
     const domItemsWithPrices = domItems.filter(i => i.price).length;
     console.log(`[DEBUG] DOM extraction: ${domItems.length} items found, ${domItemsWithImages} with images, ${domItemsWithPrices} with prices`);
+    
+    // Sample of DOM items with images
+    const sampleWithImages = domItems.filter(i => i.image_url).slice(0, 3);
+    if (sampleWithImages.length > 0) {
+      console.log(`[DEBUG] DOM sample items with images:`);
+      sampleWithImages.forEach(item => {
+        console.log(`  - "${item.name}": ${item.image_url?.substring(0, 80)}...`);
+      });
+    }
+    
     if (domItems.length > 0 && domItemsWithImages === 0) {
       console.log(`[DEBUG] WARNING: DOM found items but NO images. Website may use lazy loading or different image structure.`);
+      // Log what selectors we're using
     }
 
     // Strategy 2: Screenshot + Vision AI (accurate, handles any layout)
@@ -194,6 +205,19 @@ export async function extractMenuFromWebsite(url: string): Promise<WebMenuItem[]
 
     // Strategy 3: Intelligent merge
     const mergedItems = mergeExtractedData(domItems, visionItems);
+    
+    // DEBUG: Log merge results
+    const mergedWithImages = mergedItems.filter(i => i.image_url).length;
+    console.log(`[DEBUG] Merge complete: ${mergedItems.length} items, ${mergedWithImages} with images`);
+    
+    // Sample merged items with images
+    const sampleMerged = mergedItems.filter(i => i.image_url).slice(0, 3);
+    if (sampleMerged.length > 0) {
+      console.log(`[DEBUG] Merged sample items with images:`);
+      sampleMerged.forEach(item => {
+        console.log(`  - "${item.name}" (${item.source}): ${item.image_url?.substring(0, 80)}...`);
+      });
+    }
 
     // Final category analysis after merge
     const finalCategories = Array.from(
@@ -263,6 +287,7 @@ async function extractFromDOM(page: import("puppeteer-core").Page): Promise<WebM
     ];
 
     let elements: Element[] = [];
+    let selectedSelector = "";
 
     // Find the best selector that gives us menu items
     for (const selector of possibleSelectors) {
@@ -270,9 +295,13 @@ async function extractFromDOM(page: import("puppeteer-core").Page): Promise<WebM
       if (found.length > 3) {
         // Likely found menu items (lowered from 5 to catch smaller menus)
         elements = found;
+        selectedSelector = selector;
         break;
       }
     }
+
+    // DEBUG: Log selector results
+    console.log(`[DEBUG] DOM selector: "${selectedSelector}" found ${elements.length} elements`);
 
     if (elements.length === 0) {
       // Fallback: look for any element with both text and price pattern
@@ -282,6 +311,7 @@ async function extractFromDOM(page: import("puppeteer-core").Page): Promise<WebM
         // Has both name-like text and price pattern
         return text.length > 10 && text.length < 500 && /[£$€]?\d+[.,]\d{2}/.test(text);
       });
+      console.log(`[DEBUG] DOM fallback: found ${elements.length} elements with price pattern`);
     }
 
     elements.forEach((el, index) => {
