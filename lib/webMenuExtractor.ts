@@ -7,6 +7,8 @@
  * - Single fullPage screenshot (no manual scrolling)
  * - Hybrid DOM + Vision AI extraction
  * - Production-ready with @sparticuz/chromium for serverless
+ *
+ * DEBUG LOGGING: All extraction steps logged for Railway debugging
  */
 
 import puppeteer from "puppeteer-core";
@@ -61,7 +63,9 @@ async function getChromiumPath() {
  * Uses Puppeteer + Vision AI hybrid approach
  */
 export async function extractMenuFromWebsite(url: string): Promise<WebMenuItem[]> {
+  console.log("[WEB-EXTRACT] Starting website extraction for:", url);
   const executablePath = await getChromiumPath();
+  console.log("[WEB-EXTRACT] Chromium executable path:", executablePath ? "found" : "not found");
 
   const browser = await puppeteer.launch({
     args: [
@@ -108,6 +112,7 @@ export async function extractMenuFromWebsite(url: string): Promise<WebMenuItem[]
       waitUntil: "domcontentloaded",
       timeout: 20000,
     });
+    console.log("[WEB-EXTRACT] Page loaded successfully");
 
     await Promise.race([
       page
@@ -119,15 +124,22 @@ export async function extractMenuFromWebsite(url: string): Promise<WebMenuItem[]
     ]);
 
     await new Promise((resolve) => setTimeout(resolve, 2000));
+    console.log("[WEB-EXTRACT] Waiting complete, starting extraction...");
 
     // Extract ALL images from the page first (before DOM items)
     const allPageImages = await extractAllPageImages(page);
+    console.log("[WEB-EXTRACT] Total images extracted from page:", allPageImages.length);
+    if (allPageImages.length > 0) {
+      console.log("[WEB-EXTRACT] First 5 image URLs:", allPageImages.slice(0, 5).map((img) => ({ url: img.url, alt: img.altText, width: img.width, height: img.height })));
+    }
 
     // Extract items from DOM
     const domItems = await extractFromDOM(page);
+    console.log("[WEB-EXTRACT] DOM items extracted:", domItems.length);
 
     // Associate images with DOM items
     const domItemsWithImages = associateImagesWithItems(domItems, allPageImages);
+    console.log("[WEB-EXTRACT] DOM items with images:", domItemsWithImages.filter((i) => i.image_url).length);
 
     // Screenshot + Vision AI
     const screenshot = (await page.screenshot({
@@ -135,13 +147,19 @@ export async function extractMenuFromWebsite(url: string): Promise<WebMenuItem[]
       type: "png",
       encoding: "base64",
     })) as string;
+    console.log("[WEB-EXTRACT] Screenshot captured, size:", screenshot.length, "chars");
 
     const screenshotDataUrl = `data:image/png;base64,${screenshot}`;
+    console.log("[WEB-EXTRACT] Calling Vision AI for extraction...");
     const visionResult = await extractMenuFromImage(screenshotDataUrl);
     const visionItems = visionResult.items;
+    console.log("[WEB-EXTRACT] Vision AI extracted items:", visionItems.length);
 
     // Merge all data sources
+    console.log("[WEB-EXTRACT] Merging data sources...");
     const mergedItems = mergeExtractedData(domItemsWithImages, visionItems, allPageImages);
+    console.log("[WEB-EXTRACT] Final merged items:", mergedItems.length);
+    console.log("[WEB-EXTRACT] Items with images in final result:", mergedItems.filter((i) => i.image_url).length);
 
     return mergedItems;
   } catch (error) {
@@ -163,9 +181,11 @@ export async function extractMenuFromWebsite(url: string): Promise<WebMenuItem[]
  * This is critical for extracting images that might be in separate containers
  */
 async function extractAllPageImages(page: import("puppeteer-core").Page): Promise<PageImage[]> {
-  return await page.evaluate(() => {
+  console.log("[IMAGES] Extracting all images from page...");
+  const result = await page.evaluate(() => {
     const images: PageImage[] = [];
     const imgElements = document.querySelectorAll("img");
+    console.log(`[IMAGES] Found ${imgElements.length} total img elements on page`);
 
     imgElements.forEach((imgEl) => {
       const src =
@@ -176,7 +196,12 @@ async function extractAllPageImages(page: import("puppeteer-core").Page): Promis
         imgEl.getAttribute("data-srcset")?.split(",")[0]?.split(" ")[0] ||
         "";
 
-      if (!src) return;
+      if (!src) {
+        console.log("[IMAGES] Skipping image with no src");
+        return;
+      }
+
+      console.log("[IMAGES] Processing image:", src.substring(0, 100));
 
       // Skip placeholder/icon images
       if (
@@ -185,34 +210,45 @@ async function extractAllPageImages(page: import("puppeteer-core").Page): Promis
         src.includes("logo") ||
         src.endsWith(".svg")
       ) {
+        console.log("[IMAGES] Skipping placeholder/icon/logo image");
         return;
       }
 
       // Skip tiny images (likely icons)
       const width = imgEl.width || 0;
       const height = imgEl.height || 0;
-      if (width < 50 || height < 50) return;
+      if (width < 50 || height < 50) {
+        console.log(`[IMAGES] Skipping tiny image: ${width}x${height}`);
+        return;
+      }
 
       // Convert relative URLs to absolute
       let absoluteSrc = src;
       if (!src.startsWith("http") && !src.startsWith("data:")) {
         try {
           absoluteSrc = new URL(src, window.location.origin).href;
-        } catch {
+        } catch (e) {
+          console.log("[IMAGES] Failed to convert relative URL:", src);
           return;
         }
       }
 
-      images.push({
+      const imageEntry = {
         url: absoluteSrc,
         altText: imgEl.alt || undefined,
         width,
         height,
-      });
+      };
+      console.log("[IMAGES] Added image:", imageEntry);
+      images.push(imageEntry);
     });
 
+    console.log(`[IMAGES] Final count: ${images.length} images after filtering`);
     return images;
   });
+
+  console.log("[IMAGES] Returning", result.length, "images from page");
+  return result;
 }
 
 /**
@@ -222,13 +258,16 @@ function associateImagesWithItems(
   domItems: WebMenuItem[],
   allImages: PageImage[]
 ): WebMenuItem[] {
+  console.log("[ASSOCIATE] Starting image association:", domItems.length, "items,", allImages.length, "images");
+  
   // Create a map of item names to their images
   const itemImageMap = new Map<string, PageImage[]>();
 
   // Try to match images to items based on alt text or filename
-  allImages.forEach((image) => {
+  allImages.forEach((image, imgIdx) => {
     const altText = image.altText?.toLowerCase() || "";
     const urlParts = image.url.toLowerCase().split("/").pop() || "";
+    console.log(`[ASSOCIATE] Processing image ${imgIdx}: alt="${altText}", urlParts="${urlParts.substring(0, 50)}"`);
 
     // Check each item for potential match
     domItems.forEach((item) => {
@@ -236,6 +275,7 @@ function associateImagesWithItems(
 
       // Match by alt text containing item name
       if (altText.includes(itemName) || itemName.includes(altText)) {
+        console.log(`[ASSOCIATE] Match found: item "${item.name}" with image alt`);
         const existing = itemImageMap.get(item.name) || [];
         existing.push(image);
         itemImageMap.set(item.name, existing);
@@ -247,6 +287,7 @@ function associateImagesWithItems(
       const urlHasItemWords = itemWords.some((word) => urlParts.includes(word));
 
       if (urlHasItemWords) {
+        console.log(`[ASSOCIATE] Match found: item "${item.name}" with URL (words: ${itemWords.join(", ")})`);
         const existing = itemImageMap.get(item.name) || [];
         existing.push(image);
         itemImageMap.set(item.name, existing);
@@ -255,9 +296,10 @@ function associateImagesWithItems(
   });
 
   // Update dom items with associated images (pick the best one)
-  return domItems.map((item) => {
+  const result = domItems.map((item) => {
     const images = itemImageMap.get(item.name);
     if (images && images.length > 0 && images[0] && !item.image_url) {
+      console.log(`[ASSOCIATE] Assigning image to item "${item.name}": ${images[0].url.substring(0, 50)}...`);
       return {
         ...item,
         image_url: images[0].url,
@@ -265,6 +307,9 @@ function associateImagesWithItems(
     }
     return item;
   });
+
+  console.log(`[ASSOCIATE] Final: ${result.filter((i) => i.image_url).length} items have images assigned`);
+  return result;
 }
 
 /**
@@ -470,6 +515,11 @@ function mergeExtractedData(
   visionItems: import("./gptVisionMenuParser").ExtractedMenuItem[],
   allPageImages: PageImage[]
 ): WebMenuItem[] {
+  console.log("[MERGE] Starting merge:");
+  console.log("[MERGE] - DOM items:", domItems.length);
+  console.log("[MERGE] - Vision items:", visionItems.length);
+  console.log("[MERGE] - All page images:", allPageImages.length);
+  
   // Build image map from all page images for matching
   const imageMap = new Map<string, PageImage>();
   allPageImages.forEach((img) => {
@@ -478,9 +528,12 @@ function mergeExtractedData(
     imageMap.set(altText, img);
     imageMap.set(urlParts, img);
   });
+  console.log("[MERGE] Built imageMap with", imageMap.size, "entries");
 
   // Start with Vision AI data
-  const merged: WebMenuItem[] = visionItems.map((visionItem) => {
+  const merged: WebMenuItem[] = visionItems.map((visionItem, idx) => {
+    console.log(`[MERGE] Processing vision item ${idx + 1}/${visionItems.length}: "${visionItem.name}"`);
+    
     const domMatch = domItems.find((domItem) => {
       const similarity = calculateSimilarity(
         visionItem.name.toLowerCase().trim(),
@@ -488,19 +541,26 @@ function mergeExtractedData(
       );
       return similarity >= 0.7;
     });
+    console.log("[MERGE] - DOM match found:", domMatch ? "yes" : "no");
 
     let image_url = domMatch?.image_url;
+    console.log("[MERGE] - Image from DOM match:", image_url || "none");
 
     // If no DOM match, try to find image from all page images
     if (!image_url) {
       const itemName = visionItem.name.toLowerCase();
+      console.log(`[MERGE] - Searching allPageImages for: "${itemName}"`);
       for (const [key, img] of imageMap) {
+        console.log(`[MERGE] - Checking image key: "${key.substring(0, 50)}..."`);
         if (key.includes(itemName) || itemName.includes(key.split("/").pop() || "")) {
           image_url = img.url;
+          console.log(`[MERGE] - Found image match: ${img.url.substring(0, 50)}...`);
           break;
         }
       }
     }
+
+    console.log("[MERGE] - Final image_url for '" + visionItem.name + "':", image_url ? image_url.substring(0, 50) + "..." : "none");
 
     return {
       name: visionItem.name,
@@ -513,13 +573,17 @@ function mergeExtractedData(
     };
   });
 
+  console.log("[MERGE] After vision processing:", merged.filter((i) => i.image_url).length, "items have images");
+
   // Add DOM-only items
+  let addedCount = 0;
   domItems.forEach((domItem) => {
     const exists = merged.some(
       (m) => calculateSimilarity(m.name_normalized, domItem.name_normalized) >= 0.7
     );
 
     if (!exists && domItem.name && (domItem.price || domItem.image_url)) {
+      console.log(`[MERGE] Adding DOM-only item: "${domItem.name}", image_url: ${domItem.image_url || "none"}`);
       merged.push({
         name: domItem.name,
         name_normalized: domItem.name_normalized,
@@ -529,9 +593,12 @@ function mergeExtractedData(
         category: domItem.category,
         source: "dom" as const,
       });
+      addedCount++;
     }
   });
 
+  console.log(`[MERGE] Added ${addedCount} DOM-only items`);
+  console.log(`[MERGE] Final result: ${merged.length} items, ${merged.filter((i) => i.image_url).length} with images`);
   return merged;
 }
 
@@ -584,3 +651,4 @@ function levenshteinDistance(str1: string, str2: string): number {
 
   return matrix[rows]![cols]!;
 }
+
