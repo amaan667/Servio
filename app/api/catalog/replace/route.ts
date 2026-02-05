@@ -236,6 +236,15 @@ export const POST = withUnifiedAuth(
       const menuUrl = formData.get("menu_url") as string | null;
       const replaceMode = formData.get("replace_mode") !== "false"; // Default to true
 
+      console.info("[menu-upload] process start", {
+        requestId,
+        venueId: normalizedVenueId,
+        hasFile: !!file,
+        hasUrl: !!menuUrl,
+        menuUrl: menuUrl || null,
+        replaceMode,
+      });
+
       // VALIDATION: Must have at least one source (PDF or URL)
       if (!file && !menuUrl) {
         return NextResponse.json(
@@ -308,6 +317,12 @@ export const POST = withUnifiedAuth(
           pdfImages,
           websiteUrl: menuUrl || undefined,
           venueId: normalizedVenueId,
+        });
+        console.info("[menu-upload] process extraction done", {
+          requestId,
+          venueId: normalizedVenueId,
+          mode: extractionResult.mode,
+          itemCount: extractionResult.itemCount,
         });
       } catch (extractionError) {
         throw extractionError;
@@ -510,6 +525,13 @@ export const POST = withUnifiedAuth(
       }
 
       const duration = Date.now() - startTime;
+      console.info("[menu-upload] process success", {
+        requestId,
+        venueId: normalizedVenueId,
+        mode: extractionResult.mode,
+        items: finalItems.length,
+        durationMs: duration,
+      });
 
       // Revalidate all pages that display menu data - AGGRESSIVE CACHE BUSTING
       try {
@@ -540,8 +562,13 @@ export const POST = withUnifiedAuth(
         _error instanceof Error ? _error.message : "An unexpected error occurred";
       const errorStack = _error instanceof Error ? _error.stack : undefined;
       const errorName = _error instanceof Error ? _error.name : "UnknownError";
-
-      // Enhanced error logging
+      console.info("[menu-upload] process error", {
+        requestId,
+        venueId: normalizedVenueId,
+        error: errorMessage,
+        errorName,
+        durationMs: duration,
+      });
 
       if (errorMessage.includes("Unauthorized") || errorMessage.includes("Forbidden")) {
         return NextResponse.json(

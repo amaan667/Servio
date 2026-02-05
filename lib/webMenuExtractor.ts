@@ -63,6 +63,7 @@ async function getChromiumPath() {
  * Uses Puppeteer + Vision AI hybrid approach
  */
 export async function extractMenuFromWebsite(url: string): Promise<WebMenuItem[]> {
+  console.info("[menu-upload] url extraction start", { url });
   console.log("[WEB-EXTRACT] Starting website extraction for:", url);
   const executablePath = await getChromiumPath();
   console.log("[WEB-EXTRACT] Chromium executable path:", executablePath ? "found" : "not found");
@@ -160,11 +161,14 @@ export async function extractMenuFromWebsite(url: string): Promise<WebMenuItem[]
     const mergedItems = mergeExtractedData(domItemsWithImages, visionItems, allPageImages);
     console.log("[WEB-EXTRACT] Final merged items:", mergedItems.length);
     console.log("[WEB-EXTRACT] Items with images in final result:", mergedItems.filter((i) => i.image_url).length);
+    console.info("[menu-upload] url extraction done", { url, itemCount: mergedItems.length });
 
     return mergedItems;
   } catch (error) {
+    const message = error instanceof Error ? error.message : "Unknown error";
+    console.info("[menu-upload] url extraction error", { url, error: message });
     throw new Error(
-      `Failed to scrape menu from URL: ${error instanceof Error ? error.message : "Unknown error"}. ` +
+      `Failed to scrape menu from URL: ${message}. ` +
         `Check Railway logs for details. Common issues: site requires auth, blocks bots, or unusual structure.`
     );
   } finally {

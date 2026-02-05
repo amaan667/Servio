@@ -29,6 +29,14 @@ export const POST = createUnifiedHandler(
       return apiErrors.badRequest("file is required");
     }
 
+    const sourceType = (file.name || "").toLowerCase().endsWith(".pdf") ? "pdf" : "image";
+    console.info("[menu-upload] start", {
+      venueId,
+      filename: file.name,
+      size: file.size,
+      sourceType,
+    });
+
     const supabase = await createClient();
     const adminSupabase = createAdminClient();
 
@@ -95,6 +103,13 @@ export const POST = createUnifiedHandler(
       uploadId = ins?.id ?? null;
     }
 
+    console.info("[menu-upload] success", {
+      venueId,
+      upload_id: uploadId,
+      sha256: hash,
+      path,
+      sourceType,
+    });
     return { ok: true, upload_id: uploadId, sha256: hash, path };
   },
   {

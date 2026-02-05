@@ -62,11 +62,23 @@ export async function extractMenuHybrid(
 
   // Determine extraction mode
   const mode = getExtractionMode(!!pdfImages, !!websiteUrl);
+  const pdfPageCount = pdfImages?.length ?? 0;
+  console.info("[menu-upload] hybrid extraction start", {
+    venueId,
+    mode,
+    websiteUrl: websiteUrl || null,
+    pdfPageCount,
+  });
 
   // MODE 1: URL Only
   if (mode === "url-only" && websiteUrl) {
     const webItems = await extractMenuFromWebsite(websiteUrl);
-
+    console.info("[menu-upload] hybrid extraction done", {
+      venueId,
+      mode: "url-only",
+      url: websiteUrl,
+      itemCount: webItems.length,
+    });
     return {
       items: webItems,
       itemCount: webItems.length,
@@ -79,7 +91,12 @@ export async function extractMenuHybrid(
   // MODE 2: PDF Only
   if (mode === "pdf-only" && pdfImages) {
     const pdfData = await extractFromPDF(pdfImages);
-
+    console.info("[menu-upload] hybrid extraction done", {
+      venueId,
+      mode: "pdf-only",
+      pdfPageCount: pdfImages.length,
+      itemCount: pdfData.items.length,
+    });
     return {
       items: pdfData.items,
       itemCount: pdfData.items.length,
@@ -132,6 +149,15 @@ export async function extractMenuHybrid(
     const mergedCategories = Array.from(
       new Set(mergedItems.map((i) => i.category).filter(Boolean))
     );
+    console.info("[menu-upload] hybrid extraction done", {
+      venueId,
+      mode: "hybrid",
+      url: websiteUrl,
+      pdfPageCount: pdfImages.length,
+      pdfItems: pdfData.items.length,
+      urlItems: webItems.length,
+      itemCount: mergedItems.length,
+    });
     return {
       items: mergedItems,
       itemCount: mergedItems.length,

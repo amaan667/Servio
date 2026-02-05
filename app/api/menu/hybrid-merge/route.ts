@@ -36,6 +36,7 @@ export const POST = withUnifiedAuth(async (req: NextRequest, context) => {
     // venueId comes from context (already verified by withUnifiedAuth)
     const normalizedVenueId = context.venueId;
     logContext = { requestId, venueId: normalizedVenueId, menuUrl, userId: context.user.id };
+    console.info("[menu-upload] hybrid-merge start", logContext);
 
     if (!menuUrl) {
       return NextResponse.json({ ok: false, error: "menuUrl required" }, { status: 400 });
@@ -87,6 +88,11 @@ export const POST = withUnifiedAuth(async (req: NextRequest, context) => {
       websiteUrl: menuUrl,
       venueId: normalizedVenueId,
     });
+    console.info("[menu-upload] hybrid-merge extraction done", {
+      ...logContext,
+      mode: extractionResult.mode,
+      itemCount: extractionResult.items.length,
+    });
 
     // Step 7: Insert items into database
 
@@ -133,6 +139,12 @@ export const POST = withUnifiedAuth(async (req: NextRequest, context) => {
     }
 
     const duration = Date.now() - startTime;
+    console.info("[menu-upload] hybrid-merge success", {
+      ...logContext,
+      mode: extractionResult.mode,
+      items: menuItems.length,
+      durationMs: duration,
+    });
 
     // Revalidate all pages that display menu data
     try {
@@ -153,6 +165,11 @@ export const POST = withUnifiedAuth(async (req: NextRequest, context) => {
     });
   } catch (error) {
     const duration = Date.now() - startTime;
+    console.info("[menu-upload] hybrid-merge error", {
+      ...logContext,
+      error: error instanceof Error ? error.message : "Unknown",
+      durationMs: duration,
+    });
 
     return NextResponse.json(
       {
