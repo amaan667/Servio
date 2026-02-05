@@ -1,6 +1,6 @@
 import { createUnifiedHandler } from "@/lib/api/unified-handler";
 import { menuService } from "@/lib/services/MenuService";
-import { RATE_LIMITS } from "@/lib/rate-limit";
+import { RATE_LIMITS, getClientIdentifier } from "@/lib/rate-limit";
 import { paginationSchema } from "@/lib/api/validation-schemas";
 import { z } from "zod";
 import { apiErrors, success } from "@/lib/api/standard-response";
@@ -33,11 +33,10 @@ export const GET = createUnifiedHandler(
       offset: searchParams.get("offset") || undefined,
     });
 
-    // Add timeout wrapper to prevent hanging requests
-    // 8 second timeout - balances mobile network needs with UX
+    // 15s timeout for very slow networks; client retries with 20s
     const menuDataPromise = menuService.getPublicMenuFull(venueId, { limit, offset });
     const timeoutPromise = new Promise<never>((_, reject) => {
-      setTimeout(() => reject(new Error("Menu loading timeout - please refresh")), 8000);
+      setTimeout(() => reject(new Error("Menu loading timeout - please refresh")), 15000);
     });
 
     try {
@@ -71,6 +70,11 @@ export const GET = createUnifiedHandler(
   {
     requireAuth: false, // Public endpoint - no auth required
     rateLimit: RATE_LIMITS.MENU_PUBLIC,
+    rateLimitIdentifier: (req) => {
+      const match = req.nextUrl.pathname.match(/\/api\/menu\/([^/?#]+)/);
+      const venueId = match?.[1] ?? "unknown";
+      return `menu:${venueId}:${getClientIdentifier(req)}`;
+    },
     venueIdSource: "params",
   }
 );

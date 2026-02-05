@@ -32,7 +32,7 @@ import {
   hasRole,
   isOwner,
 } from "@/lib/auth/unified-auth";
-import { rateLimit, RATE_LIMITS, type RateLimitConfig } from "@/lib/rate-limit";
+import { rateLimit, RATE_LIMITS, getClientIdentifier, type RateLimitConfig } from "@/lib/rate-limit";
 import { checkIdempotency, storeIdempotency } from "@/lib/db/idempotency";
 import { performanceTracker } from "@/lib/monitoring/performance-tracker";
 import { logger } from "@/lib/monitoring/structured-logger";
@@ -55,6 +55,8 @@ export interface UnifiedHandlerOptions<TBody = unknown> {
   requireFeature?: keyof import("@/lib/tier-restrictions").TierLimits["features"];
   /** Rate limit configuration */
   rateLimit?: RateLimitConfig;
+  /** Custom rate limit identifier (e.g. venue-scoped for public menu to avoid shared WiFi throttling) */
+  rateLimitIdentifier?: (req: NextRequest) => string;
   /** Enforce idempotency key */
   enforceIdempotency?: boolean;
   /** Source for venueId extraction */
@@ -110,10 +112,13 @@ export function createUnifiedHandler<TBody = unknown, TResponse = unknown>(
     apmTransaction.setTag("http.url", req.nextUrl.pathname);
 
     try {
-      // 1. Rate Limiting (per-user when middleware set x-user-id, else per-IP)
+      // 1. Rate Limiting (per-user when middleware set x-user-id, else per-IP, or custom identifier for public endpoints)
       const rlConfig = options.rateLimit || RATE_LIMITS.GENERAL;
+      const customIdentifier = options.rateLimitIdentifier?.(req);
       const userId = req.headers.get("x-user-id");
-      const configWithId = { ...rlConfig, identifier: userId || undefined };
+      const identifier =
+        customIdentifier ?? userId ?? getClientIdentifier(req);
+      const configWithId = { ...rlConfig, identifier };
       const rlResult = await rateLimit(req, configWithId);
       if (!rlResult.success) {
         perf.end();

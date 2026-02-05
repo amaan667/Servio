@@ -8,7 +8,9 @@ export function useOrderMenu(venueSlug: string, isDemo: boolean) {
   // Track loading state per venue to prevent duplicate fetches
   const loadingRef = useRef<string | null>(null);
   const retryCountRef = useRef(0);
-  const maxRetries = 3;
+  const backgroundRetryRef = useRef(0);
+  const maxRetries = 8; // Any network/device: more retries for transient failures
+  const maxBackgroundRetries = 20; // Retry every 10s up to 20x (~3 min) when error + no items
 
   // Initialize state with cached values (only on first render)
   // This ensures instant loading from cache - CRITICAL for mobile
@@ -68,6 +70,7 @@ export function useOrderMenu(venueSlug: string, isDemo: boolean) {
   useEffect(() => {
     loadingRef.current = null;
     retryCountRef.current = 0;
+    backgroundRetryRef.current = 0;
     setMenuError(null);
 
     // Clear any potentially stale empty cache for this venue
@@ -172,19 +175,16 @@ export function useOrderMenu(venueSlug: string, isDemo: boolean) {
 
       const apiUrl = `${window.location.origin}/api/menu/${venueSlug}`;
 
-      // Add timeout and retry logic for reliability
-      // 10 second client timeout - server has 8s, so client should be slightly longer
+      // 20s timeout for slow networks; credentials: omit for restricted contexts (in-app browsers)
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 10000);
+      const timeoutId = setTimeout(() => controller.abort(), 20000);
 
       let response: Response;
       try {
         response = await fetch(apiUrl, {
           signal: controller.signal,
-          cache: "no-store", // Always fetch fresh data
-          headers: {
-            "Cache-Control": "no-cache",
-          },
+          cache: "default", // Honor API Cache-Control (60s) — fewer requests in busy venue
+          credentials: "omit", // Works in in-app browsers, private mode, restricted contexts
         });
         clearTimeout(timeoutId);
       } catch (fetchError) {
@@ -232,26 +232,34 @@ export function useOrderMenu(venueSlug: string, isDemo: boolean) {
           errorMessage = response.statusText || errorMessage;
         }
 
-        // Always retry on 5xx errors - never show error to user
-        if (retryCountRef.current < maxRetries && response.status >= 500) {
+        // Retry on 5xx and 429 (rate limit) - don't show "no items" when rate limited
+        if (
+          retryCountRef.current < maxRetries &&
+          (response.status >= 500 || response.status === 429)
+        ) {
           retryCountRef.current += 1;
-          // Don't show loading if we have cached data
           if (!hasCachedData) {
             setLoadingMenu(true);
+            setMenuError(
+              response.status === 429 ? "Rate limit exceeded. Retrying…" : null
+            );
+          } else {
+            setMenuError(null);
           }
-          setMenuError(null); // Never show errors
           const delay = Math.pow(2, retryCountRef.current - 1) * 1000;
           await new Promise((resolve) => setTimeout(resolve, delay));
           loadingRef.current = null;
           return loadMenuItems();
         }
 
-        // Never show error - if we have cached data, user won't notice
-        // If no cached data, silently keep retrying
-        setMenuError(null);
+        // If rate limited and no retries left, show user-friendly message
+        setMenuError(
+          response.status === 429 && !hasCachedData
+            ? "Too many requests. Please wait a moment and refresh the page."
+            : null
+        );
         setLoadingMenu(false);
         loadingRef.current = null;
-        // Don't return - continue to silently retry in background
         return;
       }
 
@@ -392,11 +400,29 @@ export function useOrderMenu(venueSlug: string, isDemo: boolean) {
   };
 
   useEffect(() => {
-    // Always load menu when venueSlug changes or component mounts
     if (venueSlug) {
       loadMenuItems();
     }
   }, [venueSlug, isDemo]);
+
+  // Background retry when error + no items — menu loads without user action
+  useEffect(() => {
+    if (
+      !venueSlug ||
+      isDemo ||
+      menuItems.length > 0 ||
+      !menuError ||
+      backgroundRetryRef.current >= maxBackgroundRetries
+    )
+      return;
+    const t = setTimeout(() => {
+      backgroundRetryRef.current += 1;
+      loadingRef.current = null;
+      retryCountRef.current = 0;
+      loadMenuItems();
+    }, 10000);
+    return () => clearTimeout(t);
+  }, [venueSlug, isDemo, menuItems.length, menuError]);
 
   return {
     menuItems,

@@ -275,7 +275,7 @@ export const RATE_LIMITS = {
   GENERAL: { limit: 100, window: 60 }, // 100 requests per minute
   /** KDS polls stations + tickets ~every 5s; per-user when x-user-id set. Avoid auth/rate-limit errors. */
   KDS: { limit: 500, window: 60 },
-  MENU_PUBLIC: { limit: 60, window: 60 }, // 60 requests per minute
+  MENU_PUBLIC: { limit: 10000, window: 60 }, // Effectively unlimited — public read-only, must work on any device/network
   STRICT: { limit: 5, window: 60 }, // 5 requests per minute
 } as const;
 

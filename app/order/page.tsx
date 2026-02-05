@@ -177,10 +177,11 @@ export default function CustomerOrderPage() {
                 <Loader2 className="h-8 w-8 animate-spin text-purple-600" />
               </div>
             ) : menuItems.length === 0 ? (
-              // Only show empty state if truly no items (not an error)
+              // Show error (e.g. rate limit) or empty state
               <Alert variant="destructive" className="m-4">
                 <AlertDescription>
-                  This venue has no available menu items yet. Please check back later.
+                  {menuError ||
+                    "This venue has no available menu items yet. Please check back later."}
                 </AlertDescription>
               </Alert>
             ) : (
