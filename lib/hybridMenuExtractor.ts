@@ -11,10 +11,6 @@
 import { extractMenuFromImage } from "./gptVisionMenuParser";
 import { extractMenuFromWebsite } from "./webMenuExtractor";
 
-// DEBUG: Enable extraction logging
-function logExtraction(phase: string, data: Record<string, unknown>) {
-  console.log(`[EXTRACTION ${phase}]`, JSON.stringify(data, null, 2));
-}
 
 interface MenuItem {
   name: string;
@@ -117,37 +113,11 @@ export async function extractMenuHybrid(
     // PDF Analysis
     const pdfCategories = Array.from(new Set(pdfData.items.map((i) => i.category).filter(Boolean)));
     const pdfWithImages = pdfData.items.filter((i) => i.image_url).length;
-    const pdfWithDescriptions = pdfData.items.filter((i) => i.description).length;
-
-    logExtraction("PDF_ANALYSIS", {
-      totalItems: pdfData.items.length,
-      categories: pdfCategories,
-      itemsWithImages: pdfWithImages,
-      itemsWithDescriptions: pdfWithDescriptions,
-    });
 
     // URL Analysis
     const urlCategories = Array.from(new Set(webItems.map((i) => i.category).filter(Boolean)));
     const urlWithImages = webItems.filter((i) => i.image_url).length;
     const urlWithDescriptions = webItems.filter((i) => i.description).length;
-    const urlUncategorized = webItems.filter(
-      (i) => !i.category || i.category === "Menu Items" || i.category === "Uncategorized"
-    ).length;
-
-
-    logExtraction("URL_ANALYSIS", {
-      totalItems: webItems.length,
-      categories: urlCategories,
-      itemsWithImages: urlWithImages,
-      itemsWithDescriptions: urlWithDescriptions,
-      uncategorized: urlUncategorized,
-    });
-    // Category breakdown comparison
-    const pdfCategoryBreakdown: Record<string, number> = {};
-    pdfData.items.forEach((item) => {
-      const cat = item.category || "Uncategorized";
-      pdfCategoryBreakdown[cat] = (pdfCategoryBreakdown[cat] || 0) + 1;
-    });
 
     const urlCategoryBreakdown: Record<string, number> = {};
     webItems.forEach((item) => {
@@ -162,18 +132,6 @@ export async function extractMenuHybrid(
     const mergedCategories = Array.from(
       new Set(mergedItems.map((i) => i.category).filter(Boolean))
     );
-    const mergedWithImages = mergedItems.filter((i) => i.image_url).length;
-    const mergedEnhanced = mergedItems.filter((i) => i.has_web_enhancement).length;
-    const mergedWebOnly = mergedItems.filter((i) => i.source === "web_only").length;
-
-    logExtraction("MERGE_COMPLETE", {
-      totalItems: mergedItems.length,
-      categories: Array.from(new Set(mergedItems.map((i) => i.category).filter(Boolean))),
-      itemsWithImages: mergedItems.filter((i) => i.image_url).length,
-      itemsEnhanced: mergedItems.filter((i) => i.has_web_enhancement).length,
-      webOnlyItems: mergedWebOnly,
-    });
-
     return {
       items: mergedItems,
       itemCount: mergedItems.length,

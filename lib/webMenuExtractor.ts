@@ -23,25 +23,28 @@ interface WebMenuItem {
   source: "dom" | "vision" | "merged";
 }
 
+interface PageImage {
+  url: string;
+  altText?: string;
+  width?: number;
+  height?: number;
+}
+
 /**
  * Get Chromium executable path for production (Railway) or local development
  */
 async function getChromiumPath() {
   if (process.env.NODE_ENV === "production" || process.env.RAILWAY_ENVIRONMENT) {
-    // Production: use @sparticuz/chromium for serverless
     return await chromium.executablePath();
   } else {
-    // Local: use system Chrome/Chromium
-    // Common paths for different systems
     const possiblePaths = [
-      "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome", // macOS
-      "/usr/bin/google-chrome", // Linux
-      "/usr/bin/chromium-browser", // Linux
-      "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe", // Windows
-      "C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe", // Windows
+      "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
+      "/usr/bin/google-chrome",
+      "/usr/bin/chromium-browser",
+      "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",
+      "C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe",
     ];
 
-    // Return first existing path, or undefined to use bundled Chromium
     return possiblePaths.find((path) => {
       try {
         const fs = require("fs");
@@ -70,7 +73,6 @@ export async function extractMenuFromWebsite(url: string): Promise<WebMenuItem[]
       "--disable-web-security",
       "--hide-scrollbars",
       "--disable-features=VizDisplayCompositor",
-      // Additional args for Railway/serverless environment
       "--disable-software-rasterizer",
       "--disable-extensions",
       "--disable-background-networking",
@@ -85,9 +87,9 @@ export async function extractMenuFromWebsite(url: string): Promise<WebMenuItem[]
       "--force-color-profile=srgb",
       "--metrics-recording-only",
       "--no-first-run",
-      "--disable-audio-output", // Fix PulseAudio error
+      "--disable-audio-output",
       "--no-zygote",
-      "--single-process", // Important for serverless
+      "--single-process",
     ],
     defaultViewport: {
       width: 1920,
@@ -100,140 +102,46 @@ export async function extractMenuFromWebsite(url: string): Promise<WebMenuItem[]
 
   try {
     const page = await browser.newPage();
-
-    // Set viewport for consistent rendering
     await page.setViewport({ width: 1920, height: 1080 });
 
-    // Navigate with simple, reliable wait strategy (NO networkidle!)
     await page.goto(url, {
-      waitUntil: "domcontentloaded", // Fast and reliable
+      waitUntil: "domcontentloaded",
       timeout: 20000,
     });
 
-    // Wait for menu content to appear with fallback
     await Promise.race([
-      // Try to find menu-related elements
       page
         .waitForSelector('[class*="menu"], [class*="item"], [class*="dish"], article', {
           timeout: 5000,
         })
         .catch(() => null),
-      // Fallback: just wait 3 seconds
       new Promise((resolve) => setTimeout(resolve, 3000)),
-    ]).catch(() => {
-      /* Intentionally empty */
-    });
+    ]);
 
-    // Additional wait for dynamic content
     await new Promise((resolve) => setTimeout(resolve, 2000));
 
-    // Strategy 1: DOM Scraping (fast, gets images/URLs)
-    const domItems = await extractFromDOM(page);
-    
-    // DEBUG: Log DOM extraction results
-    const domItemsWithImages = domItems.filter(i => i.image_url).length;
-    const domItemsWithPrices = domItems.filter(i => i.price).length;
-    console.log(`[DEBUG] DOM extraction: ${domItems.length} items found, ${domItemsWithImages} with images, ${domItemsWithPrices} with prices`);
-    
-    // Sample of DOM items with images
-    const sampleWithImages = domItems.filter(i => i.image_url).slice(0, 3);
-    if (sampleWithImages.length > 0) {
-      console.log(`[DEBUG] DOM sample items with images:`);
-      sampleWithImages.forEach(item => {
-        console.log(`  - "${item.name}": ${item.image_url?.substring(0, 80)}...`);
-      });
-    }
-    
-    if (domItems.length > 0 && domItemsWithImages === 0) {
-      console.log(`[DEBUG] WARNING: DOM found items but NO images. Website may use lazy loading or different image structure.`);
-      // Log what selectors we're using
-    }
+    // Extract ALL images from the page first (before DOM items)
+    const allPageImages = await extractAllPageImages(page);
 
-    // Strategy 2: Screenshot + Vision AI (accurate, handles any layout)
+    // Extract items from DOM
+    const domItems = await extractFromDOM(page);
+
+    // Associate images with DOM items
+    const domItemsWithImages = associateImagesWithItems(domItems, allPageImages);
+
+    // Screenshot + Vision AI
     const screenshot = (await page.screenshot({
-      fullPage: true, // Captures entire page without manual scrolling
+      fullPage: true,
       type: "png",
       encoding: "base64",
     })) as string;
 
     const screenshotDataUrl = `data:image/png;base64,${screenshot}`;
-
     const visionResult = await extractMenuFromImage(screenshotDataUrl);
     const visionItems = visionResult.items;
-    
-    // DEBUG: Log Vision extraction results
-    console.log(`[DEBUG] Vision extraction: ${visionItems.length} items found`);
 
-    // Detailed logging for URL extraction (similar to PDF extraction)
-
-    // Log categories from Vision AI
-    const visionCategories = Array.from(
-      new Set(visionItems.map((item) => item.category).filter(Boolean))
-    );
-
-    // Category breakdown
-    const categoryBreakdown: Record<string, number> = {};
-    visionItems.forEach((item) => {
-      const cat = item.category || "Uncategorized";
-      categoryBreakdown[cat] = (categoryBreakdown[cat] || 0) + 1;
-    });
-
-    // Sample items by category
-    interface CategorySample {
-      name: string;
-      price?: number;
-      hasDescription: boolean;
-    }
-    const samplesByCategory: Record<string, CategorySample[]> = {};
-    visionItems.forEach((item) => {
-      const cat = item.category || "Uncategorized";
-      const bucket = samplesByCategory[cat] ?? (samplesByCategory[cat] = []);
-      if (bucket.length < 3) {
-        bucket.push({
-          name: item.name,
-          price: item.price,
-          hasDescription: !!item.description,
-        });
-      }
-    });
-
-    // Warnings for issues
-    const menuItemsCount = visionItems.filter((item) => item.category === "Menu Items").length;
-    if (menuItemsCount > 0) {
-      /* Condition handled */
-    }
-
-    // Strategy 3: Intelligent merge
-    const mergedItems = mergeExtractedData(domItems, visionItems);
-    
-    // DEBUG: Log merge results
-    const mergedWithImages = mergedItems.filter(i => i.image_url).length;
-    console.log(`[DEBUG] Merge complete: ${mergedItems.length} items, ${mergedWithImages} with images`);
-    
-    // Sample merged items with images
-    const sampleMerged = mergedItems.filter(i => i.image_url).slice(0, 3);
-    if (sampleMerged.length > 0) {
-      console.log(`[DEBUG] Merged sample items with images:`);
-      sampleMerged.forEach(item => {
-        console.log(`  - "${item.name}" (${item.source}): ${item.image_url?.substring(0, 80)}...`);
-      });
-    }
-
-    // Final category analysis after merge
-    const finalCategories = Array.from(
-      new Set(mergedItems.map((item) => item.category).filter(Boolean))
-    );
-    const finalCategoryBreakdown: Record<string, number> = {};
-    mergedItems.forEach((item) => {
-      const cat = item.category || "Uncategorized";
-      finalCategoryBreakdown[cat] = (finalCategoryBreakdown[cat] || 0) + 1;
-    });
-
-    // Final warning if still have Menu Items
-    const finalMenuItemsCount = mergedItems.filter((item) => item.category === "Menu Items").length;
-    if (finalMenuItemsCount > 0) {
-      /* Condition handled */
-    }
+    // Merge all data sources
+    const mergedItems = mergeExtractedData(domItemsWithImages, visionItems, allPageImages);
 
     return mergedItems;
   } catch (error) {
@@ -244,15 +152,123 @@ export async function extractMenuFromWebsite(url: string): Promise<WebMenuItem[]
   } finally {
     try {
       await browser.close();
-    } catch (closeError) {
-      /* Error handled silently */
+    } catch {
+      // Silent close
     }
   }
 }
 
 /**
+ * Extract ALL images from the page, not just those within menu item elements
+ * This is critical for extracting images that might be in separate containers
+ */
+async function extractAllPageImages(page: import("puppeteer-core").Page): Promise<PageImage[]> {
+  return await page.evaluate(() => {
+    const images: PageImage[] = [];
+    const imgElements = document.querySelectorAll("img");
+
+    imgElements.forEach((imgEl) => {
+      const src =
+        imgEl.getAttribute("src") ||
+        imgEl.getAttribute("data-src") ||
+        imgEl.getAttribute("data-lazy-src") ||
+        imgEl.getAttribute("data-original") ||
+        imgEl.getAttribute("data-srcset")?.split(",")[0]?.split(" ")[0] ||
+        "";
+
+      if (!src) return;
+
+      // Skip placeholder/icon images
+      if (
+        src.includes("placeholder") ||
+        src.includes("icon") ||
+        src.includes("logo") ||
+        src.endsWith(".svg")
+      ) {
+        return;
+      }
+
+      // Skip tiny images (likely icons)
+      const width = imgEl.width || 0;
+      const height = imgEl.height || 0;
+      if (width < 50 || height < 50) return;
+
+      // Convert relative URLs to absolute
+      let absoluteSrc = src;
+      if (!src.startsWith("http") && !src.startsWith("data:")) {
+        try {
+          absoluteSrc = new URL(src, window.location.origin).href;
+        } catch {
+          return;
+        }
+      }
+
+      images.push({
+        url: absoluteSrc,
+        altText: imgEl.alt || undefined,
+        width,
+        height,
+      });
+    });
+
+    return images;
+  });
+}
+
+/**
+ * Associate extracted images with menu items based on proximity and alt text
+ */
+function associateImagesWithItems(
+  domItems: WebMenuItem[],
+  allImages: PageImage[]
+): WebMenuItem[] {
+  // Create a map of item names to their images
+  const itemImageMap = new Map<string, PageImage[]>();
+
+  // Try to match images to items based on alt text or filename
+  allImages.forEach((image) => {
+    const altText = image.altText?.toLowerCase() || "";
+    const urlParts = image.url.toLowerCase().split("/").pop() || "";
+
+    // Check each item for potential match
+    domItems.forEach((item) => {
+      const itemName = item.name_normalized.toLowerCase();
+
+      // Match by alt text containing item name
+      if (altText.includes(itemName) || itemName.includes(altText)) {
+        const existing = itemImageMap.get(item.name) || [];
+        existing.push(image);
+        itemImageMap.set(item.name, existing);
+        return;
+      }
+
+      // Match by URL filename containing item name words
+      const itemWords = itemName.split(" ").filter((w) => w.length > 2);
+      const urlHasItemWords = itemWords.some((word) => urlParts.includes(word));
+
+      if (urlHasItemWords) {
+        const existing = itemImageMap.get(item.name) || [];
+        existing.push(image);
+        itemImageMap.set(item.name, existing);
+      }
+    });
+  });
+
+  // Update dom items with associated images (pick the best one)
+  return domItems.map((item) => {
+    const images = itemImageMap.get(item.name);
+    if (images && images.length > 0 && images[0] && !item.image_url) {
+      return {
+        ...item,
+        image_url: images[0].url,
+      };
+    }
+    return item;
+  });
+}
+
+/**
  * Extract menu items from DOM structure
- * Enhanced to handle multiple website patterns and extract images properly
  */
 async function extractFromDOM(page: import("puppeteer-core").Page): Promise<WebMenuItem[]> {
   return await page.evaluate(() => {
@@ -268,7 +284,6 @@ async function extractFromDOM(page: import("puppeteer-core").Page): Promise<WebM
     }
     const items: DOMMenuItem[] = [];
 
-    // Try multiple selector strategies to find menu items
     const possibleSelectors = [
       "[data-menu-item]",
       '[class*="menu-item"]',
@@ -287,36 +302,25 @@ async function extractFromDOM(page: import("puppeteer-core").Page): Promise<WebM
     ];
 
     let elements: Element[] = [];
-    let selectedSelector = "";
 
-    // Find the best selector that gives us menu items
     for (const selector of possibleSelectors) {
       const found = Array.from(document.querySelectorAll(selector));
       if (found.length > 3) {
-        // Likely found menu items (lowered from 5 to catch smaller menus)
         elements = found;
-        selectedSelector = selector;
         break;
       }
     }
 
-    // DEBUG: Log selector results
-    console.log(`[DEBUG] DOM selector: "${selectedSelector}" found ${elements.length} elements`);
-
     if (elements.length === 0) {
-      // Fallback: look for any element with both text and price pattern
       const allElements = document.querySelectorAll("div, li, article, section");
       elements = Array.from(allElements).filter((el) => {
         const text = el.textContent || "";
-        // Has both name-like text and price pattern
         return text.length > 10 && text.length < 500 && /[£$€]?\d+[.,]\d{2}/.test(text);
       });
-      console.log(`[DEBUG] DOM fallback: found ${elements.length} elements with price pattern`);
     }
 
     elements.forEach((el, index) => {
       try {
-        // Find name - try multiple approaches with more selectors
         const nameSelectors = [
           "[data-name]",
           '[itemprop="name"]',
@@ -347,10 +351,8 @@ async function extractFromDOM(page: import("puppeteer-core").Page): Promise<WebM
         }
 
         const name = nameEl?.textContent?.trim();
+        if (!name || name.length < 2 || name.length > 200) return;
 
-        if (!name || name.length < 2 || name.length > 200) return; // Skip invalid items
-
-        // Find price - enhanced with multiple strategies
         const priceSelectors = [
           "[data-price]",
           '[itemprop="price"]',
@@ -370,30 +372,23 @@ async function extractFromDOM(page: import("puppeteer-core").Page): Promise<WebM
         }
 
         let priceText = priceEl?.textContent?.trim();
-
-        // Fallback: search in element text for price patterns
         if (!priceText) {
           const elementText = el.textContent || "";
           const pricePattern =
             /[£$€]\s*(\d+[.,]\d{2})|(\d+[.,]\d{2})\s*[£$€]|(\d+[.,]\d{2})\s*(?:GBP|USD|EUR)/gi;
           const match = pricePattern.exec(elementText);
-          if (match) {
-            priceText = match[0];
-          }
+          if (match) priceText = match[0];
         }
 
         let price: number | undefined;
         if (priceText) {
-          // Handle various price formats: £3.50, $3.50, 3.50, €3,50, 3,50€
           const cleanPrice = priceText.replace(/[£$€GBP USD EUR]/gi, "").trim();
           const priceMatch = cleanPrice.match(/\d+[.,]?\d*/);
           if (priceMatch) {
-            const priceStr = priceMatch[0].replace(",", ".");
-            price = parseFloat(priceStr);
+            price = parseFloat(priceMatch[0].replace(",", "."));
           }
         }
 
-        // Find description - enhanced
         const descSelectors = [
           "[data-description]",
           '[itemprop="description"]',
@@ -408,24 +403,17 @@ async function extractFromDOM(page: import("puppeteer-core").Page): Promise<WebM
         let descEl: Element | null = null;
         for (const selector of descSelectors) {
           descEl = el.querySelector(selector);
-          if (
-            descEl &&
-            descEl.textContent &&
-            descEl.textContent.trim().length > 5 &&
-            descEl.textContent !== name
-          ) {
+          if (descEl && descEl.textContent && descEl.textContent.trim().length > 5 && descEl.textContent !== name) {
             break;
           }
         }
 
         const description = descEl?.textContent?.trim();
 
-        // Find image - enhanced with multiple strategies
         const imgEl = el.querySelector("img");
         let imageUrl: string | undefined;
 
         if (imgEl) {
-          // Try multiple image source attributes
           imageUrl =
             imgEl.getAttribute("src") ||
             imgEl.getAttribute("data-src") ||
@@ -434,7 +422,6 @@ async function extractFromDOM(page: import("puppeteer-core").Page): Promise<WebM
             imgEl.getAttribute("data-srcset")?.split(",")[0]?.split(" ")[0] ||
             undefined;
 
-          // Convert relative URLs to absolute
           if (imageUrl && !imageUrl.startsWith("http") && !imageUrl.startsWith("data:")) {
             try {
               imageUrl = new URL(imageUrl, window.location.origin).href;
@@ -443,7 +430,6 @@ async function extractFromDOM(page: import("puppeteer-core").Page): Promise<WebM
             }
           }
 
-          // Skip placeholder/icon images
           if (
             imageUrl &&
             (imageUrl.includes("placeholder") ||
@@ -455,88 +441,84 @@ async function extractFromDOM(page: import("puppeteer-core").Page): Promise<WebM
           }
         }
 
-        // SKIP category extraction from URL - it's unreliable (picks up item names)
-        // Only PDF extraction (Vision AI) can reliably detect categories from document structure
-        // URL scraping is ONLY for: images, prices, descriptions
-
-        // Only add items with at least a name
         if (name) {
           items.push({
-            name: name,
+            name,
             name_normalized: name.toLowerCase().trim(),
             description: description || undefined,
-            price: price,
+            price,
             image_url: imageUrl || undefined,
-            category: undefined, // Never extract categories from URL DOM
+            category: undefined,
             source: "dom",
-            index: index,
+            index,
           });
         }
       } catch {
-        // Error extracting item - logging removed for production
+        // Skip on error
       }
     });
-
-    // Successfully extracted items - logging removed for production
 
     return items as unknown as WebMenuItem[];
   });
 }
 
 /**
- * Merge DOM and Vision AI extracted data
- * Strategy: Vision AI is more accurate for text, DOM is better for images/URLs
+ * Merge DOM and Vision AI extracted data, incorporating all page images
  */
 function mergeExtractedData(
   domItems: WebMenuItem[],
-  visionItems: import("./gptVisionMenuParser").ExtractedMenuItem[]
+  visionItems: import("./gptVisionMenuParser").ExtractedMenuItem[],
+  allPageImages: PageImage[]
 ): WebMenuItem[] {
-  // Start with Vision AI data (more accurate text extraction)
+  // Build image map from all page images for matching
+  const imageMap = new Map<string, PageImage>();
+  allPageImages.forEach((img) => {
+    const altText = img.altText?.toLowerCase() || "";
+    const urlParts = img.url.toLowerCase();
+    imageMap.set(altText, img);
+    imageMap.set(urlParts, img);
+  });
+
+  // Start with Vision AI data
   const merged: WebMenuItem[] = visionItems.map((visionItem) => {
-    // Find matching DOM item by name similarity
     const domMatch = domItems.find((domItem) => {
       const similarity = calculateSimilarity(
         visionItem.name.toLowerCase().trim(),
         domItem.name_normalized
       );
-      // Slightly lower threshold so we don't miss good matches
-      // This helps ensure we still merge in DOM images when names are very similar
       return similarity >= 0.7;
     });
 
-    if (domMatch) {
-      return {
-        name: visionItem.name, // Prefer Vision AI for text accuracy
-        name_normalized: visionItem.name.toLowerCase().trim(),
-        description: domMatch.description || visionItem.description,
-        price: visionItem.price || domMatch.price, // Prefer Vision AI price
-        image_url: domMatch.image_url, // DOM has actual image URLs
-        category: visionItem.category || domMatch.category,
-        source: "merged" as const,
-      };
+    let image_url = domMatch?.image_url;
+
+    // If no DOM match, try to find image from all page images
+    if (!image_url) {
+      const itemName = visionItem.name.toLowerCase();
+      for (const [key, img] of imageMap) {
+        if (key.includes(itemName) || itemName.includes(key.split("/").pop() || "")) {
+          image_url = img.url;
+          break;
+        }
+      }
     }
 
-    // No DOM match - use Vision AI data only
     return {
       name: visionItem.name,
       name_normalized: visionItem.name.toLowerCase().trim(),
-      description: visionItem.description,
-      price: visionItem.price,
-      image_url: undefined,
-      category: visionItem.category,
-      source: "vision" as const,
+      description: domMatch?.description || visionItem.description,
+      price: visionItem.price || domMatch?.price,
+      image_url,
+      category: visionItem.category || domMatch?.category,
+      source: domMatch ? "merged" as const : "vision" as const,
     };
   });
 
-  // Add DOM-only items that Vision AI missed
+  // Add DOM-only items
   domItems.forEach((domItem) => {
     const exists = merged.some(
       (m) => calculateSimilarity(m.name_normalized, domItem.name_normalized) >= 0.7
     );
 
-    // Keep DOM-only items if they have either a price OR an image.
-    // This ensures URL scraping can still contribute images even when
-    // the price is rendered separately or in a non-standard pattern.
     if (!exists && domItem.name && (domItem.price || domItem.image_url)) {
       merged.push({
         name: domItem.name,
@@ -575,31 +557,30 @@ function levenshteinDistance(str1: string, str2: string): number {
   if (rows === 0) return cols;
   if (cols === 0) return rows;
 
-  const matrix: number[][] = [];
+  const matrix: Array<Array<number>> = [];
   for (let i = 0; i <= rows; i++) {
-    const row = new Array<number>(cols + 1).fill(0);
+    const row: Array<number> = new Array<number>(cols + 1).fill(0);
     row[0] = i;
-    matrix[i] = row;
+    matrix.push(row);
   }
-  const row0 = matrix[0]!;
+
   for (let j = 0; j <= cols; j++) {
-    row0[j] = j;
+    matrix[0]![j] = j;
   }
 
   for (let i = 1; i <= rows; i++) {
-    const row = matrix[i]!;
-    const prevRow = matrix[i - 1]!;
-    const c2 = str2.charAt(i - 1);
     for (let j = 1; j <= cols; j++) {
-      const c1 = str1.charAt(j - 1);
-      if (c2 === c1) {
-        row[j] = prevRow[j - 1]!;
+      if (str2.charAt(i - 1) === str1.charAt(j - 1)) {
+        matrix[i]![j] = matrix[i - 1]![j - 1]!;
       } else {
-        row[j] = Math.min(prevRow[j - 1]! + 1, row[j - 1]! + 1, prevRow[j]! + 1);
+        matrix[i]![j] = Math.min(
+          matrix[i - 1]![j - 1]! + 1,
+          matrix[i]![j - 1]! + 1,
+          matrix[i - 1]![j]! + 1
+        );
       }
     }
   }
 
-  const lastRow = matrix[rows];
-  return lastRow?.[cols] ?? 0;
+  return matrix[rows]![cols]!;
 }

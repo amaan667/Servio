@@ -1,5 +1,4 @@
 import { getOpenAI } from "./openai";
-import { logger } from "./monitoring/structured-logger";
 import fs from "fs";
 
 export interface ExtractedMenuItem {
@@ -79,8 +78,6 @@ For this page (${pageIndex + 1}):
 `.trim();
 
   try {
-    const startTime = Date.now();
-    
     const response = await openai.chat.completions.create({
       model: "gpt-4o",
       messages: [
@@ -100,13 +97,6 @@ For this page (${pageIndex + 1}):
       ],
       max_tokens: 8000,
       temperature: 0, // Deterministic: 0 = no randomness
-    });
-
-    const duration = Date.now() - startTime;
-    logger.info("Vision extraction completed", {
-      pageIndex,
-      itemsRequested: maxItems,
-      durationMs: duration,
     });
 
     const text = response.choices[0]?.message?.content;
@@ -129,7 +119,6 @@ For this page (${pageIndex + 1}):
     const json = JSON.parse(jsonMatch[0]);
     
     if (!Array.isArray(json)) {
-      logger.warn("Vision extraction returned non-array", { pageIndex });
       return { items: [], hasMore: false, page_analyzed: pageIndex };
     }
 
@@ -151,23 +140,12 @@ For this page (${pageIndex + 1}):
 
     const hasMore = items.length >= maxItems && !isLastPage;
     
-    logger.info("Vision extraction result", {
-      pageIndex,
-      itemsExtracted: items.length,
-      hasMore,
-      categories: [...new Set(items.map(i => i.category).filter(Boolean))],
-    });
-
     return {
       items,
       hasMore,
       page_analyzed: pageIndex,
     };
-  } catch (error) {
-    logger.error("Vision extraction failed", {
-      pageIndex,
-      error: error instanceof Error ? error.message : "Unknown error",
-    });
+  } catch {
     return { items: [], hasMore: false, page_analyzed: pageIndex };
   }
 }
@@ -244,8 +222,6 @@ export async function extractMenuFromPDF(
   const totalPages = pdfImages.length;
   let pagesWithItems = 0;
 
-  logger.info("Starting PDF extraction", { totalPages });
-
   for (let i = 0; i < pdfImages.length; i++) {
     const imageUrl = pdfImages[i];
     if (!imageUrl) continue;
@@ -264,12 +240,6 @@ export async function extractMenuFromPDF(
 
     onProgress?.(i + 1, totalPages);
   }
-
-  logger.info("PDF extraction complete", {
-    totalItems: items.length,
-    totalPages,
-    pagesWithItems,
-  });
 
   return {
     items,
