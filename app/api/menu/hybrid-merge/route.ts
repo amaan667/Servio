@@ -36,6 +36,9 @@ export const POST = withUnifiedAuth(async (req: NextRequest, context) => {
     // venueId comes from context (already verified by withUnifiedAuth)
     const normalizedVenueId = context.venueId;
     logContext = { requestId, venueId: normalizedVenueId, menuUrl, userId: context.user.id };
+
+    // Explicit stdout so Railway shows logs immediately when hybrid process starts
+    process.stdout.write(`[menu-upload] HYBRID_START requestId=${requestId} venueId=${normalizedVenueId} menuUrl=${menuUrl}\n`);
     console.info("[menu-upload] hybrid-merge start", logContext);
 
     if (!menuUrl) {
@@ -80,6 +83,7 @@ export const POST = withUnifiedAuth(async (req: NextRequest, context) => {
     }
 
     // Step 5: Run THE ONE TRUE HYBRID EXTRACTION SYSTEM
+    console.info("[menu-upload] hybrid-merge calling extractMenuHybrid", { pdfImageCount: pdfImages.length, menuUrl });
 
     const { extractMenuHybrid } = await import("@/lib/hybridMenuExtractor");
 
@@ -88,11 +92,16 @@ export const POST = withUnifiedAuth(async (req: NextRequest, context) => {
       websiteUrl: menuUrl,
       venueId: normalizedVenueId,
     });
+    const itemsWithImage = extractionResult.items.filter((i) => i.image_url).length;
     console.info("[menu-upload] hybrid-merge extraction done", {
       ...logContext,
       mode: extractionResult.mode,
       itemCount: extractionResult.items.length,
+      itemsWithImageUrl: itemsWithImage,
     });
+    if (itemsWithImage === 0 && extractionResult.items.length > 0) {
+      console.info("[menu-upload] hybrid-merge WARNING: extraction returned items but none have image_url");
+    }
 
     // Step 7: Insert items into database
 

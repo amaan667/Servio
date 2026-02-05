@@ -78,9 +78,9 @@ async function getChromiumPath() {
  */
 export async function extractMenuFromWebsite(url: string): Promise<WebMenuItem[]> {
   console.info("[menu-upload] url extraction start", { url });
-  console.log("[WEB-EXTRACT] Starting website extraction for:", url);
+  console.info("[menu-upload] [WEB-EXTRACT] Starting website extraction for:", url);
   const executablePath = await getChromiumPath();
-  console.log("[WEB-EXTRACT] Chromium executable path:", executablePath ? "found" : "not found");
+  console.info("[menu-upload] [WEB-EXTRACT] Chromium path:", executablePath ? "found" : "not found");
 
   const browser = await puppeteer.launch({
     args: [
@@ -127,7 +127,7 @@ export async function extractMenuFromWebsite(url: string): Promise<WebMenuItem[]
       waitUntil: "domcontentloaded",
       timeout: 20000,
     });
-    console.log("[WEB-EXTRACT] Page loaded successfully");
+    console.info("[menu-upload] [WEB-EXTRACT] Page loaded");
 
     await Promise.race([
       page
@@ -139,22 +139,36 @@ export async function extractMenuFromWebsite(url: string): Promise<WebMenuItem[]
     ]);
 
     await new Promise((resolve) => setTimeout(resolve, 2000));
-    console.log("[WEB-EXTRACT] Waiting complete, starting extraction...");
+    console.info("[menu-upload] [WEB-EXTRACT] Wait complete, extracting images and DOM...");
 
     // Extract ALL images from the page first (before DOM items)
     const allPageImages = await extractAllPageImages(page);
-    console.log("[WEB-EXTRACT] Total images extracted from page:", allPageImages.length);
-    if (allPageImages.length > 0) {
-      console.log("[WEB-EXTRACT] First 5 image URLs:", allPageImages.slice(0, 5).map((img) => ({ url: img.url, alt: img.altText, width: img.width, height: img.height })));
+    const imageCount = allPageImages.length;
+    console.info("[menu-upload] [URL-IMAGES] Page image count:", imageCount);
+    if (imageCount > 0) {
+      console.info(
+        "[menu-upload] [URL-IMAGES] Sample (first 5):",
+        JSON.stringify(
+          allPageImages.slice(0, 5).map((img) => ({
+            url: img.url?.substring(0, 100),
+            alt: img.altText ?? null,
+            w: img.width,
+            h: img.height,
+          }))
+        )
+      );
+    } else {
+      console.info("[menu-upload] [URL-IMAGES] No images found on page (querySelectorAll img)");
     }
 
     // Extract items from DOM
     const domItems = await extractFromDOM(page);
-    console.log("[WEB-EXTRACT] DOM items extracted:", domItems.length);
+    console.info("[menu-upload] [WEB-EXTRACT] DOM items:", domItems.length);
 
     // Associate images with DOM items
     const domItemsWithImages = associateImagesWithItemsMultiSignal(domItems, allPageImages);
-    console.log("[WEB-EXTRACT] DOM items with images:", domItemsWithImages.filter((i) => i.image_url).length);
+    const domWithImages = domItemsWithImages.filter((i) => i.image_url).length;
+    console.info("[menu-upload] [URL-IMAGES] After association: DOM items with image_url:", domWithImages, "of", domItemsWithImages.length);
 
     // Screenshot + Vision AI
     const screenshot = (await page.screenshot({
@@ -162,20 +176,30 @@ export async function extractMenuFromWebsite(url: string): Promise<WebMenuItem[]
       type: "png",
       encoding: "base64",
     })) as string;
-    console.log("[WEB-EXTRACT] Screenshot captured, size:", screenshot.length, "chars");
+    console.info("[menu-upload] [WEB-EXTRACT] Screenshot length:", screenshot.length);
 
     const screenshotDataUrl = `data:image/png;base64,${screenshot}`;
-    console.log("[WEB-EXTRACT] Calling Vision AI for extraction...");
     const visionResult = await extractMenuFromImage(screenshotDataUrl);
     const visionItems = visionResult.items;
-    console.log("[WEB-EXTRACT] Vision AI extracted items:", visionItems.length);
+    console.info("[menu-upload] [WEB-EXTRACT] Vision items:", visionItems.length);
 
-    // Merge all data sources
-    console.log("[WEB-EXTRACT] Merging data sources...");
     const mergedItems = mergeExtractedData(domItemsWithImages, visionItems, allPageImages);
-    console.log("[WEB-EXTRACT] Final merged items:", mergedItems.length);
-    console.log("[WEB-EXTRACT] Items with images in final result:", mergedItems.filter((i) => i.image_url).length);
-    console.info("[menu-upload] url extraction done", { url, itemCount: mergedItems.length });
+    const mergedWithImages = mergedItems.filter((i) => i.image_url).length;
+    console.info("[menu-upload] [URL-IMAGES] After merge: items with image_url:", mergedWithImages, "of", mergedItems.length);
+    if (mergedWithImages > 0) {
+      console.info(
+        "[menu-upload] [URL-IMAGES] Sample merged with image:",
+        JSON.stringify(
+          mergedItems
+            .filter((i) => i.image_url)
+            .slice(0, 3)
+            .map((i) => ({ name: i.name, imageUrl: i.image_url?.substring(0, 80) }))
+        )
+      );
+    } else {
+      console.info("[menu-upload] [URL-IMAGES] WARNING: Zero items with image_url after merge");
+    }
+    console.info("[menu-upload] url extraction done", { url, itemCount: mergedItems.length, withImageUrl: mergedWithImages });
 
     return mergedItems;
   } catch (error) {
@@ -199,7 +223,7 @@ export async function extractMenuFromWebsite(url: string): Promise<WebMenuItem[]
  * This is critical for extracting images that might be in separate containers
  */
 async function extractAllPageImages(page: import("puppeteer-core").Page): Promise<PageImage[]> {
-  console.log("[IMAGES] Extracting all images from page...");
+  console.info("[menu-upload] [URL-IMAGES] Extracting img elements from page (browser)...");
   const result = await page.evaluate(() => {
     const images: PageImage[] = [];
     const imgElements = document.querySelectorAll("img");
@@ -268,11 +292,10 @@ async function extractAllPageImages(page: import("puppeteer-core").Page): Promis
       images.push(imageEntry);
     });
 
-    console.log(`[IMAGES] Final count: ${images.length} images after filtering`);
     return images;
   });
 
-  console.log("[IMAGES] Returning", result.length, "images from page");
+  console.info("[menu-upload] [URL-IMAGES] Browser returned", result.length, "images after filters (no src/placeholder/tiny skipped)");
   return result;
 }
 
@@ -353,7 +376,7 @@ function associateImagesWithItemsMultiSignal(
   domItems: WebMenuItem[],
   allImages: PageImage[]
 ): WebMenuItem[] {
-  console.log("[ASSOCIATE] Multi-signal:", domItems.length, "items,", allImages.length, "images");
+  console.info("[menu-upload] [ASSOCIATE] Multi-signal:", domItems.length, "items,", allImages.length, "images");
   return domItems.map((item) => {
     if (item.image_url) return item;
     let bestImage: PageImage | null = null;
@@ -678,12 +701,8 @@ function mergeExtractedData(
   visionItems: import("./gptVisionMenuParser").ExtractedMenuItem[],
   allPageImages: PageImage[]
 ): WebMenuItem[] {
-  console.log("[MERGE] Starting merge:");
-  console.log("[MERGE] - DOM items:", domItems.length);
-  console.log("[MERGE] - Vision items:", visionItems.length);
-  console.log("[MERGE] - All page images:", allPageImages.length);
-  
-  // Build image map from all page images for matching
+  console.info("[menu-upload] [MERGE] Starting merge: DOM", domItems.length, "Vision", visionItems.length, "page images", allPageImages.length);
+
   const imageMap = new Map<string, PageImage>();
   allPageImages.forEach((img) => {
     const altText = img.altText?.toLowerCase() || "";
@@ -691,12 +710,9 @@ function mergeExtractedData(
     imageMap.set(altText, img);
     imageMap.set(urlParts, img);
   });
-  console.log("[MERGE] Built imageMap with", imageMap.size, "entries");
+  console.info("[menu-upload] [MERGE] imageMap entries:", imageMap.size);
 
-  // Start with Vision AI data
   const merged: WebMenuItem[] = visionItems.map((visionItem, idx) => {
-    console.log(`[MERGE] Processing vision item ${idx + 1}/${visionItems.length}: "${visionItem.name}"`);
-    
     const domMatch = domItems.find((domItem) => {
       const similarity = calculateSimilarity(
         visionItem.name.toLowerCase().trim(),
@@ -704,12 +720,10 @@ function mergeExtractedData(
       );
       return similarity >= 0.7;
     });
-    console.log("[MERGE] - DOM match found:", domMatch ? "yes" : "no");
 
     let image_url = domMatch?.image_url;
-    console.log("[MERGE] - Image from DOM match:", image_url || "none");
+    let imageSource = image_url ? "dom" : null;
 
-    // If no DOM match, try to find image from all page images (ensure URL/PDF images present)
     if (!image_url) {
       const itemName = visionItem.name.toLowerCase();
       const itemWords = itemName.split(/\s+/).filter((w) => w.length > 2);
@@ -717,16 +731,20 @@ function mergeExtractedData(
         const filename = key.split("/").pop() || "";
         if (key.includes(itemName) || itemName.includes(filename)) {
           image_url = img.url;
+          imageSource = "imageMap_key";
           break;
         }
         if (itemWords.some((w) => key.includes(w) || filename.replace(/\.[a-z]+$/i, "").includes(w))) {
           image_url = img.url;
+          imageSource = "imageMap_words";
           break;
         }
       }
     }
 
-    console.log("[MERGE] - Final image_url for '" + visionItem.name + "':", image_url ? image_url.substring(0, 50) + "..." : "none");
+    if (idx < 5 || (idx < 15 && !image_url)) {
+      console.info("[menu-upload] [MERGE] item", idx + 1, visionItem.name, "image:", image_url ? "yes" : "none", "source:", imageSource ?? "none");
+    }
 
     const visionConf = { name: 0.95, description: 0.9, price: 0.95, category: 0.9, image_url: image_url ? 0.85 : 0.5 };
     const domConf = domMatch
@@ -754,9 +772,8 @@ function mergeExtractedData(
     };
   });
 
-  console.log("[MERGE] After vision processing:", merged.filter((i) => i.image_url).length, "items have images");
+  console.info("[menu-upload] [MERGE] After vision: items with image_url:", merged.filter((i) => i.image_url).length);
 
-  // Add DOM-only items
   let addedCount = 0;
   domItems.forEach((domItem) => {
     const exists = merged.some(
@@ -764,7 +781,9 @@ function mergeExtractedData(
     );
 
     if (!exists && domItem.name && (domItem.price || domItem.image_url)) {
-      console.log(`[MERGE] Adding DOM-only item: "${domItem.name}", image_url: ${domItem.image_url || "none"}`);
+      if (addedCount < 5) {
+        console.info("[menu-upload] [MERGE] DOM-only item:", domItem.name, "image_url:", domItem.image_url ? "yes" : "no");
+      }
       merged.push({
         name: domItem.name,
         name_normalized: domItem.name_normalized,
@@ -785,8 +804,7 @@ function mergeExtractedData(
     }
   });
 
-  console.log(`[MERGE] Added ${addedCount} DOM-only items`);
-  console.log(`[MERGE] Final result: ${merged.length} items, ${merged.filter((i) => i.image_url).length} with images`);
+  console.info("[menu-upload] [MERGE] DOM-only added:", addedCount, "Final:", merged.length, "items,", merged.filter((i) => i.image_url).length, "with images");
   return merged;
 }
 

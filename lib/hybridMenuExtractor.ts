@@ -108,7 +108,7 @@ export async function extractMenuHybrid(
 
   // MODE 3: Hybrid (PDF + URL)
   if (mode === "hybrid" && pdfImages && websiteUrl) {
-    // Extract from both sources in parallel for speed
+    console.info("[menu-upload] [HYBRID] Starting parallel PDF + URL extraction");
     let pdfData: { items: MenuItem[] };
     let webItems: MenuItem[] = [];
 
@@ -118,7 +118,9 @@ export async function extractMenuHybrid(
         extractMenuFromWebsite(websiteUrl),
       ]);
     } catch (parallelError) {
-      // Fallback: If parallel fails, try PDF only
+      console.info("[menu-upload] [HYBRID] Parallel extraction failed, fallback to PDF only", {
+        error: parallelError instanceof Error ? parallelError.message : String(parallelError),
+      });
       try {
         pdfData = await extractFromPDF(pdfImages);
         webItems = [];
@@ -127,14 +129,27 @@ export async function extractMenuHybrid(
       }
     }
 
-    // PDF Analysis
-    const pdfCategories = Array.from(new Set(pdfData.items.map((i) => i.category).filter(Boolean)));
     const pdfWithImages = pdfData.items.filter((i) => i.image_url).length;
-
-    // URL Analysis
-    const urlCategories = Array.from(new Set(webItems.map((i) => i.category).filter(Boolean)));
     const urlWithImages = webItems.filter((i) => i.image_url).length;
-    const urlWithDescriptions = webItems.filter((i) => i.description).length;
+    console.info("[menu-upload] [HYBRID] URL extraction result:", {
+      urlItems: webItems.length,
+      urlItemsWithImageUrl: urlWithImages,
+      pdfItems: pdfData.items.length,
+      pdfItemsWithImageUrl: pdfWithImages,
+    });
+    if (urlWithImages > 0) {
+      console.info(
+        "[menu-upload] [HYBRID] Sample URL items with image_url:",
+        JSON.stringify(
+          webItems
+            .filter((i) => i.image_url)
+            .slice(0, 3)
+            .map((i) => ({ name: i.name, imageUrl: i.image_url?.substring(0, 80) }))
+        )
+      );
+    } else {
+      console.info("[menu-upload] [HYBRID] WARNING: Zero URL items have image_url — images will not be added from URL");
+    }
 
     const urlCategoryBreakdown: Record<string, number> = {};
     webItems.forEach((item) => {
@@ -142,13 +157,9 @@ export async function extractMenuHybrid(
       urlCategoryBreakdown[cat] = (urlCategoryBreakdown[cat] || 0) + 1;
     });
 
-    // Intelligent merge
     const mergedItems = await mergeWebAndPdfData(pdfData.items, webItems);
 
-    // Merge Analysis
-    const mergedCategories = Array.from(
-      new Set(mergedItems.map((i) => i.category).filter(Boolean))
-    );
+    const mergedWithImages = mergedItems.filter((i) => i.image_url).length;
     console.info("[menu-upload] hybrid extraction done", {
       venueId,
       mode: "hybrid",
@@ -156,7 +167,9 @@ export async function extractMenuHybrid(
       pdfPageCount: pdfImages.length,
       pdfItems: pdfData.items.length,
       urlItems: webItems.length,
-      itemCount: mergedItems.length,
+      urlItemsWithImageUrl: urlWithImages,
+      mergedItems: mergedItems.length,
+      mergedWithImageUrl: mergedWithImages,
     });
     return {
       items: mergedItems,
@@ -716,6 +729,13 @@ function findBestMatchForDedupe(
  * - Add web-only items that PDF missed
  */
 async function mergeWebAndPdfData(pdfItems: MenuItem[], webItems: MenuItem[]): Promise<MenuItem[]> {
+  const webItemsWithImages = webItems.filter((i) => i.image_url).length;
+  console.info("[menu-upload] [HYBRID-MERGE] mergeWebAndPdfData start:", {
+    pdfItems: pdfItems.length,
+    webItems: webItems.length,
+    webItemsWithImageUrl: webItemsWithImages,
+  });
+
   let matchedCount = 0;
   let imagesAddedCount = 0;
   let descriptionsEnhancedCount = 0;
@@ -756,9 +776,11 @@ async function mergeWebAndPdfData(pdfItems: MenuItem[], webItems: MenuItem[]): P
       if (enhancedDesc) descriptionsEnhancedCount++;
       if (updatedPrice) pricesUpdatedCount++;
 
-      // Reduced logging - only progress updates every 25 items for speed
-      if (matchedCount === 1 || matchedCount % 25 === 0) {
-        /* Condition handled */
+      if (addedImage && imagesAddedCount <= 5) {
+        console.info("[menu-upload] [HYBRID-MERGE] image from URL for item:", pdfItem.name, "url:", webMatch.image_url?.substring(0, 60));
+      }
+      if (!webMatch.image_url && pdfItem.image_url && matchedCount <= 3) {
+        console.info("[menu-upload] [HYBRID-MERGE] using PDF image (no URL image) for:", pdfItem.name);
       }
 
       return {
@@ -1028,8 +1050,6 @@ async function mergeWebAndPdfData(pdfItems: MenuItem[], webItems: MenuItem[]): P
     const unmatchedWithImages = unmatchedUrlItems.filter((i) => i.image_url).length;
   }
 
-  // Image flow analysis
-  const urlItemsWithImages = webItems.filter((i) => i.image_url).length;
   const mergedWithImages = merged.filter((i) => i.image_url).length;
   const pdfEnhancedWithImages = merged.filter(
     (i) => i.merge_source === "pdf_enhanced_with_url" && i.image_url
@@ -1037,6 +1057,12 @@ async function mergeWebAndPdfData(pdfItems: MenuItem[], webItems: MenuItem[]): P
   const urlOnlyWithImages = merged.filter(
     (i) => i.merge_source === "url_only_new_item" && i.image_url
   ).length;
+  console.info("[menu-upload] [HYBRID-MERGE] image summary:", {
+    mergedWithImageUrl: mergedWithImages,
+    pdfEnhancedWithUrlImage: pdfEnhancedWithImages,
+    urlOnlyNewItemWithImage: urlOnlyWithImages,
+    imagesAddedFromUrl: imagesAddedCount,
+  });
 
   // FINAL DEDUPLICATION PASS
   const dedupeResult = deduplicateMergedItems(merged);
