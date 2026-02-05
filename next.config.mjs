@@ -54,96 +54,28 @@ const nextConfig = {
         source: '/_next/static/css/:path*',
         headers: [
           // Let Next.js set Content-Type - explicit override can cause MIME/script issues
-          {
-            key: 'Cache-Control',
-            value: 'public, max-age=31536000, immutable',
-          },
-          {
-          },
         ],
       },
       {
         source: '/_next/static/chunks/:path*',
         headers: [
           // Removed explicit Content-Type - Next.js handles MIME types correctly
-          {
-            key: 'Cache-Control',
-            value: 'public, max-age=31536000, immutable',
-          },
-          {
-          },
         ],
       },
       {
         source: '/_next/static/media/:path*',
         headers: [
           // Removed explicit Content-Type - Next.js handles MIME types correctly
-          {
-            key: 'Cache-Control',
-            value: 'public, max-age=31536000, immutable',
-          },
-          {
-          },
         ],
       },
       {
         source: '/:path*',
         headers: [
-          {
-            key: 'X-DNS-Prefetch-Control',
-            value: 'on'
-          },
-          {
-            key: 'Strict-Transport-Security',
-            value: 'max-age=63072000; includeSubDomains; preload'
-          },
-          {
-          },
-          {
-            key: 'X-Frame-Options',
-            value: 'SAMEORIGIN'
-          },
-          {
-            key: 'Referrer-Policy',
-            value: 'strict-origin-when-cross-origin'
-          },
-          {
-            key: 'Permissions-Policy',
-            value: 'camera=(), microphone=(), geolocation=(self), payment=(self)'
-          },
-          {
-            // Content Security Policy - balanced security with Next.js compatibility
-            // Note: 'unsafe-inline' needed for Next.js inline scripts/styles
-            // Note: 'unsafe-eval' needed for some Next.js features in dev
-            // Allow loading images from any HTTPS origin so that menu item photos
-            // scraped from restaurant websites can be displayed correctly.
-            key: 'Content-Security-Policy',
-            value: process.env.NODE_ENV === 'production'
-              ? [
-                  "default-src 'self'",
-                  "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://js.stripe.com https://*.sentry.io https://www.googletagmanager.com https://www.google-analytics.com",
-                  "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
-                  "img-src 'self' data: blob: https://*.supabase.co https://images.unsplash.com https://*.stripe.com https://www.googletagmanager.com https://www.google-analytics.com",
-                  "font-src 'self' https://fonts.gstatic.com",
-                  "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.stripe.com https://*.sentry.io https://*.ingest.sentry.io https://*.google-analytics.com https://region1.google-analytics.com https://region2.google-analytics.com https://www.googletagmanager.com https://analytics.google.com",
-                  "frame-src 'self' https://js.stripe.com https://hooks.stripe.com",
-                  "frame-ancestors 'self'",
-                  "form-action 'self'",
-                  "base-uri 'self'",
-                  "object-src 'none'",
-                  "upgrade-insecure-requests",
-                ].join('; ')
-              : '' // Don't apply CSP in development (causes issues with hot reload)
-          },
         ].filter(h => h.value !== ''), // Filter out empty headers in dev
       },
       {
         source: '/images/:path*',
         headers: [
-          {
-            key: 'Cache-Control',
-            value: 'public, max-age=31536000, immutable',
-          },
         ],
       },
     ];
