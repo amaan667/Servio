@@ -1,6 +1,14 @@
 import { getOpenAI } from "./openai";
 import fs from "fs";
 
+/** Fractional region 0-1 for cropping (x, y = top-left; w, h = width, height). */
+export interface ImageRegionFraction {
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+}
+
 export interface ExtractedMenuItem {
   name: string;
   description?: string;
@@ -12,6 +20,8 @@ export interface ExtractedMenuItem {
   image_url?: string;
   has_image?: boolean;
   page_index?: number;
+  /** When set, crop this region from the page image to get image_url (PDF extraction). */
+  image_region?: ImageRegionFraction;
 }
 
 export interface VisionExtractionResult {
@@ -75,6 +85,11 @@ PRICING:
 
 For this page (${pageIndex + 1}):
 - Max ${maxItems} items per page
+
+IMAGE REGIONS (for PDFs with photos):
+- When has_image is true, also return "image_region": { "x", "y", "w", "h" } as fractions 0-1 of the full image.
+- (x, y) = top-left of the photo region, (w, h) = width and height of the photo region.
+- Use the full menu page image as the coordinate space. Example: photo taking right half of page: {"x": 0.5, "y": 0.2, "w": 0.45, "h": 0.3}.
 `.trim();
 
   try {
@@ -123,6 +138,18 @@ For this page (${pageIndex + 1}):
     }
 
     // Validate and clean items
+    const parseRegion = (r: unknown): ImageRegionFraction | undefined => {
+      if (!r || typeof r !== "object") return undefined;
+      const o = r as Record<string, unknown>;
+      const x = Number(o.x);
+      const y = Number(o.y);
+      const w = Number(o.w);
+      const h = Number(o.h);
+      if (!Number.isFinite(x) || !Number.isFinite(y) || !Number.isFinite(w) || !Number.isFinite(h)) return undefined;
+      if (w <= 0 || h <= 0) return undefined;
+      return { x, y, w, h };
+    };
+
     const items: ExtractedMenuItem[] = json
       .filter((item: Record<string, unknown>) => item && typeof item === "object" && item.name)
       .map((item: Record<string, unknown>) => ({
@@ -136,6 +163,7 @@ For this page (${pageIndex + 1}):
         image_url: undefined,
         has_image: item.has_image === true,
         page_index: pageIndex,
+        ...(parseRegion(item.image_region) ? { image_region: parseRegion(item.image_region) } : {}),
       }));
 
     const hasMore = items.length >= maxItems && !isLastPage;
@@ -147,6 +175,35 @@ For this page (${pageIndex + 1}):
     };
   } catch {
     return { items: [], hasMore: false, page_analyzed: pageIndex };
+  }
+}
+
+/**
+ * Crop a page image (data URL) by fractional region and return cropped image as data URL.
+ * Used to extract item photos from PDF pages when Vision returns image_region.
+ */
+export async function cropPageImageToDataUrl(
+  pageDataUrl: string,
+  region: ImageRegionFraction
+): Promise<string> {
+  const base64 = pageDataUrl.replace(/^data:image\/\w+;base64,/, "");
+  const buffer = Buffer.from(base64, "base64");
+  try {
+    const sharp = (await import("sharp")).default;
+    const meta = await sharp(buffer).metadata();
+    const width = meta.width ?? 1;
+    const height = meta.height ?? 1;
+    const left = Math.max(0, Math.floor(region.x * width));
+    const top = Math.max(0, Math.floor(region.y * height));
+    const w = Math.min(width - left, Math.max(1, Math.ceil(region.w * width)));
+    const h = Math.min(height - top, Math.max(1, Math.ceil(region.h * height)));
+    const cropped = await sharp(buffer)
+      .extract({ left, top, width: w, height: h })
+      .png()
+      .toBuffer();
+    return `data:image/png;base64,${cropped.toString("base64")}`;
+  } catch {
+    return pageDataUrl;
   }
 }
 

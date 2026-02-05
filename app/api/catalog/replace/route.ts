@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { apiErrors } from "@/lib/api/standard-response";
 import { createServerSupabase } from "@/lib/supabase";
 import { extractMenuHybrid } from "@/lib/hybridMenuExtractor";
+import { validateExtractedItems } from "@/lib/extractionValidation";
 
 // Import MenuItem type from hybrid extractor for extracted items
 type ExtractedMenuItem = {
@@ -324,6 +325,19 @@ export const POST = withUnifiedAuth(
           mode: extractionResult.mode,
           itemCount: extractionResult.itemCount,
         });
+
+        const validated = validateExtractedItems(extractionResult.items);
+        const inconsistentPrice = validated.filter((v) => !v.validation.priceFormatConsistent).length;
+        const outliers = validated.filter((v) => v.validation.priceOutlier).length;
+        const inconsistentCategory = validated.filter((v) => !v.validation.categoryConsistent).length;
+        if (inconsistentPrice + outliers + inconsistentCategory > 0) {
+          console.info("[menu-upload] cross-reference validation", {
+            requestId,
+            priceFormatInconsistent: inconsistentPrice,
+            priceOutliers: outliers,
+            categoryInconsistent: inconsistentCategory,
+          });
+        }
       } catch (extractionError) {
         throw extractionError;
       }

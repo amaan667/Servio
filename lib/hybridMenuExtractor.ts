@@ -8,7 +8,7 @@
  * 3. Hybrid (PDF + URL) - Combine both sources
  */
 
-import { extractMenuFromImage } from "./gptVisionMenuParser";
+import { extractMenuFromImage, cropPageImageToDataUrl } from "./gptVisionMenuParser";
 import { extractMenuFromWebsite } from "./webMenuExtractor";
 
 
@@ -192,34 +192,42 @@ function chunkArray<T>(array: T[], chunkSize: number): T[][] {
 }
 
 /**
- * Extract menu items from PDF images
+ * Extract menu items from PDF images.
+ * Vision returns image_region (fractions 0-1) for items with photos; we crop the page to get image_url.
  */
 async function extractFromPDF(pdfImages: string[]): Promise<{ items: MenuItem[] }> {
   const items: MenuItem[] = [];
 
-  // Process all pages in parallel for much faster extraction
   const pagePromises = pdfImages.map(async (imageUrl, i) => {
     try {
-      // Extract items from page
       const pageResult = await extractMenuFromImage(imageUrl);
       const pageItems = pageResult.items;
 
-      // Add page index to each item
-      return pageItems.map((item) => ({
-        ...item,
-        page_index: i,
-        source: "pdf",
-      }));
-    } catch (pageError) {
-      // Continue with other pages instead of failing completely
+      const withImages: MenuItem[] = [];
+      for (const item of pageItems) {
+        const { image_region, ...rest } = item;
+        let image_url = item.image_url;
+        if (image_region && (item.has_image || image_region.w > 0)) {
+          try {
+            image_url = await cropPageImageToDataUrl(imageUrl, image_region);
+          } catch {
+            // keep image_url undefined on crop failure
+          }
+        }
+        withImages.push({
+          ...rest,
+          page_index: i,
+          source: "pdf",
+          image_url,
+        });
+      }
+      return withImages;
+    } catch {
       return [];
     }
   });
 
-  // Wait for all pages to complete
   const pageResults = await Promise.all(pagePromises);
-
-  // Flatten results
   pageResults.forEach((pageItems) => {
     items.push(...pageItems);
   });

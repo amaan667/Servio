@@ -15,6 +15,14 @@ import puppeteer from "puppeteer-core";
 import chromium from "@sparticuz/chromium";
 import { extractMenuFromImage } from "./gptVisionMenuParser";
 
+/** Document coordinates for layout-aware matching. */
+export interface Rect {
+  top: number;
+  left: number;
+  width: number;
+  height: number;
+}
+
 interface WebMenuItem {
   name: string;
   name_normalized: string;
@@ -23,6 +31,10 @@ interface WebMenuItem {
   image_url?: string;
   category?: string;
   source: "dom" | "vision" | "merged";
+  /** Layout rect for spatial image matching (optional). */
+  rect?: Rect;
+  /** Per-field confidence 0-1 for user feedback (optional). */
+  _confidence?: { name?: number; description?: number; price?: number; category?: number; image_url?: number };
 }
 
 interface PageImage {
@@ -30,6 +42,8 @@ interface PageImage {
   altText?: string;
   width?: number;
   height?: number;
+  /** Document rect for spatial proximity matching. */
+  rect?: Rect;
 }
 
 /**
@@ -139,7 +153,7 @@ export async function extractMenuFromWebsite(url: string): Promise<WebMenuItem[]
     console.log("[WEB-EXTRACT] DOM items extracted:", domItems.length);
 
     // Associate images with DOM items
-    const domItemsWithImages = associateImagesWithItems(domItems, allPageImages);
+    const domItemsWithImages = associateImagesWithItemsMultiSignal(domItems, allPageImages);
     console.log("[WEB-EXTRACT] DOM items with images:", domItemsWithImages.filter((i) => i.image_url).length);
 
     // Screenshot + Vision AI
@@ -237,11 +251,18 @@ async function extractAllPageImages(page: import("puppeteer-core").Page): Promis
         }
       }
 
+      const rect = imgEl.getBoundingClientRect();
       const imageEntry = {
         url: absoluteSrc,
         altText: imgEl.alt || undefined,
         width,
         height,
+        rect: {
+          top: rect.top + window.scrollY,
+          left: rect.left + window.scrollX,
+          width: rect.width,
+          height: rect.height,
+        },
       };
       console.log("[IMAGES] Added image:", imageEntry);
       images.push(imageEntry);
@@ -316,6 +337,57 @@ function associateImagesWithItems(
   return result;
 }
 
+/** Distance between two rects (center to center) for spatial scoring. */
+function rectDistance(a: Rect, b: Rect): number {
+  const ax = a.left + a.width / 2;
+  const ay = a.top + a.height / 2;
+  const bx = b.left + b.width / 2;
+  const by = b.top + b.height / 2;
+  return Math.hypot(ax - bx, ay - by);
+}
+
+/**
+ * Multi-signal image association: alt text, URL path, name substring, and spatial proximity.
+ */
+function associateImagesWithItemsMultiSignal(
+  domItems: WebMenuItem[],
+  allImages: PageImage[]
+): WebMenuItem[] {
+  console.log("[ASSOCIATE] Multi-signal:", domItems.length, "items,", allImages.length, "images");
+  return domItems.map((item) => {
+    if (item.image_url) return item;
+    let bestImage: PageImage | null = null;
+    let bestScore = 0;
+    for (const img of allImages) {
+      const altText = img.altText?.toLowerCase() || "";
+      const urlParts = img.url.toLowerCase().split("/").pop() || "";
+      const itemName = item.name_normalized;
+      let score = 0;
+      if (altText && itemName) {
+        if (altText.includes(itemName) || itemName.includes(altText)) score += 0.5;
+        else if (itemName.split(" ").filter((w) => w.length > 2).some((w) => altText.includes(w))) score += 0.25;
+      }
+      if (itemName.split(" ").filter((w) => w.length > 2).some((w) => urlParts.includes(w))) score += 0.3;
+      if (item.rect && img.rect) {
+        const dist = rectDistance(item.rect, img.rect);
+        score += Math.max(0, 0.4 * (1 - dist / 800));
+      }
+      if (score > bestScore) {
+        bestScore = score;
+        bestImage = img;
+      }
+    }
+    if (bestImage && bestScore >= 0.2) {
+      return {
+        ...item,
+        image_url: bestImage.url,
+        _confidence: { ...item._confidence, image_url: Math.min(1, bestScore + 0.3) },
+      };
+    }
+    return item;
+  });
+}
+
 /**
  * Extract menu items from DOM structure
  */
@@ -330,8 +402,32 @@ async function extractFromDOM(page: import("puppeteer-core").Page): Promise<WebM
       category?: string;
       source: string;
       index: number;
+      rect?: { top: number; left: number; width: number; height: number };
     }
     const items: DOMMenuItem[] = [];
+    const seenNormalized = new Set<string>();
+
+    function findSectionHeader(el: Element | null): string | undefined {
+      let current: Element | null = el;
+      for (let depth = 0; depth < 15 && current; depth++) {
+        let prev: Element | null = current.previousElementSibling;
+        for (let i = 0; i < 10 && prev; i++) {
+          const tag = prev.tagName?.toUpperCase() || "";
+          if (/^H[1-6]$/.test(tag)) {
+            const t = prev.textContent?.trim();
+            if (t && t.length < 80) return t;
+          }
+          const cls = (prev.getAttribute?.("class") || "").toLowerCase();
+          if (/section|category|heading|menu-section|menu-category|group-title/.test(cls)) {
+            const t = prev.textContent?.trim();
+            if (t && t.length < 80) return t;
+          }
+          prev = prev.previousElementSibling;
+        }
+        current = current.parentElement;
+      }
+      return undefined;
+    }
 
     const possibleSelectors = [
       "[data-menu-item]",
@@ -491,21 +587,65 @@ async function extractFromDOM(page: import("puppeteer-core").Page): Promise<WebM
         }
 
         if (name) {
+          const nameNorm = name.toLowerCase().trim();
+          if (seenNormalized.has(nameNorm)) return;
+          seenNormalized.add(nameNorm);
+          const rect = el.getBoundingClientRect();
+          const category = findSectionHeader(el);
           items.push({
             name,
-            name_normalized: name.toLowerCase().trim(),
+            name_normalized: nameNorm,
             description: description || undefined,
             price,
             image_url: imageUrl || undefined,
-            category: undefined,
+            category: category || undefined,
             source: "dom",
             index,
+            rect: {
+              top: rect.top + window.scrollY,
+              left: rect.left + window.scrollX,
+              width: rect.width,
+              height: rect.height,
+            },
           });
         }
       } catch {
         // Skip on error
       }
     });
+
+    if (items.length < 5) {
+      const allEls = document.querySelectorAll("div, li, article, section");
+      allEls.forEach((el) => {
+        const text = (el.textContent || "").trim();
+        if (text.length < 15 || text.length > 600) return;
+        const priceMatch = text.match(/[£$€]?\s*(\d+[.,]\d{2})/);
+        if (!priceMatch || priceMatch[1] == null) return;
+        const priceNum = parseFloat(priceMatch[1].replace(",", "."));
+        const beforePrice = text.substring(0, text.indexOf(priceMatch[0])).trim();
+        const lines = beforePrice.split(/\n/).map((s) => s.trim()).filter(Boolean);
+        const name = lines.length > 0 ? lines[lines.length - 1] : beforePrice.split(/\s{2,}/)[0] || beforePrice.slice(0, 80);
+        if (!name || name.length < 2 || name.length > 150) return;
+        const nameNorm = name.toLowerCase().trim();
+        if (seenNormalized.has(nameNorm)) return;
+        seenNormalized.add(nameNorm);
+        const rect = el.getBoundingClientRect();
+        items.push({
+          name,
+          name_normalized: nameNorm,
+          price: priceNum,
+          category: findSectionHeader(el),
+          source: "dom",
+          index: items.length,
+          rect: {
+            top: rect.top + window.scrollY,
+            left: rect.left + window.scrollX,
+            width: rect.width,
+            height: rect.height,
+          },
+        });
+      });
+    }
 
     return items as unknown as WebMenuItem[];
   });
@@ -566,6 +706,20 @@ function mergeExtractedData(
 
     console.log("[MERGE] - Final image_url for '" + visionItem.name + "':", image_url ? image_url.substring(0, 50) + "..." : "none");
 
+    const visionConf = { name: 0.95, description: 0.9, price: 0.95, category: 0.9, image_url: image_url ? 0.85 : 0.5 };
+    const domConf = domMatch
+      ? { name: 0.75, description: 0.7, price: 0.75, category: domMatch.category ? 0.8 : 0.5, image_url: domMatch.image_url ? 0.8 : 0.5 }
+      : null;
+    const confidence = domConf
+      ? {
+          name: Math.max(visionConf.name, domConf.name),
+          description: Math.max(visionConf.description, domConf.description),
+          price: Math.max(visionConf.price, domConf.price),
+          category: Math.max(visionConf.category, domConf.category),
+          image_url: Math.max(visionConf.image_url, domConf.image_url),
+        }
+      : visionConf;
+
     return {
       name: visionItem.name,
       name_normalized: visionItem.name.toLowerCase().trim(),
@@ -573,7 +727,8 @@ function mergeExtractedData(
       price: visionItem.price || domMatch?.price,
       image_url,
       category: visionItem.category || domMatch?.category,
-      source: domMatch ? "merged" as const : "vision" as const,
+      source: domMatch ? ("merged" as const) : ("vision" as const),
+      _confidence: confidence,
     };
   });
 
@@ -596,6 +751,13 @@ function mergeExtractedData(
         image_url: domItem.image_url,
         category: domItem.category,
         source: "dom" as const,
+        _confidence: domItem._confidence ?? {
+          name: 0.75,
+          description: 0.6,
+          price: 0.75,
+          category: domItem.category ? 0.8 : 0.5,
+          image_url: domItem.image_url ? 0.8 : 0.5,
+        },
       });
       addedCount++;
     }
