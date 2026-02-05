@@ -77,10 +77,7 @@ async function getChromiumPath() {
  * Uses Puppeteer + Vision AI hybrid approach
  */
 export async function extractMenuFromWebsite(url: string): Promise<WebMenuItem[]> {
-  console.info("[menu-upload] url extraction start", { url });
-  console.info("[menu-upload] [WEB-EXTRACT] Starting website extraction for:", url);
   const executablePath = await getChromiumPath();
-  console.info("[menu-upload] [WEB-EXTRACT] Chromium path:", executablePath ? "found" : "not found");
 
   const browser = await puppeteer.launch({
     args: [
@@ -127,48 +124,26 @@ export async function extractMenuFromWebsite(url: string): Promise<WebMenuItem[]
       waitUntil: "domcontentloaded",
       timeout: 20000,
     });
-    console.info("[menu-upload] [WEB-EXTRACT] Page loaded");
 
     await Promise.race([
       page
         .waitForSelector('[class*="menu"], [class*="item"], [class*="dish"], article', {
-          timeout: 5000,
+          timeout: 4000,
         })
         .catch(() => null),
-      new Promise((resolve) => setTimeout(resolve, 3000)),
+      new Promise((resolve) => setTimeout(resolve, 1500)),
     ]);
 
-    await new Promise((resolve) => setTimeout(resolve, 2000));
-    console.info("[menu-upload] [WEB-EXTRACT] Wait complete, extracting images and DOM...");
+    await new Promise((resolve) => setTimeout(resolve, 1000));
 
     // Extract ALL images from the page first (before DOM items)
     const allPageImages = await extractAllPageImages(page);
-    const imageCount = allPageImages.length;
-    console.info("[menu-upload] [URL-IMAGES] Page image count:", imageCount);
-    if (imageCount > 0) {
-      console.info(
-        "[menu-upload] [URL-IMAGES] Sample (first 5):",
-        JSON.stringify(
-          allPageImages.slice(0, 5).map((img) => ({
-            url: img.url?.substring(0, 100),
-            alt: img.altText ?? null,
-            w: img.width,
-            h: img.height,
-          }))
-        )
-      );
-    } else {
-      console.info("[menu-upload] [URL-IMAGES] No images found on page (querySelectorAll img)");
-    }
 
     // Extract items from DOM
     const domItems = await extractFromDOM(page);
-    console.info("[menu-upload] [WEB-EXTRACT] DOM items:", domItems.length);
 
     // Associate images with DOM items
     const domItemsWithImages = associateImagesWithItemsMultiSignal(domItems, allPageImages);
-    const domWithImages = domItemsWithImages.filter((i) => i.image_url).length;
-    console.info("[menu-upload] [URL-IMAGES] After association: DOM items with image_url:", domWithImages, "of", domItemsWithImages.length);
 
     // Screenshot + Vision AI
     const screenshot = (await page.screenshot({
@@ -176,35 +151,16 @@ export async function extractMenuFromWebsite(url: string): Promise<WebMenuItem[]
       type: "png",
       encoding: "base64",
     })) as string;
-    console.info("[menu-upload] [WEB-EXTRACT] Screenshot length:", screenshot.length);
 
     const screenshotDataUrl = `data:image/png;base64,${screenshot}`;
     const visionResult = await extractMenuFromImage(screenshotDataUrl);
     const visionItems = visionResult.items;
-    console.info("[menu-upload] [WEB-EXTRACT] Vision items:", visionItems.length);
 
     const mergedItems = mergeExtractedData(domItemsWithImages, visionItems, allPageImages);
-    const mergedWithImages = mergedItems.filter((i) => i.image_url).length;
-    console.info("[menu-upload] [URL-IMAGES] After merge: items with image_url:", mergedWithImages, "of", mergedItems.length);
-    if (mergedWithImages > 0) {
-      console.info(
-        "[menu-upload] [URL-IMAGES] Sample merged with image:",
-        JSON.stringify(
-          mergedItems
-            .filter((i) => i.image_url)
-            .slice(0, 3)
-            .map((i) => ({ name: i.name, imageUrl: i.image_url?.substring(0, 80) }))
-        )
-      );
-    } else {
-      console.info("[menu-upload] [URL-IMAGES] WARNING: Zero items with image_url after merge");
-    }
-    console.info("[menu-upload] url extraction done", { url, itemCount: mergedItems.length, withImageUrl: mergedWithImages });
 
     return mergedItems;
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unknown error";
-    console.info("[menu-upload] url extraction error", { url, error: message });
     throw new Error(
       `Failed to scrape menu from URL: ${message}. ` +
         `Check Railway logs for details. Common issues: site requires auth, blocks bots, or unusual structure.`
@@ -223,11 +179,9 @@ export async function extractMenuFromWebsite(url: string): Promise<WebMenuItem[]
  * This is critical for extracting images that might be in separate containers
  */
 async function extractAllPageImages(page: import("puppeteer-core").Page): Promise<PageImage[]> {
-  console.info("[menu-upload] [URL-IMAGES] Extracting img elements from page (browser)...");
   const result = await page.evaluate(() => {
     const images: PageImage[] = [];
     const imgElements = document.querySelectorAll("img");
-    console.log(`[IMAGES] Found ${imgElements.length} total img elements on page`);
 
     imgElements.forEach((imgEl) => {
       const src =
@@ -238,12 +192,7 @@ async function extractAllPageImages(page: import("puppeteer-core").Page): Promis
         imgEl.getAttribute("data-srcset")?.split(",")[0]?.split(" ")[0] ||
         "";
 
-      if (!src) {
-        console.log("[IMAGES] Skipping image with no src");
-        return;
-      }
-
-      console.log("[IMAGES] Processing image:", src.substring(0, 100));
+      if (!src) return;
 
       // Skip placeholder/icon images
       if (
@@ -252,31 +201,26 @@ async function extractAllPageImages(page: import("puppeteer-core").Page): Promis
         src.includes("logo") ||
         src.endsWith(".svg")
       ) {
-        console.log("[IMAGES] Skipping placeholder/icon/logo image");
         return;
       }
 
       // Skip tiny images (likely icons)
       const width = imgEl.width || 0;
       const height = imgEl.height || 0;
-      if (width < 50 || height < 50) {
-        console.log(`[IMAGES] Skipping tiny image: ${width}x${height}`);
-        return;
-      }
+      if (width < 50 || height < 50) return;
 
       // Convert relative URLs to absolute
       let absoluteSrc = src;
       if (!src.startsWith("http") && !src.startsWith("data:")) {
         try {
           absoluteSrc = new URL(src, window.location.origin).href;
-        } catch (e) {
-          console.log("[IMAGES] Failed to convert relative URL:", src);
+        } catch {
           return;
         }
       }
 
       const rect = imgEl.getBoundingClientRect();
-      const imageEntry = {
+      images.push({
         url: absoluteSrc,
         altText: imgEl.alt || undefined,
         width,
@@ -287,15 +231,12 @@ async function extractAllPageImages(page: import("puppeteer-core").Page): Promis
           width: rect.width,
           height: rect.height,
         },
-      };
-      console.log("[IMAGES] Added image:", imageEntry);
-      images.push(imageEntry);
+      });
     });
 
     return images;
   });
 
-  console.info("[menu-upload] [URL-IMAGES] Browser returned", result.length, "images after filters (no src/placeholder/tiny skipped)");
   return result;
 }
 
@@ -306,36 +247,26 @@ function associateImagesWithItems(
   domItems: WebMenuItem[],
   allImages: PageImage[]
 ): WebMenuItem[] {
-  console.log("[ASSOCIATE] Starting image association:", domItems.length, "items,", allImages.length, "images");
-  
-  // Create a map of item names to their images
   const itemImageMap = new Map<string, PageImage[]>();
 
-  // Try to match images to items based on alt text or filename
-  allImages.forEach((image, imgIdx) => {
+  allImages.forEach((image) => {
     const altText = image.altText?.toLowerCase() || "";
     const urlParts = image.url.toLowerCase().split("/").pop() || "";
-    console.log(`[ASSOCIATE] Processing image ${imgIdx}: alt="${altText}", urlParts="${urlParts.substring(0, 50)}"`);
 
-    // Check each item for potential match
     domItems.forEach((item) => {
       const itemName = item.name_normalized.toLowerCase();
 
-      // Match by alt text containing item name
       if (altText.includes(itemName) || itemName.includes(altText)) {
-        console.log(`[ASSOCIATE] Match found: item "${item.name}" with image alt`);
         const existing = itemImageMap.get(item.name) || [];
         existing.push(image);
         itemImageMap.set(item.name, existing);
         return;
       }
 
-      // Match by URL filename containing item name words
       const itemWords = itemName.split(" ").filter((w) => w.length > 2);
       const urlHasItemWords = itemWords.some((word) => urlParts.includes(word));
 
       if (urlHasItemWords) {
-        console.log(`[ASSOCIATE] Match found: item "${item.name}" with URL (words: ${itemWords.join(", ")})`);
         const existing = itemImageMap.get(item.name) || [];
         existing.push(image);
         itemImageMap.set(item.name, existing);
@@ -343,21 +274,13 @@ function associateImagesWithItems(
     });
   });
 
-  // Update dom items with associated images (pick the best one)
-  const result = domItems.map((item) => {
+  return domItems.map((item) => {
     const images = itemImageMap.get(item.name);
     if (images && images.length > 0 && images[0] && !item.image_url) {
-      console.log(`[ASSOCIATE] Assigning image to item "${item.name}": ${images[0].url.substring(0, 50)}...`);
-      return {
-        ...item,
-        image_url: images[0].url,
-      };
+      return { ...item, image_url: images[0].url };
     }
     return item;
   });
-
-  console.log(`[ASSOCIATE] Final: ${result.filter((i) => i.image_url).length} items have images assigned`);
-  return result;
 }
 
 /** Distance between two rects (center to center) for spatial scoring. */
@@ -376,7 +299,6 @@ function associateImagesWithItemsMultiSignal(
   domItems: WebMenuItem[],
   allImages: PageImage[]
 ): WebMenuItem[] {
-  console.info("[menu-upload] [ASSOCIATE] Multi-signal:", domItems.length, "items,", allImages.length, "images");
   return domItems.map((item) => {
     if (item.image_url) return item;
     let bestImage: PageImage | null = null;
@@ -701,8 +623,6 @@ function mergeExtractedData(
   visionItems: import("./gptVisionMenuParser").ExtractedMenuItem[],
   allPageImages: PageImage[]
 ): WebMenuItem[] {
-  console.info("[menu-upload] [MERGE] Starting merge: DOM", domItems.length, "Vision", visionItems.length, "page images", allPageImages.length);
-
   const imageMap = new Map<string, PageImage>();
   allPageImages.forEach((img) => {
     const altText = img.altText?.toLowerCase() || "";
@@ -710,9 +630,8 @@ function mergeExtractedData(
     imageMap.set(altText, img);
     imageMap.set(urlParts, img);
   });
-  console.info("[menu-upload] [MERGE] imageMap entries:", imageMap.size);
 
-  const merged: WebMenuItem[] = visionItems.map((visionItem, idx) => {
+  const merged: WebMenuItem[] = visionItems.map((visionItem) => {
     const domMatch = domItems.find((domItem) => {
       const similarity = calculateSimilarity(
         visionItem.name.toLowerCase().trim(),
@@ -742,10 +661,6 @@ function mergeExtractedData(
       }
     }
 
-    if (idx < 5 || (idx < 15 && !image_url)) {
-      console.info("[menu-upload] [MERGE] item", idx + 1, visionItem.name, "image:", image_url ? "yes" : "none", "source:", imageSource ?? "none");
-    }
-
     const visionConf = { name: 0.95, description: 0.9, price: 0.95, category: 0.9, image_url: image_url ? 0.85 : 0.5 };
     const domConf = domMatch
       ? { name: 0.75, description: 0.7, price: 0.75, category: domMatch.category ? 0.8 : 0.5, image_url: domMatch.image_url ? 0.8 : 0.5 }
@@ -772,8 +687,6 @@ function mergeExtractedData(
     };
   });
 
-  console.info("[menu-upload] [MERGE] After vision: items with image_url:", merged.filter((i) => i.image_url).length);
-
   let addedCount = 0;
   domItems.forEach((domItem) => {
     const exists = merged.some(
@@ -781,9 +694,6 @@ function mergeExtractedData(
     );
 
     if (!exists && domItem.name && (domItem.price || domItem.image_url)) {
-      if (addedCount < 5) {
-        console.info("[menu-upload] [MERGE] DOM-only item:", domItem.name, "image_url:", domItem.image_url ? "yes" : "no");
-      }
       merged.push({
         name: domItem.name,
         name_normalized: domItem.name_normalized,
@@ -804,7 +714,6 @@ function mergeExtractedData(
     }
   });
 
-  console.info("[menu-upload] [MERGE] DOM-only added:", addedCount, "Final:", merged.length, "items,", merged.filter((i) => i.image_url).length, "with images");
   return merged;
 }
 

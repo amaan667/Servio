@@ -10,6 +10,7 @@ import { formatPriceWithCurrency } from "@/lib/pricing-utils";
 import { groupByCategory } from "@/lib/utils/group-by-category";
 import { safeGetItem, safeSetItem, safeRemoveItem } from "@/app/order/utils/safeStorage";
 import { normalizeVenueId } from "@/lib/utils/venueId";
+import { getMenuImageDisplayUrl } from "@/lib/menu-image-url";
 
 interface MenuItem {
   id: string;
@@ -585,7 +586,7 @@ export function EnhancedPDFMenuDisplay({
                           {item.image_url && (
                             <div className="relative w-full h-40 sm:h-48 md:h-56 lg:h-64 bg-gray-100 overflow-hidden flex items-center justify-center">
                               <img
-                                src={item.image_url}
+                                src={getMenuImageDisplayUrl(item.image_url)}
                                 alt={item.name}
                                 className="w-full h-full object-cover"
                                 loading="lazy"

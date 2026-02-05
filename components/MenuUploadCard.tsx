@@ -1,11 +1,12 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
+import { Progress } from "@/components/ui/progress";
 import { FileText, Upload, Info, X } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
@@ -37,15 +38,44 @@ function validateStagedFile(file: File): string | null {
   return null;
 }
 
+const PROGRESS_CAP = 95;
+const PROGRESS_INTERVAL_MS = 2000;
+const PROGRESS_INCREMENT = 5;
+
 export function MenuUploadCard({ venueId, onSuccess, menuItemCount = 0 }: MenuUploadCardProps) {
   const [isProcessing, setIsProcessing] = useState(false);
+  const [progress, setProgress] = useState(0);
   const [isReplacing, setIsReplacing] = useState(true);
   const [isDragOver, setIsDragOver] = useState(false);
   const [menuUrl, setMenuUrl] = useState("");
   const [stagedFile, setStagedFile] = useState<File | null>(null);
+  const [recentUploads, setRecentUploads] = useState<{ id: string; filename: string | null; created_at: string }[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
   const supabase = createClient();
+
+  useEffect(() => {
+    if (!isProcessing) return;
+    setProgress(0);
+    const interval = setInterval(() => {
+      setProgress((p) => (p >= PROGRESS_CAP ? p : p + PROGRESS_INCREMENT));
+    }, PROGRESS_INTERVAL_MS);
+    return () => clearInterval(interval);
+  }, [isProcessing]);
+
+  useEffect(() => {
+    const loadRecent = async () => {
+      const normalizedVenueId = normalizeVenueId(venueId) ?? venueId;
+      const { data } = await supabase
+        .from("menu_uploads")
+        .select("id, filename, created_at")
+        .eq("venue_id", normalizedVenueId)
+        .order("created_at", { ascending: false })
+        .limit(3);
+      setRecentUploads((data ?? []).map((r) => ({ id: r.id, filename: r.filename ?? null, created_at: r.created_at })));
+    };
+    loadRecent();
+  }, [venueId, isProcessing]);
 
   // Save extracted style to database
   const saveExtractedStyle = async (extractedText: string) => {
@@ -240,6 +270,7 @@ export function MenuUploadCard({ venueId, onSuccess, menuItemCount = 0 }: MenuUp
         variant: "destructive",
       });
     } finally {
+      setProgress(100);
       setIsProcessing(false);
     }
   };
@@ -373,13 +404,41 @@ export function MenuUploadCard({ venueId, onSuccess, menuItemCount = 0 }: MenuUp
           </p>
         </div>
 
+        {isProcessing && <Progress value={progress} className="h-2" />}
         <Button
           onClick={runProcessMenu}
           disabled={!canProcess || isProcessing}
           className="w-full"
         >
-          {isProcessing ? "Processing..." : "Process menu"}
+          {isProcessing ? "Processing…" : "Process menu"}
         </Button>
+
+        {recentUploads.length > 0 && (
+          <div className="space-y-2">
+            <Label className="text-muted-foreground text-xs">Recent uploads</Label>
+            <ul className="text-xs text-muted-foreground space-y-1">
+              {recentUploads.map((u) => (
+                <li key={u.id}>
+                  {u.filename ? (
+                    <span className="truncate block" title={u.filename}>
+                      {u.filename.split("/").pop() ?? u.filename}
+                    </span>
+                  ) : null}
+                  <span className="text-muted-foreground/80">
+                    {" "}
+                    {new Date(u.created_at).toLocaleDateString(undefined, {
+                      month: "short",
+                      day: "numeric",
+                      year: "numeric",
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
 
         <Alert>
           <Info className="h-4 w-4" />

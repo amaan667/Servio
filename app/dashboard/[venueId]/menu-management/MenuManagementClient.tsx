@@ -54,6 +54,7 @@ import { EditItemModal } from "@/components/menu-management/EditItemModal";
 
 // Utils
 import { loadFontForFamily } from "./utils/fontLoader";
+import { getMenuImageDisplayUrl } from "@/lib/menu-image-url";
 
 // Types
 import { MenuItem, ActiveTab, PreviewMode } from "./types";
@@ -621,7 +622,7 @@ export default function MenuManagementClient({
                                                           <div className="w-16 h-16 flex-shrink-0 cursor-pointer">
                                                             {item.image_url ? (
                                                               <img
-                                                                src={item.image_url}
+                                                                src={getMenuImageDisplayUrl(item.image_url)}
                                                                 alt={item.name}
                                                                 className="w-full h-full object-cover rounded border border-gray-200 hover:ring-2 hover:ring-purple-500 transition-all"
                                                                 onError={(e) => {
@@ -644,7 +645,7 @@ export default function MenuManagementClient({
                                                             side="right"
                                                           >
                                                             <img
-                                                              src={item.image_url}
+                                                              src={getMenuImageDisplayUrl(item.image_url)}
                                                               alt={item.name}
                                                               className="w-full h-auto rounded-lg"
                                                             />

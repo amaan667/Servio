@@ -62,23 +62,10 @@ export async function extractMenuHybrid(
 
   // Determine extraction mode
   const mode = getExtractionMode(!!pdfImages, !!websiteUrl);
-  const pdfPageCount = pdfImages?.length ?? 0;
-  console.info("[menu-upload] hybrid extraction start", {
-    venueId,
-    mode,
-    websiteUrl: websiteUrl || null,
-    pdfPageCount,
-  });
 
   // MODE 1: URL Only
   if (mode === "url-only" && websiteUrl) {
     const webItems = await extractMenuFromWebsite(websiteUrl);
-    console.info("[menu-upload] hybrid extraction done", {
-      venueId,
-      mode: "url-only",
-      url: websiteUrl,
-      itemCount: webItems.length,
-    });
     return {
       items: webItems,
       itemCount: webItems.length,
@@ -91,12 +78,6 @@ export async function extractMenuHybrid(
   // MODE 2: PDF Only
   if (mode === "pdf-only" && pdfImages) {
     const pdfData = await extractFromPDF(pdfImages);
-    console.info("[menu-upload] hybrid extraction done", {
-      venueId,
-      mode: "pdf-only",
-      pdfPageCount: pdfImages.length,
-      itemCount: pdfData.items.length,
-    });
     return {
       items: pdfData.items,
       itemCount: pdfData.items.length,
@@ -108,7 +89,6 @@ export async function extractMenuHybrid(
 
   // MODE 3: Hybrid (PDF + URL)
   if (mode === "hybrid" && pdfImages && websiteUrl) {
-    console.info("[menu-upload] [HYBRID] Starting parallel PDF + URL extraction");
     let pdfData: { items: MenuItem[] };
     let webItems: MenuItem[] = [];
 
@@ -118,37 +98,12 @@ export async function extractMenuHybrid(
         extractMenuFromWebsite(websiteUrl),
       ]);
     } catch (parallelError) {
-      console.info("[menu-upload] [HYBRID] Parallel extraction failed, fallback to PDF only", {
-        error: parallelError instanceof Error ? parallelError.message : String(parallelError),
-      });
       try {
         pdfData = await extractFromPDF(pdfImages);
         webItems = [];
       } catch (pdfError) {
         throw pdfError;
       }
-    }
-
-    const pdfWithImages = pdfData.items.filter((i) => i.image_url).length;
-    const urlWithImages = webItems.filter((i) => i.image_url).length;
-    console.info("[menu-upload] [HYBRID] URL extraction result:", {
-      urlItems: webItems.length,
-      urlItemsWithImageUrl: urlWithImages,
-      pdfItems: pdfData.items.length,
-      pdfItemsWithImageUrl: pdfWithImages,
-    });
-    if (urlWithImages > 0) {
-      console.info(
-        "[menu-upload] [HYBRID] Sample URL items with image_url:",
-        JSON.stringify(
-          webItems
-            .filter((i) => i.image_url)
-            .slice(0, 3)
-            .map((i) => ({ name: i.name, imageUrl: i.image_url?.substring(0, 80) }))
-        )
-      );
-    } else {
-      console.info("[menu-upload] [HYBRID] WARNING: Zero URL items have image_url — images will not be added from URL");
     }
 
     const urlCategoryBreakdown: Record<string, number> = {};
@@ -159,18 +114,6 @@ export async function extractMenuHybrid(
 
     const mergedItems = await mergeWebAndPdfData(pdfData.items, webItems);
 
-    const mergedWithImages = mergedItems.filter((i) => i.image_url).length;
-    console.info("[menu-upload] hybrid extraction done", {
-      venueId,
-      mode: "hybrid",
-      url: websiteUrl,
-      pdfPageCount: pdfImages.length,
-      pdfItems: pdfData.items.length,
-      urlItems: webItems.length,
-      urlItemsWithImageUrl: urlWithImages,
-      mergedItems: mergedItems.length,
-      mergedWithImageUrl: mergedWithImages,
-    });
     return {
       items: mergedItems,
       itemCount: mergedItems.length,
@@ -729,13 +672,6 @@ function findBestMatchForDedupe(
  * - Add web-only items that PDF missed
  */
 async function mergeWebAndPdfData(pdfItems: MenuItem[], webItems: MenuItem[]): Promise<MenuItem[]> {
-  const webItemsWithImages = webItems.filter((i) => i.image_url).length;
-  console.info("[menu-upload] [HYBRID-MERGE] mergeWebAndPdfData start:", {
-    pdfItems: pdfItems.length,
-    webItems: webItems.length,
-    webItemsWithImageUrl: webItemsWithImages,
-  });
-
   let matchedCount = 0;
   let imagesAddedCount = 0;
   let descriptionsEnhancedCount = 0;
@@ -775,13 +711,6 @@ async function mergeWebAndPdfData(pdfItems: MenuItem[], webItems: MenuItem[]): P
       if (addedImage) imagesAddedCount++;
       if (enhancedDesc) descriptionsEnhancedCount++;
       if (updatedPrice) pricesUpdatedCount++;
-
-      if (addedImage && imagesAddedCount <= 5) {
-        console.info("[menu-upload] [HYBRID-MERGE] image from URL for item:", pdfItem.name, "url:", webMatch.image_url?.substring(0, 60));
-      }
-      if (!webMatch.image_url && pdfItem.image_url && matchedCount <= 3) {
-        console.info("[menu-upload] [HYBRID-MERGE] using PDF image (no URL image) for:", pdfItem.name);
-      }
 
       return {
         ...pdfItem,
@@ -1049,20 +978,6 @@ async function mergeWebAndPdfData(pdfItems: MenuItem[], webItems: MenuItem[]): P
     // Count how many unmatched URL items had images
     const unmatchedWithImages = unmatchedUrlItems.filter((i) => i.image_url).length;
   }
-
-  const mergedWithImages = merged.filter((i) => i.image_url).length;
-  const pdfEnhancedWithImages = merged.filter(
-    (i) => i.merge_source === "pdf_enhanced_with_url" && i.image_url
-  ).length;
-  const urlOnlyWithImages = merged.filter(
-    (i) => i.merge_source === "url_only_new_item" && i.image_url
-  ).length;
-  console.info("[menu-upload] [HYBRID-MERGE] image summary:", {
-    mergedWithImageUrl: mergedWithImages,
-    pdfEnhancedWithUrlImage: pdfEnhancedWithImages,
-    urlOnlyNewItemWithImage: urlOnlyWithImages,
-    imagesAddedFromUrl: imagesAddedCount,
-  });
 
   // FINAL DEDUPLICATION PASS
   const dedupeResult = deduplicateMergedItems(merged);

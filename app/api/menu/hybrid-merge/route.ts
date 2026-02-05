@@ -24,22 +24,11 @@ import { withUnifiedAuth } from "@/lib/auth/unified-auth";
  */
 export const POST = withUnifiedAuth(async (req: NextRequest, context) => {
   const startTime = Date.now();
-  const requestId = Math.random().toString(36).substring(7);
-  let logContext: { requestId: string; venueId?: string; menuUrl?: string; userId?: string } = {
-    requestId,
-  };
-
   try {
     const body = await req.json();
     const menuUrl = body.menuUrl as string | undefined;
 
-    // venueId comes from context (already verified by withUnifiedAuth)
     const normalizedVenueId = context.venueId;
-    logContext = { requestId, venueId: normalizedVenueId, menuUrl, userId: context.user.id };
-
-    // Explicit stdout so Railway shows logs immediately when hybrid process starts
-    process.stdout.write(`[menu-upload] HYBRID_START requestId=${requestId} venueId=${normalizedVenueId} menuUrl=${menuUrl}\n`);
-    console.info("[menu-upload] hybrid-merge start", logContext);
 
     if (!menuUrl) {
       return NextResponse.json({ ok: false, error: "menuUrl required" }, { status: 400 });
@@ -82,9 +71,6 @@ export const POST = withUnifiedAuth(async (req: NextRequest, context) => {
       throw new Error(`Failed to clear menu: ${deleteItemsError.message}`);
     }
 
-    // Step 5: Run THE ONE TRUE HYBRID EXTRACTION SYSTEM
-    console.info("[menu-upload] hybrid-merge calling extractMenuHybrid", { pdfImageCount: pdfImages.length, menuUrl });
-
     const { extractMenuHybrid } = await import("@/lib/hybridMenuExtractor");
 
     const extractionResult = await extractMenuHybrid({
@@ -92,18 +78,8 @@ export const POST = withUnifiedAuth(async (req: NextRequest, context) => {
       websiteUrl: menuUrl,
       venueId: normalizedVenueId,
     });
-    const itemsWithImage = extractionResult.items.filter((i) => i.image_url).length;
-    console.info("[menu-upload] hybrid-merge extraction done", {
-      ...logContext,
-      mode: extractionResult.mode,
-      itemCount: extractionResult.items.length,
-      itemsWithImageUrl: itemsWithImage,
-    });
-    if (itemsWithImage === 0 && extractionResult.items.length > 0) {
-      console.info("[menu-upload] hybrid-merge WARNING: extraction returned items but none have image_url");
-    }
 
-    // Step 7: Insert items into database
+    // Insert menu items
 
     const menuItems = [];
 
@@ -148,12 +124,6 @@ export const POST = withUnifiedAuth(async (req: NextRequest, context) => {
     }
 
     const duration = Date.now() - startTime;
-    console.info("[menu-upload] hybrid-merge success", {
-      ...logContext,
-      mode: extractionResult.mode,
-      items: menuItems.length,
-      durationMs: duration,
-    });
 
     // Revalidate all pages that display menu data
     try {
@@ -173,13 +143,6 @@ export const POST = withUnifiedAuth(async (req: NextRequest, context) => {
       duration: `${duration}ms`,
     });
   } catch (error) {
-    const duration = Date.now() - startTime;
-    console.info("[menu-upload] hybrid-merge error", {
-      ...logContext,
-      error: error instanceof Error ? error.message : "Unknown",
-      durationMs: duration,
-    });
-
     return NextResponse.json(
       {
         ok: false,

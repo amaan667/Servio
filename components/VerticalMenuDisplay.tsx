@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Plus, Minus, Search, Menu } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { groupByCategory } from "@/lib/utils/group-by-category";
+import { getMenuImageDisplayUrl } from "@/lib/menu-image-url";
 
 interface MenuItem {
   id: string;
@@ -249,7 +250,7 @@ export function VerticalMenuDisplay({
                             {item.image_url && (
                               <div className="flex-shrink-0 bg-white rounded-lg overflow-hidden border border-gray-200 w-full sm:w-40 md:w-48 lg:w-56 h-40 sm:h-40 md:h-48 lg:h-56">
                                 <img
-                                  src={item.image_url}
+                                  src={getMenuImageDisplayUrl(item.image_url)}
                                   alt={item.name}
                                   className="w-full h-full object-cover"
                                   style={{ objectPosition: "center" }}

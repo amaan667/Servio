@@ -142,6 +142,10 @@ const nextConfig = {
           }],
       }];
   },
+  // API versioning: /api/v1/* -> /api/* (same handlers; middleware sets X-API-Version)
+  async rewrites() {
+    return [{ source: "/api/v1/:path*", destination: "/api/:path*" }];
+  },
   images: {
     unoptimized: false, // Enable Next.js image optimization with sharp
     formats: ['image/webp', 'image/avif'],

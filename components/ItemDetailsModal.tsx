@@ -11,6 +11,7 @@ import {
   type SelectedModifiers,
 } from "@/components/ModifierSelector";
 import { supabaseBrowser } from "@/lib/supabase";
+import { getMenuImageDisplayUrl } from "@/lib/menu-image-url";
 
 interface MenuItem {
   id: string;
@@ -154,7 +155,7 @@ export function ItemDetailsModal({
           {item.image_url && (
             <div className="relative w-full h-56 sm:h-64 md:h-72 lg:h-80 bg-gray-100 rounded-lg overflow-hidden">
               <img
-                src={item.image_url}
+                src={getMenuImageDisplayUrl(item.image_url)}
                 alt={item.name}
                 className="w-full h-full object-cover"
                 loading="lazy"

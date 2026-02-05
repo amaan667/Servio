@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase";
-import { withUnifiedAuth } from "@/lib/auth/unified-auth";
+import { createUnifiedHandler } from "@/lib/api/unified-handler";
+import { apiErrors } from "@/lib/api/standard-response";
 
 /**
  * GET: List corrections for a venue (optional venueId query).
@@ -26,59 +27,62 @@ export async function GET(req: NextRequest) {
   return NextResponse.json({ corrections: data ?? [] });
 }
 
-export const POST = withUnifiedAuth(async (req: NextRequest, context) => {
-  const venueId = context.venueId;
-  if (!venueId) {
-    return NextResponse.json({ error: "venueId required" }, { status: 400 });
-  }
+const ALLOWED_FIELDS = ["name", "description", "price", "category", "image_url"];
 
-  const body = await req.json();
-  const { menu_item_id, item_name, field, value_text, value_number } = body as {
-    menu_item_id?: string;
-    item_name?: string;
-    field?: string;
-    value_text?: string;
-    value_number?: number;
-  };
+export const POST = createUnifiedHandler(
+  async (_req, context) => {
+    const venueId = context.venueId;
+    const body = context.body as {
+      menu_item_id?: string;
+      item_name?: string;
+      field?: string;
+      value_text?: string;
+      value_number?: number;
+    };
+    const { menu_item_id, item_name, field, value_text, value_number } = body;
 
-  const allowedFields = ["name", "description", "price", "category", "image_url"];
-  if (!field || !allowedFields.includes(field)) {
-    return NextResponse.json({ error: "field must be one of: " + allowedFields.join(", ") }, { status: 400 });
-  }
-  if (!menu_item_id) {
-    return NextResponse.json({ error: "menu_item_id required" }, { status: 400 });
-  }
+    if (!field || !ALLOWED_FIELDS.includes(field)) {
+      return apiErrors.badRequest("field must be one of: " + ALLOWED_FIELDS.join(", "));
+    }
+    if (!menu_item_id) {
+      return apiErrors.badRequest("menu_item_id required");
+    }
 
-  const isNumber = field === "price";
-  if (isNumber && value_number == null) {
-    return NextResponse.json({ error: "value_number required for price" }, { status: 400 });
-  }
-  if (!isNumber && value_text == null) {
-    return NextResponse.json({ error: "value_text required for non-price fields" }, { status: 400 });
-  }
+    const isNumber = field === "price";
+    if (isNumber && value_number == null) {
+      return apiErrors.badRequest("value_number required for price");
+    }
+    if (!isNumber && value_text == null) {
+      return apiErrors.badRequest("value_text required for non-price fields");
+    }
 
-  const supabase = await createClient();
-  const row = {
-    venue_id: venueId,
-    menu_item_id: menu_item_id || null,
-    item_name: item_name?.trim() || null,
-    field,
-    value_text: isNumber ? null : (value_text ?? null),
-    value_number: isNumber ? value_number : null,
-    user_id: context.user?.id ?? null,
-  };
+    const supabase = await createClient();
+    const row = {
+      venue_id: venueId,
+      menu_item_id: menu_item_id || null,
+      item_name: item_name?.trim() || null,
+      field,
+      value_text: isNumber ? null : (value_text ?? null),
+      value_number: isNumber ? value_number : null,
+      user_id: context.user?.id ?? null,
+    };
 
-  const { data, error } = await supabase
-    .from("menu_item_corrections")
-    .upsert(row, {
-      onConflict: "venue_id,menu_item_id,field",
-      ignoreDuplicates: false,
-    })
-    .select()
-    .maybeSingle();
+    const { data, error } = await supabase
+      .from("menu_item_corrections")
+      .upsert(row, {
+        onConflict: "venue_id,menu_item_id,field",
+        ignoreDuplicates: false,
+      })
+      .select()
+      .maybeSingle();
 
-  if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    if (error) {
+      return NextResponse.json({ error: error.message }, { status: 500 });
+    }
+    return { ok: true, correction: data };
+  },
+  {
+    requireVenueAccess: true,
+    venueIdSource: "auto",
   }
-  return NextResponse.json({ ok: true, correction: data });
-});
+);

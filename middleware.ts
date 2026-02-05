@@ -138,8 +138,11 @@ export async function middleware(request: NextRequest) {
 
   // For API routes, inject user info into headers if session exists
   if (pathname.startsWith("/api/")) {
+    const requestHeaders = new Headers(request.headers);
+    if (pathname.startsWith("/api/v1/")) {
+      requestHeaders.set("x-api-version", "v1");
+    }
     if (session) {
-      const requestHeaders = new Headers(request.headers);
       requestHeaders.set("x-user-id", session.user.id);
       requestHeaders.set("x-user-email", session.user.email || "");
 
@@ -153,7 +156,14 @@ export async function middleware(request: NextRequest) {
       return newResponse;
     }
 
-    // No session - pass through without headers, let unified handler decide
+    // No session - still set x-api-version if v1 path
+    if (pathname.startsWith("/api/v1/")) {
+      const requestHeaders = new Headers(request.headers);
+      requestHeaders.set("x-api-version", "v1");
+      return NextResponse.next({
+        request: { headers: requestHeaders },
+      });
+    }
     return response;
   }
 

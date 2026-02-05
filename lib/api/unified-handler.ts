@@ -19,6 +19,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { ZodSchema, ZodError } from "zod";
 import { apiErrors, success, handleZodError, ApiResponse } from "./standard-response";
+import {
+  getApiVersionFromRequest,
+  createVersionHeaders,
+  type ApiVersion,
+} from "./versioning";
 import { normalizeVenueId } from "@/lib/utils/venueId";
 import {
   getAuthUserFromRequest,
@@ -433,11 +438,18 @@ export function createUnifiedHandler<TBody = unknown, TResponse = unknown>(
         duration
       );
 
-      return success(responseData, {
+      const res = success(responseData, {
         timestamp: new Date().toISOString(),
         requestId,
         duration,
       });
+      const apiVersion: ApiVersion =
+        (req.headers.get("x-api-version") as ApiVersion) || getApiVersionFromRequest(req);
+      const versionHeaders = createVersionHeaders(apiVersion);
+      for (const [k, v] of Object.entries(versionHeaders)) {
+        if (typeof v === "string") res.headers.set(k, v);
+      }
+      return res;
     } catch (error) {
       perf.end();
       const duration = Date.now() - startTime;

@@ -18,6 +18,7 @@ import UnifiedFeedbackForm from "@/components/UnifiedFeedbackForm";
 import { supabaseBrowser as createClient } from "@/lib/supabase";
 import { Order, OrderStatus } from "@/types/order";
 import { ReceiptModal } from "@/components/receipt/ReceiptModal";
+import { getMenuImageDisplayUrl } from "@/lib/menu-image-url";
 
 interface OrderSummaryProps {
   orderId?: string;
@@ -479,7 +480,7 @@ export default function OrderSummary({ orderId, sessionId, orderData }: OrderSum
                             style={{ width: "60px", height: "60px" }}
                           >
                             <img
-                              src={item.image_url}
+                              src={getMenuImageDisplayUrl(item.image_url)}
                               alt={item.item_name}
                               className="w-full h-full object-cover"
                               style={{ objectPosition: "center" }}
