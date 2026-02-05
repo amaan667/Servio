@@ -292,37 +292,68 @@ function rectDistance(a: Rect, b: Rect): number {
   return Math.hypot(ax - bx, ay - by);
 }
 
+/** Minimum total score to assign an image (avoids proximity-only matches). */
+const IMAGE_ASSIGN_MIN_SCORE = 0.55;
+/** Minimum score from text (alt or URL) so we never assign on proximity alone. */
+const IMAGE_ASSIGN_MIN_TEXT_SCORE = 0.25;
+
 /**
  * Multi-signal image association: alt text, URL path, name substring, and spatial proximity.
+ * Only assigns when there is clear text evidence (alt/URL) and each image is used at most once.
  */
 function associateImagesWithItemsMultiSignal(
   domItems: WebMenuItem[],
   allImages: PageImage[]
 ): WebMenuItem[] {
-  return domItems.map((item) => {
+  const assignedUrls = new Set<string>();
+  const sortedItems = [...domItems].sort((a, b) => {
+    const aTop = a.rect?.top ?? 0;
+    const bTop = b.rect?.top ?? 0;
+    return aTop - bTop;
+  });
+
+  return sortedItems.map((item) => {
     if (item.image_url) return item;
     let bestImage: PageImage | null = null;
     let bestScore = 0;
+    let bestTextScore = 0;
     for (const img of allImages) {
+      if (assignedUrls.has(img.url)) continue;
       const altText = img.altText?.toLowerCase() || "";
       const urlParts = img.url.toLowerCase().split("/").pop() || "";
       const itemName = item.name_normalized;
       let score = 0;
+      let textScore = 0;
       if (altText && itemName) {
-        if (altText.includes(itemName) || itemName.includes(altText)) score += 0.5;
-        else if (itemName.split(" ").filter((w) => w.length > 2).some((w) => altText.includes(w))) score += 0.25;
+        if (altText.includes(itemName) || itemName.includes(altText)) {
+          score += 0.5;
+          textScore += 0.5;
+        } else if (itemName.split(" ").filter((w) => w.length > 2).some((w) => altText.includes(w))) {
+          score += 0.25;
+          textScore += 0.25;
+        }
       }
-      if (itemName.split(" ").filter((w) => w.length > 2).some((w) => urlParts.includes(w))) score += 0.3;
+      const urlMatch = itemName.split(" ").filter((w) => w.length > 2).some((w) => urlParts.includes(w));
+      if (urlMatch) {
+        score += 0.3;
+        textScore += 0.3;
+      }
       if (item.rect && img.rect) {
         const dist = rectDistance(item.rect, img.rect);
         score += Math.max(0, 0.4 * (1 - dist / 800));
       }
-      if (score > bestScore) {
+      if (score > bestScore && textScore >= IMAGE_ASSIGN_MIN_TEXT_SCORE) {
         bestScore = score;
+        bestTextScore = textScore;
         bestImage = img;
       }
     }
-    if (bestImage && bestScore >= 0.2) {
+    if (
+      bestImage &&
+      bestScore >= IMAGE_ASSIGN_MIN_SCORE &&
+      bestTextScore >= IMAGE_ASSIGN_MIN_TEXT_SCORE
+    ) {
+      assignedUrls.add(bestImage.url);
       return {
         ...item,
         image_url: bestImage.url,
@@ -615,8 +646,30 @@ async function extractFromDOM(page: import("puppeteer-core").Page): Promise<WebM
   });
 }
 
+/** Stop words to avoid matching images by generic terms (e.g. "egg", "with"). */
+const IMAGE_MAP_STOP_WORDS = new Set([
+  "with",
+  "for",
+  "the",
+  "and",
+  "pieces",
+  "slices",
+  "slice",
+  "per",
+  "piece",
+  "pcs",
+  "two",
+  "2",
+  "egg",
+  "eggs",
+  "from",
+  "our",
+  "your",
+]);
+
 /**
- * Merge DOM and Vision AI extracted data, incorporating all page images
+ * Merge DOM and Vision AI extracted data, incorporating all page images.
+ * Only assigns an image when there is a strong text match; each image is used at most once.
  */
 function mergeExtractedData(
   domItems: WebMenuItem[],
@@ -631,6 +684,8 @@ function mergeExtractedData(
     imageMap.set(urlParts, img);
   });
 
+  const assignedImageUrls = new Set<string>();
+
   const merged: WebMenuItem[] = visionItems.map((visionItem) => {
     const domMatch = domItems.find((domItem) => {
       const similarity = calculateSimilarity(
@@ -641,23 +696,55 @@ function mergeExtractedData(
     });
 
     let image_url = domMatch?.image_url;
-    let imageSource = image_url ? "dom" : null;
+    if (image_url) assignedImageUrls.add(image_url);
 
     if (!image_url) {
-      const itemName = visionItem.name.toLowerCase();
-      const itemWords = itemName.split(/\s+/).filter((w) => w.length > 2);
+      const itemName = visionItem.name.toLowerCase().trim();
+      const filenameBase = (path: string) =>
+        path
+          .split("/")
+          .pop()
+          ?.replace(/\.[a-z]+$/i, "")
+          .toLowerCase() ?? "";
+      const itemWords = itemName
+        .split(/\s+/)
+        .filter((w) => w.length > 2 && !IMAGE_MAP_STOP_WORDS.has(w));
+      let bestImage: PageImage | null = null;
+      let bestStrength: "full" | "two-words" | null = null;
+
       for (const [key, img] of imageMap) {
-        const filename = key.split("/").pop() || "";
-        if (key.includes(itemName) || itemName.includes(filename)) {
-          image_url = img.url;
-          imageSource = "imageMap_key";
+        if (assignedImageUrls.has(img.url)) continue;
+        const filename = key.split("/").pop()?.toLowerCase() ?? "";
+        const base = filenameBase(key);
+
+        const fullMatch = key.includes(itemName) || itemName.includes(base);
+        if (fullMatch) {
+          bestImage = img;
+          bestStrength = "full";
           break;
         }
-        if (itemWords.some((w) => key.includes(w) || filename.replace(/\.[a-z]+$/i, "").includes(w))) {
-          image_url = img.url;
-          imageSource = "imageMap_words";
-          break;
+        if (itemWords.length >= 2) {
+          const matchCount = itemWords.filter(
+            (w) => key.includes(w) || base.includes(w)
+          ).length;
+          if (matchCount >= 2 && !bestImage) {
+            bestImage = img;
+            bestStrength = "two-words";
+          }
+        } else if (itemWords.length === 1 && (key.includes(itemWords[0]!) || base.includes(itemWords[0]!))) {
+          if (!bestImage) {
+            bestImage = img;
+            bestStrength = "two-words";
+          }
         }
+      }
+
+      if (bestImage && bestStrength === "full") {
+        image_url = bestImage.url;
+        assignedImageUrls.add(bestImage.url);
+      } else if (bestImage && bestStrength === "two-words") {
+        image_url = bestImage.url;
+        assignedImageUrls.add(bestImage.url);
       }
     }
 
