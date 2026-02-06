@@ -715,12 +715,15 @@ const PaymentsClient: React.FC<PaymentsClientProps> = ({ venueId }) => {
   }, [venueId]);
 
   const handleMarkAsPaid = async (orderId: string) => {
+      // Generate unique idempotency key for this request
+      const idempotencyKey = `${orderId}-${Date.now()}-${Math.random().toString(36).substring(2, 11)}`;
     try {
       setIsProcessingPayment(orderId);
       const response = await fetch("/api/orders/mark-paid", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          "x-idempotency-key": idempotencyKey,
         },
         credentials: "same-origin",
         body: JSON.stringify({
