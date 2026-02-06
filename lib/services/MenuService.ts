@@ -292,13 +292,19 @@ export class MenuService extends BaseService {
             : null;
 
           let returnedItems = menuItems || [];
-          const { data: corrections } = await supabase
-            .from("menu_item_corrections")
-            .select("menu_item_id, item_name, field, value_text, value_number")
-            .eq("venue_id", venueId);
-          if (corrections?.length) {
-            const { applyCorrections: apply } = await import("@/lib/menu-corrections");
-            returnedItems = apply(returnedItems as { id: string; name: string; [k: string]: unknown }[], corrections);
+          // Fetch corrections - handle RLS errors gracefully for public access
+          try {
+            const { data: corrections } = await supabase
+              .from("menu_item_corrections")
+              .select("menu_item_id, item_name, field, value_text, value_number")
+              .eq("venue_id", venueId);
+            if (corrections?.length) {
+              const { applyCorrections: apply } = await import("@/lib/menu-corrections");
+              returnedItems = apply(returnedItems as { id: string; name: string; [k: string]: unknown }[], corrections);
+            }
+          } catch (correctionsError) {
+            // Corrections are optional - public users may not have RLS access
+            // Continue without corrections, menu items will work fine
           }
           const availableCount = menuCount || returnedItems.length || 0;
 
