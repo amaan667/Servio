@@ -114,11 +114,14 @@ export function usePullToRefresh({
 
 /**
  * Hook for detecting online/offline status
+ * Properly handles SSR by only returning actual value after mount
  */
 export function useOnlineStatus() {
   const [isOnline, setIsOnline] = useState(true);
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
+    setMounted(true);
     setIsOnline(navigator.onLine);
 
     const handleOnline = () => setIsOnline(true);
@@ -133,5 +136,6 @@ export function useOnlineStatus() {
     };
   }, []);
 
-  return isOnline;
+  // Always return true during SSR to avoid hydration mismatch
+  return mounted ? isOnline : true;
 }

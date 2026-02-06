@@ -29,19 +29,26 @@ interface UseOfflineSyncReturn {
 
 /**
  * Hook for managing offline sync queue for failed requests
+ * Properly handles SSR by only initializing browser APIs after mount
  */
 export function useOfflineSync({
   maxRetries = 3,
   retryDelay = 5000,
   storageKey = "offline-sync-queue",
 }: UseOfflineSyncOptions = {}): UseOfflineSyncReturn {
+  // Initialize with SSR-safe defaults
   const [isOnline, setIsOnline] = useState(true);
   const [queue, setQueue] = useState<SyncQueueItem[]>([]);
   const [isSyncing, setIsSyncing] = useState(false);
+  const [mounted, setMounted] = useState(false);
   const processingRef = useRef(false);
 
-  // Load queue from localStorage on mount
+  // Mark as mounted and initialize browser APIs only on client
   useEffect(() => {
+    setMounted(true);
+    setIsOnline(navigator.onLine);
+
+    // Load queue from localStorage on mount
     try {
       const saved = localStorage.getItem(storageKey);
       if (saved) {
@@ -51,24 +58,9 @@ export function useOfflineSync({
     } catch (error) {
       console.error("Failed to load sync queue:", error);
     }
-  }, [storageKey]);
-
-  // Save queue to localStorage whenever it changes
-  useEffect(() => {
-    try {
-      localStorage.setItem(storageKey, JSON.stringify(queue));
-    } catch (error) {
-      console.error("Failed to save sync queue:", error);
-    }
-  }, [queue, storageKey]);
-
-  // Monitor online status
-  useEffect(() => {
-    setIsOnline(navigator.onLine);
 
     const handleOnline = () => {
       setIsOnline(true);
-      // Trigger sync when coming back online
       if (queue.length > 0 && !processingRef.current) {
         processQueue();
       }
@@ -82,10 +74,20 @@ export function useOfflineSync({
       window.removeEventListener("online", handleOnline);
       window.removeEventListener("offline", handleOffline);
     };
-  }, [queue]);
+  }, [storageKey, queue.length]);
+
+  // Save queue to localStorage whenever it changes (only after mount)
+  useEffect(() => {
+    if (!mounted) return;
+    try {
+      localStorage.setItem(storageKey, JSON.stringify(queue));
+    } catch (error) {
+      console.error("Failed to save sync queue:", error);
+    }
+  }, [queue, storageKey, mounted]);
 
   const processQueue = useCallback(async () => {
-    if (processingRef.current || queue.length === 0) return;
+    if (!mounted || processingRef.current || queue.length === 0) return;
     processingRef.current = true;
     setIsSyncing(true);
 
@@ -102,8 +104,6 @@ export function useOfflineSync({
         if (!response.ok) {
           throw new Error(`HTTP ${response.status}`);
         }
-
-        // Success - don't add back to queue
       } catch (error) {
         if (item.retryCount < maxRetries) {
           remaining.push({
@@ -111,12 +111,10 @@ export function useOfflineSync({
             retryCount: item.retryCount + 1,
           });
         } else {
-          // Max retries exceeded - notify user
           console.warn(`Max retries exceeded for ${item.action}:`, item);
         }
       }
 
-      // Delay between requests
       await new Promise((resolve) => setTimeout(resolve, retryDelay));
     }
 
@@ -124,7 +122,6 @@ export function useOfflineSync({
     setIsSyncing(false);
     processingRef.current = false;
 
-    // If there are remaining items, schedule another sync attempt
     if (remaining.length > 0 && isOnline) {
       setTimeout(() => {
         if (!processingRef.current) {
@@ -132,7 +129,7 @@ export function useOfflineSync({
         }
       }, retryDelay * 2);
     }
-  }, [queue, maxRetries, retryDelay, isOnline]);
+  }, [queue, maxRetries, retryDelay, isOnline, mounted]);
 
   const addToQueue = useCallback(
     (action: string, payload: Record<string, unknown>) => {
@@ -157,15 +154,16 @@ export function useOfflineSync({
   }, []);
 
   const forceSync = useCallback(async () => {
-    if (!isOnline) {
+    if (!mounted || !isOnline) {
       console.warn("Cannot force sync while offline");
       return;
     }
     await processQueue();
-  }, [isOnline, processQueue]);
+  }, [isOnline, processQueue, mounted]);
 
   return {
-    isOnline,
+    // Always return true during SSR to avoid hydration mismatch
+    isOnline: mounted ? isOnline : true,
     pendingCount: queue.length,
     isSyncing,
     queue,
@@ -198,7 +196,6 @@ export function useOfflineAction<T extends Record<string, unknown>>(
         await executeAction(payload);
         return { success: true };
       } catch (error) {
-        // On failure, queue for later
         addToQueue(action, payload as Record<string, unknown>);
         return { queued: true, error };
       }
