@@ -65,13 +65,14 @@ export default function LiveOrdersClient({
   const autoRefreshRef = useRef<NodeJS.Timeout | null>(null);
 
   // Use custom hooks
-  const {
+    const {
     orders,
     allTodayOrders,
     groupedHistoryOrders,
     loading,
     todayWindow,
-    setOrders,
+      setOrders,
+    refreshOrders,
     setAllTodayOrders,
   } = useOrderManagement(venueId);
 
@@ -108,7 +109,9 @@ export default function LiveOrdersClient({
 
   // Counts are refreshed by useTabCounts (60s). Only refetch once on mount so tab badges appear.
   useEffect(() => {
-    refetchCounts();
+    // Refetch counts and refresh orders (no full page reload needed)
+          refetchCounts();
+          refreshOrders();
   }, [refetchCounts]);
 
   // Periodically check if orders need to be moved from live to all today
@@ -134,7 +137,9 @@ export default function LiveOrdersClient({
 
         if (movedToAllToday.length > 0) {
           setAllTodayOrders((prev) => [...movedToAllToday, ...prev]);
+          // Refetch counts and refresh orders (no full page reload needed)
           refetchCounts();
+          refreshOrders();
         }
 
         return stillLive;
@@ -167,7 +172,6 @@ export default function LiveOrdersClient({
       ["PLACED", "IN_PREP", "READY", "SERVING", "SERVED"].includes(order.order_status)
     );
     bulkCompleteAllOrders(activeOrders, () => {
-      window.location.reload();
     });
   };
 
@@ -281,9 +285,9 @@ export default function LiveOrdersClient({
         venueId={venueId}
         showActions={showActions}
         onActionComplete={() => {
+          // Refetch counts and refresh orders (no full page reload needed)
           refetchCounts();
-          // Force page reload to refresh orders with updated payment status
-          window.location.reload();
+          refreshOrders();
         }}
       />
     );

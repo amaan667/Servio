@@ -260,6 +260,7 @@ export function useOrderManagement(venueId: string) {
     loading,
     todayWindow,
     setOrders,
-    setAllTodayOrders,
+      setAllTodayOrders,
+    refreshOrders: () => loadOrders(),
   };
 }
