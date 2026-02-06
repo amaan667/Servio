@@ -12,10 +12,11 @@ export function useOrderMenu(venueSlug: string, isDemo: boolean) {
     return safeParseJSON<MenuItem[]>(cached, []);
   });
   const [loadingMenu, setLoadingMenu] = useState(() => {
+    // Only show loading if we have NO cached data at all
     if (typeof window === "undefined") return true;
     const cached = safeGetItem(sessionStorage, `menu_${venueSlug}`);
     const parsed = safeParseJSON<MenuItem[]>(cached, []);
-    return parsed.length === 0; // Only show loading if no cache
+    return parsed.length === 0;
   });
   const [menuError, setMenuError] = useState<string | null>(null);
   const [categoryOrder, setCategoryOrder] = useState<string[] | null>(() => {
@@ -46,14 +47,17 @@ export function useOrderMenu(venueSlug: string, isDemo: boolean) {
     };
   }, []);
 
-  const loadMenuItems = useCallback(async (isBackgroundRefresh = false) => {
+  const loadMenuItems = useCallback(async () => {
     if (!venueSlug) return;
 
     // Prevent duplicate fetches
-    if (loadingRef.current && !isBackgroundRefresh) return;
+    if (loadingRef.current) return;
     
     loadingRef.current = true;
-    if (!isBackgroundRefresh) {
+    // Only set loading true if we don't have cached data
+    const cached = safeGetItem(sessionStorage, `menu_${venueSlug}`);
+    const cachedItems = safeParseJSON<MenuItem[]>(cached, []);
+    if (cachedItems.length === 0) {
       setLoadingMenu(true);
     }
     setMenuError(null);
@@ -84,7 +88,7 @@ export function useOrderMenu(venueSlug: string, isDemo: boolean) {
 
       const response = await fetch(apiUrl, {
         signal: controller.signal,
-        cache: "no-store", // Always fetch fresh
+        cache: "no-store",
         credentials: "omit",
       });
 
@@ -155,14 +159,11 @@ export function useOrderMenu(venueSlug: string, isDemo: boolean) {
         retryCountRef.current++;
         loadingRef.current = false;
         await new Promise(resolve => setTimeout(resolve, 1000 * retryCountRef.current));
-        return loadMenuItems(isBackgroundRefresh);
+        return loadMenuItems();
       }
 
-      // All retries exhausted
+      // All retries exhausted - only show error if no cached data
       const errorMessage = error instanceof Error ? error.message : "Failed to load menu";
-      // Only show error if we have no cached data
-      const cached = safeGetItem(sessionStorage, `menu_${venueSlug}`);
-      const cachedItems = safeParseJSON<MenuItem[]>(cached, []);
       if (cachedItems.length === 0) {
         setMenuError(errorMessage);
       }
@@ -175,12 +176,9 @@ export function useOrderMenu(venueSlug: string, isDemo: boolean) {
   // Load menu when venue changes
   useEffect(() => {
     if (venueSlug) {
-      // Reset retry count
       retryCountRef.current = 0;
       loadingRef.current = false;
-      
-      // Start fetching fresh data in background (cached data already shown)
-      loadMenuItems(true);
+      loadMenuItems();
     }
   }, [venueSlug, isDemo, loadMenuItems]);
 

@@ -292,6 +292,35 @@ export class MenuService extends BaseService {
             : null;
 
           let returnedItems = menuItems || [];
+
+          // Order items according to category_order if available
+          if (categoryOrder && categoryOrder.length > 0) {
+            const categorySet = new Set(categoryOrder);
+            // Get unique categories from items that are in categoryOrder
+            const orderedCategories = categoryOrder.filter(cat => 
+              returnedItems.some((item: MenuItem) => item.category === cat)
+            );
+            // Get remaining categories not in categoryOrder
+            const remainingCategories = [...new Set(returnedItems
+              .map((item: MenuItem) => item.category)
+              .filter(cat => !categorySet.has(cat)))
+            ];
+            const finalCategoryOrder = [...orderedCategories, ...remainingCategories];
+
+            // Sort items: first by category order, then by position within each category
+            returnedItems.sort((a: MenuItem, b: MenuItem) => {
+              const catAIndex = finalCategoryOrder.indexOf(a.category);
+              const catBIndex = finalCategoryOrder.indexOf(b.category);
+              if (catAIndex !== catBIndex) return catAIndex - catBIndex;
+              return (a.position || 0) - (b.position || 0);
+            });
+          } else {
+            // Default sort by category then position
+            returnedItems.sort((a: MenuItem, b: MenuItem) => {
+              if (a.category !== b.category) return a.category.localeCompare(b.category);
+              return (a.position || 0) - (b.position || 0);
+            });
+          }
           // Fetch corrections - handle RLS errors gracefully for public access
           try {
             const { data: corrections } = await supabase
