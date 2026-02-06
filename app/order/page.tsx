@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
-import { Alert, AlertDescription } from "@/components/ui/alert";
 import { EnhancedPDFMenuDisplay } from "@/components/EnhancedPDFMenuDisplay";
 
 // Hooks
@@ -170,15 +169,10 @@ export default function CustomerOrderPage() {
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_420px] gap-4 sm:gap-5 md:gap-6 lg:gap-8">
           {/* Menu Section */}
           <div className="lg:col-span-1">
-            {menuItems.length === 0 ? (
-              // Show error or empty state
-              <Alert variant="destructive" className="m-4">
-                <AlertDescription>
-                  {menuError ||
-                    "This venue has no available menu items yet. Please check back later."}
-                </AlertDescription>
-              </Alert>
-            ) : (
+            {loadingMenu ? (
+              // Loading - show nothing while fetching
+              <div className="hidden" />
+            ) : menuItems.length > 0 ? (
               <EnhancedPDFMenuDisplay
                 venueId={venueSlug}
                 pdfImages={pdfImages}
@@ -191,6 +185,11 @@ export default function CustomerOrderPage() {
                 isOrdering={true}
                 onViewCart={() => setShowMobileCart(true)}
               />
+            ) : (
+              // No items and not loading - show minimal empty state (no error message)
+              <div className="flex items-center justify-center py-12 text-gray-500">
+                <p>No menu items available</p>
+              </div>
             )}
           </div>
 
