@@ -246,13 +246,13 @@ export class MenuService extends BaseService {
               .select("venue_id, venue_name")
               .eq("venue_id", venueId)
               .maybeSingle(),
-            // 2. Get Menu Items - order by position field (same as menu management)
+            // 2. Get Menu Items - order by position (user reordering), then by created_at (PDF extraction order)
             supabase
               .from("menu_items")
               .select("*", { count: "exact" })
               .eq("venue_id", venueId)
               .order("position", { ascending: true, nullsFirst: false })
-              .order("name", { ascending: true })
+              .order("created_at", { ascending: true })
               .range(options.offset, options.offset + options.limit - 1),
             // 3. Get Uploads (optional - don't fail if missing)
             supabase
@@ -294,11 +294,13 @@ export class MenuService extends BaseService {
           let returnedItems = menuItems || [];
 
           // First, order items by position field (same as menu management)
+          // Items without position keep their original order from query (created_at = PDF extraction order)
           returnedItems.sort((a: MenuItem, b: MenuItem) => {
             const posA = a.position ?? Infinity;
             const posB = b.position ?? Infinity;
             if (posA !== posB) return posA - posB;
-            return a.name.localeCompare(b.name);
+            // Preserve original order for items without position
+            return 0;
           });
 
           // Then group by category using category_order from menu_uploads
@@ -320,10 +322,11 @@ export class MenuService extends BaseService {
               const catAIndex = finalCategoryOrder.indexOf(a.category);
               const catBIndex = finalCategoryOrder.indexOf(b.category);
               if (catAIndex !== catBIndex) return catAIndex - catBIndex;
+              // Items with position set use that, others preserve original order
               const posA = a.position ?? Infinity;
               const posB = b.position ?? Infinity;
               if (posA !== posB) return posA - posB;
-              return a.name.localeCompare(b.name);
+              return 0; // Preserve original order for items without position
             });
           }
           // Fetch corrections - handle RLS errors gracefully for public access
