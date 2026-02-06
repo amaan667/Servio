@@ -1,18 +1,41 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { MenuItem } from "../types";
 import { demoMenuItems } from "@/data/demoMenuItems";
+import { safeGetItem, safeSetItem, safeParseJSON } from "../utils/safeStorage";
 import { normalizeVenueId } from "@/lib/utils/venueId";
 
 export function useOrderMenu(venueSlug: string, isDemo: boolean) {
-  const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
-  const [loadingMenu, setLoadingMenu] = useState(true);
+  // Initialize with cached data for instant display
+  const [menuItems, setMenuItems] = useState<MenuItem[]>(() => {
+    if (typeof window === "undefined") return [];
+    const cached = safeGetItem(sessionStorage, `menu_${venueSlug}`);
+    return safeParseJSON<MenuItem[]>(cached, []);
+  });
+  const [loadingMenu, setLoadingMenu] = useState(() => {
+    if (typeof window === "undefined") return true;
+    const cached = safeGetItem(sessionStorage, `menu_${venueSlug}`);
+    const parsed = safeParseJSON<MenuItem[]>(cached, []);
+    return parsed.length === 0; // Only show loading if no cache
+  });
   const [menuError, setMenuError] = useState<string | null>(null);
-  const [categoryOrder, setCategoryOrder] = useState<string[] | null>(null);
-  const [venueName, setVenueName] = useState<string>("");
-  const [pdfImages, setPdfImages] = useState<string[]>([]);
+  const [categoryOrder, setCategoryOrder] = useState<string[] | null>(() => {
+    if (typeof window === "undefined") return null;
+    const cached = safeGetItem(sessionStorage, `categories_${venueSlug}`);
+    return safeParseJSON<string[] | null>(cached, null);
+  });
+  const [venueName, setVenueName] = useState<string>(() => {
+    if (typeof window === "undefined") return "";
+    return safeGetItem(sessionStorage, `venue_name_${venueSlug}`) || "";
+  });
+  const [pdfImages, setPdfImages] = useState<string[]>(() => {
+    if (typeof window === "undefined") return [];
+    const cached = safeGetItem(sessionStorage, `pdf_images_${venueSlug}`);
+    return safeParseJSON<string[]>(cached, []);
+  });
 
   const loadingRef = useRef(false);
   const fetchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const retryCountRef = useRef(0);
 
   // Cleanup timeout on unmount
   useEffect(() => {
@@ -23,13 +46,16 @@ export function useOrderMenu(venueSlug: string, isDemo: boolean) {
     };
   }, []);
 
-  const loadMenuItems = useCallback(async (retryCount = 0, maxRetries = 3) => {
+  const loadMenuItems = useCallback(async (isBackgroundRefresh = false) => {
     if (!venueSlug) return;
 
     // Prevent duplicate fetches
-    if (loadingRef.current) return;
+    if (loadingRef.current && !isBackgroundRefresh) return;
+    
     loadingRef.current = true;
-    setLoadingMenu(true);
+    if (!isBackgroundRefresh) {
+      setLoadingMenu(true);
+    }
     setMenuError(null);
 
     // Demo mode - load immediately without API
@@ -52,36 +78,25 @@ export function useOrderMenu(venueSlug: string, isDemo: boolean) {
     try {
       const apiUrl = `${window.location.origin}/api/menu/${venueSlug}`;
       
-      // 15s timeout - fail fast, retry a few times
+      // 15s timeout
       const controller = new AbortController();
       fetchTimeoutRef.current = setTimeout(() => controller.abort(), 15000);
 
       const response = await fetch(apiUrl, {
         signal: controller.signal,
-        cache: "no-store", // Always fetch fresh - no caching
+        cache: "no-store", // Always fetch fresh
         credentials: "omit",
       });
 
       clearTimeout(fetchTimeoutRef.current!);
 
       if (!response.ok) {
-        // Retry on error
-        if (retryCount < maxRetries) {
-          loadingRef.current = false;
-          await new Promise(resolve => setTimeout(resolve, 1000 * (retryCount + 1)));
-          return loadMenuItems(retryCount + 1, maxRetries);
-        }
         throw new Error(response.statusText || "Failed to load menu");
       }
 
       const data = await response.json();
 
       if (!data.success || !data.data) {
-        if (retryCount < maxRetries) {
-          loadingRef.current = false;
-          await new Promise(resolve => setTimeout(resolve, 1000 * (retryCount + 1)));
-          return loadMenuItems(retryCount + 1, maxRetries);
-        }
         throw new Error("Invalid menu data");
       }
 
@@ -93,12 +108,27 @@ export function useOrderMenu(venueSlug: string, isDemo: boolean) {
         venue_name: payloadVenueName,
       }));
 
+      // Update state with fresh data
       setMenuItems(normalized);
       setVenueName(payloadVenueName);
       setPdfImages(Array.isArray(payload.pdfImages) ? payload.pdfImages : []);
       setCategoryOrder(Array.isArray(payload.categoryOrder) ? payload.categoryOrder : null);
+
+      // Cache the fresh data
+      if (typeof window !== "undefined") {
+        safeSetItem(sessionStorage, `menu_${venueSlug}`, JSON.stringify(normalized));
+        safeSetItem(sessionStorage, `venue_name_${venueSlug}`, payloadVenueName);
+        if (Array.isArray(payload.categoryOrder)) {
+          safeSetItem(sessionStorage, `categories_${venueSlug}`, JSON.stringify(payload.categoryOrder));
+        }
+        if (Array.isArray(payload.pdfImages) && payload.pdfImages.length > 0) {
+          safeSetItem(sessionStorage, `pdf_images_${venueSlug}`, JSON.stringify(payload.pdfImages));
+        }
+      }
+
       setLoadingMenu(false);
       loadingRef.current = false;
+      retryCountRef.current = 0;
 
       // Fetch category order separately if needed
       if (!Array.isArray(payload.categoryOrder)) {
@@ -120,33 +150,37 @@ export function useOrderMenu(venueSlug: string, isDemo: boolean) {
     } catch (error) {
       clearTimeout(fetchTimeoutRef.current!);
       
-      // Retry on error
-      if (retryCount < maxRetries) {
+      // Retry up to 3 times
+      if (retryCountRef.current < 3) {
+        retryCountRef.current++;
         loadingRef.current = false;
-        await new Promise(resolve => setTimeout(resolve, 1000 * (retryCount + 1)));
-        return loadMenuItems(retryCount + 1, maxRetries);
+        await new Promise(resolve => setTimeout(resolve, 1000 * retryCountRef.current));
+        return loadMenuItems(isBackgroundRefresh);
       }
 
-      // All retries exhausted - show error but stop loading
+      // All retries exhausted
       const errorMessage = error instanceof Error ? error.message : "Failed to load menu";
-      setMenuError(errorMessage);
+      // Only show error if we have no cached data
+      const cached = safeGetItem(sessionStorage, `menu_${venueSlug}`);
+      const cachedItems = safeParseJSON<MenuItem[]>(cached, []);
+      if (cachedItems.length === 0) {
+        setMenuError(errorMessage);
+      }
       setLoadingMenu(false);
       loadingRef.current = false;
+      retryCountRef.current = 0;
     }
   }, [venueSlug, isDemo]);
 
   // Load menu when venue changes
   useEffect(() => {
     if (venueSlug) {
-      // Reset state for new venue
-      setMenuItems([]);
-      setCategoryOrder(null);
-      setVenueName("");
-      setPdfImages([]);
-      setMenuError(null);
+      // Reset retry count
+      retryCountRef.current = 0;
       loadingRef.current = false;
       
-      loadMenuItems();
+      // Start fetching fresh data in background (cached data already shown)
+      loadMenuItems(true);
     }
   }, [venueSlug, isDemo, loadMenuItems]);
 
