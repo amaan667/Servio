@@ -4,7 +4,7 @@
  */
 
 import { BaseService } from "./BaseService";
-import { createSupabaseClient, createClient } from "@/lib/supabase";
+import { createSupabaseClient, supabaseAdmin } from "@/lib/supabase";
 
 export interface MenuItem {
   id: string;
@@ -236,7 +236,7 @@ export class MenuService extends BaseService {
       async () => {
         try {
           // Use admin client to bypass RLS - customers don't have auth cookies
-          const supabase = await createClient();
+          const supabase = supabaseAdmin();
 
           // Parallelize queries for better performance
           const [venueResult, menuItemsResult, uploadResult] = await Promise.all([
