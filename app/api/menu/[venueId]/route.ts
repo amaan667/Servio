@@ -42,12 +42,11 @@ export const GET = createUnifiedHandler(
     try {
       const menuData = await Promise.race([menuDataPromise, timeoutPromise]);
 
-      // Return with edge caching headers for CDN optimization
-      // Cache for 60 seconds on client, 120 seconds on CDN, allow stale for 300 seconds while revalidating
+      // Return with no-cache headers - always fetch fresh from database
       return success(menuData, undefined, undefined, {
-        maxAge: 60,
-        sMaxAge: 120,
-        staleWhileRevalidate: 300,
+        maxAge: 0,
+        sMaxAge: 0,
+        staleWhileRevalidate: 0,
       });
     } catch (error) {
       // Enhanced error handling for private browsers and mobile

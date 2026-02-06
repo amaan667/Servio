@@ -222,7 +222,7 @@ export class MenuService extends BaseService {
 
   /**
    * Get public menu data (venue + items + uploads)
-   * Optimized for first-load performance - uses shorter cache TTL for public access
+   * Optimized for first-load performance - uses minimal cache TTL for instant updates
    * IMPORTANT: Uses admin client to bypass RLS for public/anonymous access (customers scanning QR codes)
    */
   async getPublicMenuFull(
@@ -287,7 +287,7 @@ export class MenuService extends BaseService {
           }
 
           const pdfImages = (uploadData?.pdf_images || uploadData?.pdf_images_cc || []) as string[];
-          const categoryOrder = Array.isArray(uploadData?.category_order)
+          const categoryOrder = uploadData?.category_order
             ? (uploadData.category_order as string[])
             : null;
 
@@ -324,7 +324,7 @@ export class MenuService extends BaseService {
           throw new Error(`Failed to load menu: ${errorMessage}`);
         }
       },
-      60 // Shorter cache TTL (1 minute) for public menu to ensure freshness
+      5 // Minimal cache (5 seconds) - ensures menu updates appear almost instantly
     );
   }
 }
