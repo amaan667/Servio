@@ -8,11 +8,7 @@
  * - Earlier Today: Orders from today that are not in live orders (orders from earlier today)
  * - History: Orders from previous days
  *
- * Features:
- * - Pull-to-refresh for mobile
- * - Offline support with sync queue
- * - Skeleton loading states
- * - Real-time subscriptions
+ * Orders automatically move from "Live Orders" to "Earlier Today" after a period of time
  */
 
 import React, { useEffect, useState, useRef } from "react";
@@ -20,15 +16,12 @@ import { useSearchParams } from "next/navigation";
 import { supabaseBrowser as createClient } from "@/lib/supabase";
 import { useTabCounts } from "@/hooks/use-tab-counts";
 import { OrderCard } from "@/components/orders/OrderCard";
-import { OrderCardSkeletonGrid } from "@/components/orders/OrderCardSkeleton";
 import { mapOrderToCardData } from "@/lib/orders/mapOrderToCardData";
 import type { LegacyOrder } from "@/types/orders";
 import MobileNav from "@/components/MobileNav";
 import { Input } from "@/components/ui/input";
-import { Search, X, WifiOff, RefreshCw } from "lucide-react";
+import { Search, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { usePullToRefresh, useOnlineStatus } from "@/hooks/usePullToRefresh";
-import { useOfflineSync } from "@/hooks/useOfflineSync";
 
 // Hooks
 import { useOrderManagement } from "./hooks/useOrderManagement";
@@ -79,22 +72,11 @@ export default function LiveOrdersClient({
     loading,
     todayWindow,
     setOrders,
-    refreshOrders,
     setAllTodayOrders,
   } = useOrderManagement(venueId);
 
   const { data: tabCounts, refetch: refetchCounts } = useTabCounts(venueId, "Europe/London", 30);
   const { isBulkCompleting, bulkCompleteAllOrders } = useBulkOperations(venueId);
-
-  // Pull-to-refresh and offline status hooks
-  const isOnline = useOnlineStatus();
-  const { pendingCount, isSyncing } = useOfflineSync();
-  const { isPulling, pullDistance, isRefreshing: isPullRefreshing, triggerRefresh } = usePullToRefresh({
-    onRefresh: () => {
-      refreshOrders();
-      refetchCounts();
-    },
-  });
 
   // Sync URL params after mount to avoid hydration mismatch (server has no searchParams)
   useEffect(() => {
@@ -126,9 +108,7 @@ export default function LiveOrdersClient({
 
   // Counts are refreshed by useTabCounts (60s). Only refetch once on mount so tab badges appear.
   useEffect(() => {
-    // Refetch counts and refresh orders (no full page reload needed)
-          refetchCounts();
-          refreshOrders();
+    refetchCounts();
   }, [refetchCounts]);
 
   // Periodically check if orders need to be moved from live to all today
@@ -154,9 +134,7 @@ export default function LiveOrdersClient({
 
         if (movedToAllToday.length > 0) {
           setAllTodayOrders((prev) => [...movedToAllToday, ...prev]);
-          // Refetch counts and refresh orders (no full page reload needed)
           refetchCounts();
-          refreshOrders();
         }
 
         return stillLive;
@@ -189,6 +167,7 @@ export default function LiveOrdersClient({
       ["PLACED", "IN_PREP", "READY", "SERVING", "SERVED"].includes(order.order_status)
     );
     bulkCompleteAllOrders(activeOrders, () => {
+      window.location.reload();
     });
   };
 
@@ -302,9 +281,9 @@ export default function LiveOrdersClient({
         venueId={venueId}
         showActions={showActions}
         onActionComplete={() => {
-          // Refetch counts and refresh orders (no full page reload needed)
           refetchCounts();
-          refreshOrders();
+          // Force page reload to refresh orders with updated payment status
+          window.location.reload();
         }}
       />
     );
@@ -380,27 +359,6 @@ export default function LiveOrdersClient({
 
         <OrderTabs activeTab={activeTab} onTabChange={handleTabChange} counts={counts} />
 
-        {/* Offline indicator */}
-        {!isOnline && (
-          <div className="flex items-center gap-2 rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-800 border border-amber-200">
-            <WifiOff className="h-4 w-4" />
-            <span>Offline mode - changes will sync when connection is restored</span>
-            {pendingCount > 0 && (
-              <span className="ml-auto font-medium">
-                {pendingCount} pending
-              </span>
-            )}
-          </div>
-        )}
-
-        {/* Syncing indicator */}
-        {isSyncing && (
-          <div className="flex items-center gap-2 rounded-lg bg-blue-50 px-3 py-2 text-sm text-blue-800 border border-blue-200">
-            <RefreshCw className="h-4 w-4 animate-spin" />
-            <span>Syncing {pendingCount} pending changes...</span>
-          </div>
-        )}
-
         {activeTab === "live" && (
           <div className="flex justify-center">
             <div className="hidden md:flex items-center gap-2 rounded-xl bg-rose-50 px-3 py-2 text-sm text-white ring-1 ring-rose-100">
@@ -412,27 +370,12 @@ export default function LiveOrdersClient({
       </section>
 
       <main className="mt-4 space-y-6 pb-20">
-        {/* Pull-to-refresh indicator */}
-        {(isPulling || isPullRefreshing) && (
-          <div
-            className="fixed top-0 left-0 right-0 z-50 flex items-center justify-center gap-2 bg-servio-purple text-white py-2 transition-transform duration-200"
-            style={{ transform: `translateY(${Math.min(pullDistance, 60)}px)` }}
-          >
-            {isPullRefreshing ? (
-              <RefreshCw className="h-4 w-4 animate-spin" />
-            ) : (
-              <RefreshCw className="h-4 w-4" />
-            )}
-            <span className="text-sm font-medium">
-              {isPullRefreshing ? "Refreshing..." : pullDistance >= 80 ? "Release to refresh" : "Pull to refresh"}
-            </span>
-          </div>
-        )}
-
         {activeTab === "live" && (
           <div className="space-y-6">
             {showLoadingState ? (
-              <OrderCardSkeletonGrid count={3} columns={2} />
+              <div className="rounded-2xl border border-slate-200 bg-slate-50 p-10 text-center text-gray-700">
+                <p className="text-lg font-medium">Loading orders…</p>
+              </div>
             ) : (
               (() => {
                 // Combine live and all today orders if table filter is active
@@ -499,7 +442,9 @@ export default function LiveOrdersClient({
         {activeTab === "all" && (
           <div className="space-y-6">
             {showLoadingState ? (
-              <OrderCardSkeletonGrid count={3} columns={2} />
+              <div className="rounded-2xl border border-slate-200 bg-slate-50 p-10 text-center text-gray-700">
+                <p className="text-lg font-medium">Loading orders…</p>
+              </div>
             ) : (
               (() => {
                 // Combine live and all today orders if table filter is active
@@ -562,7 +507,9 @@ export default function LiveOrdersClient({
         {activeTab === "history" && (
           <div className="space-y-6">
             {showLoadingState ? (
-              <OrderCardSkeletonGrid count={3} columns={1} />
+              <div className="rounded-2xl border border-slate-200 bg-slate-50 p-10 text-center text-gray-700">
+                <p className="text-lg font-medium">Loading orders…</p>
+              </div>
             ) : filteredHistoryOrders.length === 0 ? (
               <EmptyState
                 title={searchQuery ? "No orders found" : "No Historical Orders"}
