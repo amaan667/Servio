@@ -246,13 +246,13 @@ export class MenuService extends BaseService {
               .select("venue_id, venue_name")
               .eq("venue_id", venueId)
               .maybeSingle(),
-            // 2. Get Menu Items - show ALL items to customers (no is_available filter)
-            // Filtering by availability should be done in the UI if needed
+            // 2. Get Menu Items - order by position field (same as menu management)
             supabase
               .from("menu_items")
               .select("*", { count: "exact" })
               .eq("venue_id", venueId)
-              .order("created_at", { ascending: true })
+              .order("position", { ascending: true, nullsFirst: false })
+              .order("name", { ascending: true })
               .range(options.offset, options.offset + options.limit - 1),
             // 3. Get Uploads (optional - don't fail if missing)
             supabase
@@ -293,32 +293,37 @@ export class MenuService extends BaseService {
 
           let returnedItems = menuItems || [];
 
-          // Order items according to category_order if available
+          // First, order items by position field (same as menu management)
+          returnedItems.sort((a: MenuItem, b: MenuItem) => {
+            const posA = a.position ?? Infinity;
+            const posB = b.position ?? Infinity;
+            if (posA !== posB) return posA - posB;
+            return a.name.localeCompare(b.name);
+          });
+
+          // Then group by category using category_order from menu_uploads
           if (categoryOrder && categoryOrder.length > 0) {
             const categorySet = new Set(categoryOrder);
-            // Get unique categories from items that are in categoryOrder
+            // Sort categories according to category_order
             const orderedCategories = categoryOrder.filter(cat => 
               returnedItems.some((item: MenuItem) => item.category === cat)
             );
-            // Get remaining categories not in categoryOrder
+            // Get remaining categories not in category_order
             const remainingCategories = [...new Set(returnedItems
               .map((item: MenuItem) => item.category)
               .filter(cat => !categorySet.has(cat)))
             ];
             const finalCategoryOrder = [...orderedCategories, ...remainingCategories];
 
-            // Sort items: first by category order, then by position within each category
+            // Re-sort items: first by category order, then by position within each category
             returnedItems.sort((a: MenuItem, b: MenuItem) => {
               const catAIndex = finalCategoryOrder.indexOf(a.category);
               const catBIndex = finalCategoryOrder.indexOf(b.category);
               if (catAIndex !== catBIndex) return catAIndex - catBIndex;
-              return (a.position || 0) - (b.position || 0);
-            });
-          } else {
-            // Default sort by category then position
-            returnedItems.sort((a: MenuItem, b: MenuItem) => {
-              if (a.category !== b.category) return a.category.localeCompare(b.category);
-              return (a.position || 0) - (b.position || 0);
+              const posA = a.position ?? Infinity;
+              const posB = b.position ?? Infinity;
+              if (posA !== posB) return posA - posB;
+              return a.name.localeCompare(b.name);
             });
           }
           // Fetch corrections - handle RLS errors gracefully for public access
