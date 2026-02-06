@@ -5,16 +5,25 @@ import { z } from "zod";
 export const runtime = "nodejs";
 
 const checkoutSchema = z.object({
+  // Accept both camelCase and snake_case for compatibility
   amount: z.number().min(0.5, "Amount must be at least £0.50"),
-  venue_id: z.string(),
+  venueId: z.string().optional(),
+  venue_id: z.string().optional(),
+  venueName: z.string().optional(),
   venue_name: z.string().optional(),
+  tableNumber: z.union([z.string(), z.number()]).optional(),
   table_number: z.union([z.string(), z.number()]).optional(),
-  order_id: z.string().optional(), // Optional: create order after payment when omitted
+  orderId: z.string().optional(),
+  order_id: z.string().optional(),
+  customerName: z.string().optional().default("Customer"),
   customer_name: z.string().optional().default("Customer"),
+  customerPhone: z.string().optional(),
   customer_phone: z.string().optional(),
+  customerEmail: z.string().email().optional().or(z.literal("")), 
   customer_email: z.string().email().optional().or(z.literal("")),
   items: z.array(z.unknown()).optional(),
   source: z.string().optional().default("qr"),
+  qrType: z.string().optional().default("TABLE_FULL_SERVICE"),
   qr_type: z.string().optional().default("TABLE_FULL_SERVICE"),
 });
 
@@ -32,27 +41,39 @@ export const POST = createUnifiedHandler(
     const protocol = host.includes("localhost") ? "http" : "https";
     const base = `${protocol}://${host}`;
 
+    // Support both camelCase and snake_case from frontend
+    const venueId = body.venueId ?? body.venue_id ?? "";
+    const venueName = body.venueName ?? body.venue_name ?? "Restaurant";
+    const tableNumber = String(body.tableNumber ?? body.table_number ?? "1");
+    const orderId = body.orderId ?? body.order_id;
+    const customerName = body.customerName ?? body.customer_name ?? "Customer";
+    const customerPhone = body.customerPhone ?? body.customer_phone;
+    const customerEmailRaw = body.customerEmail ?? body.customer_email;
+    const customerEmail = customerEmailRaw && customerEmailRaw !== "" ? customerEmailRaw : undefined;
+    const items = body.items;
+    const source = body.source;
+    const qrType = body.qrType ?? body.qr_type ?? "TABLE_FULL_SERVICE";
+
     const session = await stripeService.createOrderCheckoutSession({
       amount: body.amount,
-      venueName: body.venue_name || "Restaurant",
-      venueId: body.venue_id,
-      tableNumber: String(body.table_number || "1"),
-      orderId: body.order_id ?? undefined,
-      customerName: body.customer_name || "Customer",
-      customerPhone: body.customer_phone,
-      customerEmail:
-        body.customer_email && body.customer_email !== "" ? body.customer_email : undefined,
-      items: body.items,
-      source: body.source,
-      qrType: body.qr_type,
+      venueName,
+      venueId,
+      tableNumber,
+      orderId: orderId ?? undefined,
+      customerName,
+      customerPhone,
+      customerEmail,
+      items,
+      source,
+      qrType,
       successUrl:
-        body.order_id != null
-          ? `${base}/payment/success?session_id={CHECKOUT_SESSION_ID}&orderId=${body.order_id}`
+        orderId != null
+          ? `${base}/payment/success?session_id={CHECKOUT_SESSION_ID}&orderId=${orderId}`
           : `${base}/payment/success?session_id={CHECKOUT_SESSION_ID}`,
       cancelUrl:
-        body.order_id != null
-          ? `${base}/payment/cancel?orderId=${body.order_id}&venueId=${body.venue_id}&tableNumber=${body.table_number || "1"}`
-          : `${base}/payment/cancel?venueId=${body.venue_id}&tableNumber=${body.table_number || "1"}`,
+        orderId != null
+          ? `${base}/payment/cancel?orderId=${orderId}&venueId=${venueId}&tableNumber=${tableNumber}`
+          : `${base}/payment/cancel?venueId=${venueId}&tableNumber=${tableNumber}`,
     });
 
     return { id: session.id, url: session.url };
@@ -62,6 +83,6 @@ export const POST = createUnifiedHandler(
     requireAuth: false,
     requireVenueAccess: false,
     enforceIdempotency: true,
-    autoCase: true,
+    // Removed autoCase: true - schema accepts both casing
   }
 );
