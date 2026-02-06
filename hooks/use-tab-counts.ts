@@ -47,15 +47,16 @@ export function useTabCounts(venueId: string, tz: string, liveWindowMins = 30) {
       setError(null);
 
       try {
-        const params = new URLSearchParams({
-          venueId,
-          tz,
-          live_window_mins: String(liveWindowMins),
-        });
         const { apiClient } = await import("@/lib/api-client");
         const res = await apiClient.get(`/api/dashboard/counts`, {
           params: { venueId, tz, live_window_mins: String(liveWindowMins) },
         });
+
+        if (res.status === 429) {
+          // Rate limited: keep cached data, clear error so UI doesn't show failure
+          setError(null);
+          return;
+        }
 
         if (!res.ok) {
           setError("Failed to fetch counts");
@@ -102,13 +103,13 @@ export function useTabCounts(venueId: string, tz: string, liveWindowMins = 30) {
     void fetchCounts(true);
   }, [venueId, fetchCounts]);
 
-  // Set up periodic refresh to keep counts updated even when tab is not active
+  // Set up periodic refresh (60s to avoid 429 when multiple components poll)
   useEffect(() => {
     if (!venueId) return;
 
     const interval = setInterval(() => {
       fetchCounts(false);
-    }, 30000); // Refresh every 30 seconds
+    }, 60000); // Refresh every 60 seconds
 
     return () => clearInterval(interval);
   }, [venueId, fetchCounts]);

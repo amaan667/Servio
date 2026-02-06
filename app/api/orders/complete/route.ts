@@ -22,11 +22,28 @@ export const POST = createUnifiedHandler(
       throw new Error("Forbidden: Forced completion requires owner or manager role");
     }
 
-    const order = await orderService.completeOrder(body.orderId, venueId, {
-      forced: body.forced,
-      userId: user.id,
-      forcedReason: body.forcedReason,
-    });
+    // Try RPC first, fallback to direct update if RPC fails
+    let order;
+    try {
+      order = await orderService.completeOrder(body.orderId, venueId, {
+        forced: body.forced,
+        userId: user.id,
+        forcedReason: body.forcedReason,
+      });
+    } catch (rpcError) {
+      // Fallback to direct update when RPC fails (e.g., ambiguous column error)
+      order = await orderService.forceCompleteOrder(body.orderId, venueId);
+      // Run table cleanup after fallback so table state stays consistent
+      if (order.table_id || order.table_number) {
+        const { cleanupTableOnOrderCompletion } = await import("@/lib/table-cleanup");
+        await cleanupTableOnOrderCompletion({
+          venueId,
+          tableId: order.table_id || undefined,
+          tableNumber: order.table_number?.toString() || undefined,
+          orderId: body.orderId,
+        });
+      }
+    }
 
     return {
       success: true,

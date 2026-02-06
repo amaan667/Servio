@@ -56,11 +56,12 @@ export default function LiveOrdersClient({
       : tableFilter
     : null;
 
-  const [activeTab, setActiveTab] = useState(tabParam || "live");
+  // Initial tab "live" to avoid hydration mismatch (server has no searchParams; client may have tab=all)
+  const [activeTab, setActiveTab] = useState("live");
   const [venueName, setVenueName] = useState<string>(venueNameProp || "");
   const [autoRefreshEnabled, setAutoRefreshEnabled] = useState(true);
   const [refreshInterval, setRefreshInterval] = useState(120000);
-  const [searchQuery, setSearchQuery] = useState(searchParam || orderParam || "");
+  const [searchQuery, setSearchQuery] = useState("");
   const autoRefreshRef = useRef<NodeJS.Timeout | null>(null);
 
   // Use custom hooks
@@ -77,12 +78,13 @@ export default function LiveOrdersClient({
   const { data: tabCounts, refetch: refetchCounts } = useTabCounts(venueId, "Europe/London", 30);
   const { isBulkCompleting, bulkCompleteAllOrders } = useBulkOperations(venueId);
 
-  // Update active tab when URL parameter changes
+  // Sync URL params after mount to avoid hydration mismatch (server has no searchParams)
   useEffect(() => {
-    if (tabParam && ["live", "all", "history"].includes(tabParam)) {
-      setActiveTab(tabParam);
-    }
-  }, [tabParam]);
+    const tab = tabParam && ["live", "all", "history"].includes(tabParam) ? tabParam : "live";
+    setActiveTab(tab);
+    const q = searchParam || orderParam || "";
+    if (q) setSearchQuery(q);
+  }, [tabParam, searchParam, orderParam]);
 
   // When table filter is active, search through both live and all tabs
   // Show orders from whichever tab they're in without switching tabs
@@ -104,30 +106,10 @@ export default function LiveOrdersClient({
     }
   }, [venueId, venueNameProp]);
 
-  // Auto-refresh effect - always keep counts updated regardless of active tab
+  // Counts are refreshed by useTabCounts (60s). Only refetch once on mount so tab badges appear.
   useEffect(() => {
-    // Always fetch counts on mount to ensure they're visible
     refetchCounts();
-
-    if (!autoRefreshEnabled) {
-      if (autoRefreshRef.current) {
-        clearInterval(autoRefreshRef.current);
-        autoRefreshRef.current = null;
-      }
-      return;
-    }
-
-    autoRefreshRef.current = setInterval(() => {
-      refetchCounts();
-    }, refreshInterval);
-
-    return () => {
-      if (autoRefreshRef.current) {
-        clearInterval(autoRefreshRef.current);
-        autoRefreshRef.current = null;
-      }
-    };
-  }, [autoRefreshEnabled, refreshInterval, refetchCounts]);
+  }, [refetchCounts]);
 
   // Periodically check if orders need to be moved from live to all today
   useEffect(() => {

@@ -41,6 +41,6 @@ export const GET = createUnifiedHandler(
   {
     requireVenueAccess: true,
     venueIdSource: "query",
-    rateLimit: RATE_LIMITS.GENERAL,
+    rateLimit: RATE_LIMITS.DASHBOARD_POLLING,
   }
 );

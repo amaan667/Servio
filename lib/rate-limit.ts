@@ -273,6 +273,8 @@ export const RATE_LIMITS = {
   PAYMENT: { limit: 20, window: 60 }, // 20 requests per minute
   ORDER_CREATE: { limit: 30, window: 60 }, // 30 requests per minute
   GENERAL: { limit: 100, window: 60 }, // 100 requests per minute
+  /** Dashboard/live-orders poll counts every 30–60s; multiple components share this endpoint. */
+  DASHBOARD_POLLING: { limit: 180, window: 60 }, // 180 requests per minute
   /** KDS polls stations + tickets ~every 5s; per-user when x-user-id set. Avoid auth/rate-limit errors. */
   KDS: { limit: 500, window: 60 },
   MENU_PUBLIC: { limit: 10000, window: 60 }, // Effectively unlimited — public read-only, must work on any device/network

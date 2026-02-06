@@ -71,6 +71,7 @@ export default function ConditionalBottomNav() {
         });
 
         if (!isMounted) return;
+        if (res.status === 429) return; // Rate limited; keep cached counts
 
         const body = res.ok ? await res.json() : null;
         const data = body?.data ?? body;
