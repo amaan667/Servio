@@ -135,22 +135,12 @@ export default function AnalyticsClient({
   }, [revenueData.revenueByDay]);
 
   // Calculate real peak hours from data (aggregate by hour if available)
-  const peakHours = useMemo(() => {
-    // Since we don't have hourly data, return estimated distribution based on total
-    // In a real implementation, this would query orders with hour extraction
-    const totalOrders = ordersData.totalOrders || 1;
-    
-    // Distribute orders across hours based on typical patterns
-    // These would be calculated from actual order timestamps in a full implementation
-    return [
-      { label: "12:00 PM - 2:00 PM", orders: Math.floor(totalOrders * 0.25) },
-      { label: "6:00 PM - 8:00 PM", orders: Math.floor(totalOrders * 0.25) },
-      { label: "10:00 AM - 12:00 PM", orders: Math.floor(totalOrders * 0.2) },
-      { label: "8:00 PM - 10:00 PM", orders: Math.floor(totalOrders * 0.15) },
-    ];
-  }, [ordersData.totalOrders]);
+  const peakHours: { label: string; orders: number }[] = useMemo(() => {
+    // No hourly aggregation available - would need orders extracted by hour
+    return [];
+  }, []);
 
-  // Calculate real busiest days from actual ordersByDay data
+  // Calculate busiest days from actual ordersByDay data
   const busiestDays = useMemo(() => {
     const ordersByDay = ordersData.ordersByDay || {};
     const dayNames = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
@@ -159,41 +149,20 @@ export default function AnalyticsClient({
     const values = Object.values(ordersByDay);
     const maxValue = Math.max(...values, 1);
     
-    if (Object.keys(ordersByDay).length > 0) {
-      // Real data exists - use it
-      return dayNames.map((day) => {
-        const dayLower = day.toLowerCase().substring(0, 3);
-        const value = ordersByDay[dayLower] || 0;
-        const percentage = maxValue > 0 ? Math.round((value / maxValue) * 100) : 0;
-        
-        return {
-          day,
-          avgOrders: value,
-          percentage: percentage || 50,
-        };
-      });
-    }
-    
-    // No real data - show estimated pattern based on total orders
-    const avgOrdersPerDay = Math.floor(ordersData.totalOrders / 7) || 10;
+    // Real data exists - use it
     return dayNames.map((day) => {
-      // Weekend bias (Sat, Fri, Sun higher, Mon lower)
-      let multiplier = 1;
-      if (day === "Saturday") multiplier = 1.4;
-      else if (day === "Friday") multiplier = 1.3;
-      else if (day === "Sunday") multiplier = 1.2;
-      else if (day === "Monday") multiplier = 0.8;
-      
-      const avgOrders = Math.floor(avgOrdersPerDay * multiplier);
-      const percentage = Math.round((avgOrders / (avgOrdersPerDay * 1.4)) * 100);
+      const dayLower = day.toLowerCase().substring(0, 3);
+      const value = ordersByDay[dayLower] || 0;
+      const percentage = maxValue > 0 ? Math.round((value / maxValue) * 100) : 0;
       
       return {
         day,
-        avgOrders,
-        percentage: Math.max(percentage, 30),
+        avgOrders: value,
+        percentage: percentage || 0,
+        hasData: value > 0,
       };
     });
-  }, [ordersData.totalOrders, ordersData.ordersByDay]);
+  }, [ordersData.ordersByDay]);
 
   return (
     <div className="space-y-6">
@@ -477,14 +446,18 @@ export default function AnalyticsClient({
                 <CardDescription>Busiest times for your venue</CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="space-y-2">
-                  {peakHours.map((peak) => (
-                    <div key={peak.label} className="flex items-center justify-between py-2 border-b">
-                      <span className="text-sm">{peak.label}</span>
-                      <span className="text-sm font-semibold">{peak.orders} orders</span>
-                    </div>
-                  ))}
-                </div>
+                {peakHours.length > 0 ? (
+                  <div className="space-y-2">
+                    {peakHours.map((peak) => (
+                      <div key={peak.label} className="flex items-center justify-between py-2 border-b">
+                        <span className="text-sm">{peak.label}</span>
+                        <span className="text-sm font-semibold">{peak.orders} orders</span>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-muted-foreground text-sm py-4">No hourly data available</p>
+                )}
               </CardContent>
             </Card>
 
