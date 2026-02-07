@@ -247,9 +247,8 @@ export default function MenuManagementClient({
   };
 
   const handleDelete = async (item: MenuItem) => {
-    if (!confirm(`Are you sure you want to delete "${item.name}"?`)) {
-      return;
-    }
+    const confirmDelete = confirm(`Are you sure you want to delete "${item.name}"?`);
+    if (!confirmDelete) { toast({ description: "Delete cancelled" }); return; }
 
     try {
       const supabase = createClient();
@@ -346,9 +345,8 @@ export default function MenuManagementClient({
   const clearAllMenu = async () => {
     // CRITICAL LOG: Clear menu button clicked
 
-    if (!confirm("Are you sure you want to clear the entire menu? This action cannot be undone.")) {
-      return;
-    }
+    const confirmClear = confirm("Are you sure you want to clear the entire menu? This action cannot be undone.");
+    if (!confirmClear) { toast({ description: "Clear cancelled" }); return; }
 
     try {
       setIsClearing(true);

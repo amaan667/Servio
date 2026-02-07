@@ -134,7 +134,7 @@ export default function GlobalBottomNav({
             try {
               const { apiClient } = await import("@/lib/api-client");
               const res = await apiClient.get(`/api/dashboard/counts`, {
-                params: { venueId, tz: "Europe/London", live_window_mins: "30" },
+                params: { venueId, tz: undefined, live_window_mins: "30" },
               });
 
               if (!isSubscribed || !isMountedRef.current) return;

@@ -38,12 +38,31 @@ export function addDaysISO(dateYYYYMMDD: string, days: number): string {
   return d.toISOString().slice(0, 10);
 }
 
+// Get today's window in the device's local timezone
+export function todayWindowForLocal() {
+  const now = DateTime.local();
+  
+  const start = now.startOf("day");
+  const end = start.plus({ days: 1 });
+
+  return {
+    zone: "local",
+    startUtcISO: start.toUTC().toISO(),
+    endUtcISO: end.toUTC().toISO(),
+    startLocalISO: start.toISO(),
+    endLocalISO: end.toISO(),
+  };
+}
+
 export function todayWindowForTZ(tz?: string) {
-  const zone = tz || "Europe/London";
+  // If no timezone provided, use device local time
+  if (!tz) {
+    return todayWindowForLocal();
+  }
+  
+  const zone = tz;
   const now = DateTime.now().setZone(zone);
 
-  // Handle both 2024 and 2025 dates - use the current system year
-  // This ensures orders created with current system date will be included
   const start = now.startOf("day");
   const end = start.plus({ days: 1 });
 

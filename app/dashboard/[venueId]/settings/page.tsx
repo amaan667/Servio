@@ -121,7 +121,7 @@ export default async function SettingsPage({ params }: { params: { venueId: stri
           owner_user_id: auth?.user?.id ?? "",
           organization_id: userOrg?.id || null,
           is_active: true,
-          timezone: "Europe/London",
+          timezone: undefined,
           currency: "GBP",
           daily_reset_time: "06:00:00",
         })

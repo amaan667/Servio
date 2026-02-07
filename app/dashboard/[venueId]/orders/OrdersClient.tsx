@@ -91,7 +91,7 @@ const OrdersClient: React.FC<OrdersClientProps> = ({
   const LIVE_ORDER_WINDOW_MS = 30 * 60 * 1000; // 30 minutes
 
   // Get tab counts using the hook
-  const { data: tabCounts } = useTabCounts(venueId, "Europe/London", 30);
+  const { data: tabCounts } = useTabCounts(venueId, "", 30);
 
   // Auto-refresh functionality
   const [autoRefreshEnabled, setAutoRefreshEnabled] = useState(true);
@@ -104,7 +104,7 @@ const OrdersClient: React.FC<OrdersClientProps> = ({
 
     try {
       const supabase = createClient();
-      const venueTz = "Europe/London";
+      const venueTz = undefined;
 
       // Get today's time window
       const todayWindowData = todayWindowForTZ(venueTz);

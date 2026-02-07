@@ -4,6 +4,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { useSearchParams } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { toast } from "@/hooks/use-toast";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Copy, Download, Printer, Trash2, QrCode, Grid3x3, FileJson } from "lucide-react";
@@ -144,7 +145,7 @@ export default function QRCodeClient({
   const handleGenerateBulk = () => {
     const count = parseInt(bulkCount) || 0;
     if (count < 1 || count > 100) {
-      alert("Please enter a number between 1 and 100");
+      toast({ title: "Invalid Input", description: "Please enter a number between 1 and 100", variant: "destructive" });
       return;
     }
 
@@ -167,7 +168,7 @@ export default function QRCodeClient({
       url: qr.url,
     }));
     navigator.clipboard.writeText(JSON.stringify(urls, null, 2));
-    alert("All URLs copied as JSON!");
+    toast({ title: "Copied", description: "All URLs copied as JSON!" });
   };
 
   // Download all as PDF (4 per page)

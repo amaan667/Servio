@@ -58,7 +58,7 @@ export default async function VenuePage({ params }: { params: { venueId: string 
       // Continue without initial data - client will handle gracefully
     } else {
       const supabase = createAdminClient();
-      const venueTz = "Europe/London";
+      const venueTz = undefined;
       const window = todayWindowForTZ(venueTz);
 
       // Normalize venueId format - database stores with venue- prefix

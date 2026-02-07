@@ -9,6 +9,7 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { toast } from "@/hooks/use-toast";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -141,14 +142,12 @@ export function BillSplitModal({
   const handleComplete = () => {
     const validSplits = splits.filter((split) => split.items.length > 0);
     if (validSplits.length === 0) {
-      alert("Please assign items to at least one person.");
+      toast({ title: "Invalid Split", description: "Please assign items to at least one person.", variant: "destructive" });
       return;
     }
 
     if (Math.abs(getRemainingAmount()) > 0.01) {
-      alert(
-        "Please assign all items to splits. Remaining amount: £" + getRemainingAmount().toFixed(2)
-      );
+      toast({ title: "Invalid Split", description: "Please assign all items to splits. Remaining amount: £" + getRemainingAmount().toFixed(2), variant: "destructive" });
       return;
     }
 

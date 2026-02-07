@@ -67,7 +67,7 @@ export default function ConditionalBottomNav() {
       try {
         const { apiClient } = await import("@/lib/api-client");
         const res = await apiClient.get(`/api/dashboard/counts`, {
-          params: { venueId: venueIdFromPath, tz: "Europe/London", live_window_mins: "30" },
+          params: { venueId: venueIdFromPath, tz: undefined, live_window_mins: "30" },
         });
 
         if (!isMounted) return;

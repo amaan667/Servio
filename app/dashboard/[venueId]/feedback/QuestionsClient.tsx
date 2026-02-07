@@ -432,7 +432,8 @@ export default function QuestionsClient({
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm("Are you sure you want to delete this question?")) return;
+    const confirmDelete = confirm("Are you sure you want to delete this question?");
+    if (!confirmDelete) { toast({ description: "Delete cancelled" }); return; }
 
     try {
       // Normalize venueId - database stores with venue- prefix

@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { toast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -736,7 +737,7 @@ const PaymentsClient: React.FC<PaymentsClientProps> = ({ venueId }) => {
 
       if (!response.ok) {
         const errorMessage = data?.error?.message || data?.error || "Failed to mark order as paid";
-        alert(`Failed to mark order as paid: ${errorMessage}`);
+        toast({ title: "Error", description: `Failed to mark order as paid: ${errorMessage}`, variant: "destructive" });
         return;
       }
 
@@ -744,7 +745,7 @@ const PaymentsClient: React.FC<PaymentsClientProps> = ({ venueId }) => {
       await loadPayments();
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : "An unexpected error occurred";
-      alert(`Error: ${errorMessage}`);
+      toast({ title: "Error", description: errorMessage, variant: "destructive" });
     } finally {
       setIsProcessingPayment(null);
     }

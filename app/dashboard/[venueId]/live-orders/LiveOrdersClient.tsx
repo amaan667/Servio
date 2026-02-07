@@ -77,7 +77,7 @@ export default function LiveOrdersClient({
     pagination,
   } = useOrderManagement(venueId);
 
-  const { data: tabCounts, refetch: refetchCounts } = useTabCounts(venueId, "Europe/London", 30);
+  const { data: tabCounts, refetch: refetchCounts } = useTabCounts(venueId, "", 30);
   const { isBulkCompleting, bulkCompleteAllOrders } = useBulkOperations(venueId);
 
   // Sync URL params after mount to avoid hydration mismatch (server has no searchParams)
