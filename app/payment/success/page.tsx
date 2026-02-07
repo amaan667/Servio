@@ -4,6 +4,7 @@ import { useSearchParams, useRouter } from "next/navigation";
 import { useEffect } from "react";
 import { Loader2 } from "lucide-react";
 import { getScopedCartKey, safeRemoveItem } from "@/app/order/utils/safeStorage";
+import { toast } from "@/hooks/use-toast";
 
 export default function PaymentSuccessPage() {
   const searchParams = useSearchParams();
@@ -113,7 +114,7 @@ export default function PaymentSuccessPage() {
         );
         router.push("/");
       } catch (_error) {
-        alert(`Error finding order. Session ID: ${sessionId}`);
+        toast({ title: "Error", description: `Error finding order. Session ID: ${sessionId}`, variant: "destructive" });
         router.push("/");
       }
     };

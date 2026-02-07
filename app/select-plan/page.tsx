@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { toast } from "@/hooks/use-toast";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -206,7 +207,7 @@ export default function SelectPlanPage() {
           const data = await response.json();
 
           if (data.error || !data.url) {
-            alert(data.error || "Failed to create checkout session. Please try again.");
+            toast({ title: "Error", description: data.error || "Failed to create checkout session. Please try again.", variant: "destructive" });
             setLoading(false);
             setSelectedTier(null);
             return;
@@ -236,7 +237,7 @@ export default function SelectPlanPage() {
       const data = await response.json();
 
       if (data.error || !data.url) {
-        alert(data.error || "Failed to create checkout session. Please try again.");
+        toast({ title: "Error", description: data.error || "Failed to create checkout session. Please try again.", variant: "destructive" });
         setLoading(false);
         setSelectedTier(null);
         return;
@@ -245,7 +246,7 @@ export default function SelectPlanPage() {
       // Redirect to Stripe checkout
       window.location.href = data.url;
     } catch (error) {
-      alert(error instanceof Error ? error.message : "Failed to proceed. Please try again.");
+      toast({ title: "Error", description: error instanceof Error ? error.message : "Failed to proceed. Please try again.", variant: "destructive" });
       setLoading(false);
       setSelectedTier(null);
     }

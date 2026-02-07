@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { toast } from "@/hooks/use-toast";
 import {
   Dialog,
   DialogContent,
@@ -43,7 +44,7 @@ export function ReceiveStockDialog({
       const costValue = parseFloat(costPerUnit);
 
       if (isNaN(quantityValue) || quantityValue <= 0) {
-        alert("Please enter a valid quantity");
+        toast({ title: "Invalid Input", description: "Please enter a valid quantity", variant: "destructive" });
         return;
       }
 

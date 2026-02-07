@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Star } from "lucide-react";
+import { toast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
@@ -38,14 +39,14 @@ export default function SimpleFeedbackForm({
       // Remove artificial delay - submit immediately
 
       // Show success message
-      alert("Thank you for your feedback!");
+      toast({ title: "Success", description: "Thank you for your feedback!" });
 
       // Call onSubmit callback if provided
       if (onSubmit) {
         onSubmit();
       }
     } catch (_error) {
-      alert("Failed to submit feedback. Please try again.");
+      toast({ title: "Error", description: "Failed to submit feedback. Please try again.", variant: "destructive" });
     } finally {
       setSubmitting(false);
     }

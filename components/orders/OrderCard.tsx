@@ -1,5 +1,6 @@
 "use client";
 
+import { toast } from "@/hooks/use-toast";
 import { useState } from "react";
 import * as React from "react";
 import { Card, CardContent } from "@/components/ui/card";
@@ -367,7 +368,7 @@ export function OrderCard({
 
   const handleStatusUpdate = async (nextStatusRaw: string) => {
     if (!venueId) {
-      alert("Error: Venue ID missing. Please refresh the page.");
+      toast({ title: "Error", description: "Venue ID missing. Please refresh the page.", variant: "destructive" });
       return;
     }
 
@@ -428,7 +429,7 @@ export function OrderCard({
         setAllTicketsBumped(null);
       }
     } catch (_error) {
-      alert(`Error: ${_error instanceof Error ? _error.message : "Failed to update order status"}`);
+      toast({ title: "Error", description: _error instanceof Error ? _error.message : "Failed to update order status", variant: "destructive" });
     } finally {
       setIsProcessing(false);
     }

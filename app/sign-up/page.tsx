@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { supabaseBrowser } from "@/lib/supabase";
 import { getAuthRedirectUrl } from "@/lib/auth";
+import { toast } from "@/hooks/use-toast";
 import SignUpForm from "./signup-form";
 
 export default function SignUpPage() {
@@ -35,7 +36,7 @@ export default function SignUpPage() {
       });
 
       if (error) {
-        alert(`Sign up failed: ${error.message}`);
+        toast({ title: "Error", description: `Sign up failed: ${error.message}`, variant: "destructive" });
         setIsSigningUp(false);
         return;
       }
@@ -45,7 +46,7 @@ export default function SignUpPage() {
         window.location.href = data.url;
       }
     } catch (_error) {
-      alert("Sign up failed. Please try again.");
+      toast({ title: "Error", description: "Sign up failed. Please try again.", variant: "destructive" });
       setIsSigningUp(false);
     }
   };

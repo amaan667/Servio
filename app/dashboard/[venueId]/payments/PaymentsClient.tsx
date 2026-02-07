@@ -150,7 +150,7 @@ function RefundDialog({
       setCustomReason("");
     } catch (error) {
       // Refund error - handled by toast notification
-      alert(error instanceof Error ? error.message : "Failed to process refund");
+      toast({ title: "Error", description: error instanceof Error ? error.message : "Failed to process refund", variant: "destructive" });
     } finally {
       setIsProcessing(false);
     }

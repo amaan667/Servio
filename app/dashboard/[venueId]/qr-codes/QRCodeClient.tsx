@@ -252,7 +252,7 @@ export default function QRCodeClient({
       // Download the PDF
       pdf.save(`qr-codes-${venueName}-${new Date().toISOString().split("T")[0]}.pdf`);
     } catch (error) {
-      alert("Failed to generate PDF. Please try again.");
+      toast({ title: "Error", description: "Failed to generate PDF. Please try again.", variant: "destructive" });
     }
   };
 

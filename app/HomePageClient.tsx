@@ -315,7 +315,7 @@ export function HomePageClient({ initialAuthState, initialUserPlan = null }: Hom
           const data = await response.json();
 
           if (data.error) {
-            alert(`Failed to upgrade: ${data.error}`);
+            toast({ title: "Error", description: `Failed to upgrade: ${data.error}`, variant: "destructive" });
             return;
           }
 

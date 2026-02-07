@@ -35,14 +35,14 @@ export function useOrderSubmission() {
     // Validate order data
     // Skip customer info validation for demo orders
     if (!isDemo && !isDemoFallback) {
-      if (!customerInfo.name.trim()) {
-        alert("Please enter your name before placing the order.");
-        return;
-      }
+    if (!customerInfo.name.trim()) {
+      alert("Please enter your name before placing the order.");
+      return;
+    }
 
-      if (!customerInfo.phone.trim()) {
-        alert("Please enter your phone number before placing the order.");
-        return;
+    if (!customerInfo.phone.trim()) {
+      alert("Please enter your phone number before placing the order.");
+      return;
       }
     }
 

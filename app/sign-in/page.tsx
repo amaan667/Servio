@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { supabaseBrowser } from "@/lib/supabase";
 import { getAuthRedirectUrl } from "@/lib/auth";
 import { useAuth } from "@/app/auth/AuthProvider";
+import { toast } from "@/hooks/use-toast";
 import SignInForm from "./signin-form";
 
 function SignInPageContent() {
@@ -177,13 +178,13 @@ function SignInPageContent() {
         const msg = error?.message || "Sign in failed.";
         // If rate limited, display a friendlier message with longer wait time
         if (/rate limit/i.test(msg)) {
-          alert("Too many sign-in attempts. Please wait 1 minute and try again.");
+          toast({ title: "Rate Limited", description: "Too many sign-in attempts. Please wait 1 minute and try again.", variant: "destructive" });
         } else if (/network|connection|timeout/i.test(msg)) {
-          alert("Connection issue. Please check your internet and try again.");
+          toast({ title: "Connection Error", description: "Connection issue. Please check your internet and try again.", variant: "destructive" });
         } else if (/invalid.*credentials/i.test(msg)) {
-          alert("Invalid email or password. Please check and try again.");
+          toast({ title: "Invalid Credentials", description: "Invalid email or password. Please check and try again.", variant: "destructive" });
         } else {
-          alert(`Sign in failed: ${msg}`);
+          toast({ title: "Error", description: `Sign in failed: ${msg}`, variant: "destructive" });
         }
         setIsSigningIn(false);
         return;
@@ -196,7 +197,7 @@ function SignInPageContent() {
         window.location.href = data.url;
       }
     } catch {
-      alert("Sign in failed. Please try again.");
+      toast({ title: "Error", description: "Sign in failed. Please try again.", variant: "destructive" });
       setIsSigningIn(false);
     }
   };

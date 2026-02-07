@@ -1,4 +1,5 @@
 "use client";
+import { toast } from "@/hooks/use-toast";
 
 import React, { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -110,7 +111,7 @@ export function ItemDetailsModal({
 
     if (!hasRequiredModifiers) {
       // Show error - required modifiers not selected
-      alert("Please select all required modifiers before adding to cart.");
+      toast({ title: "Required Modifiers", description: "Please select all required modifiers before adding to cart.", variant: "destructive" });
       return;
     }
 
