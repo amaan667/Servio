@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Order } from "../types";
+import { toast } from "@/hooks/use-toast";
 
 export function useBulkOperations(venueId: string) {
   const [isBulkCompleting, setIsBulkCompleting] = useState(false);
@@ -37,13 +38,25 @@ export function useBulkOperations(venueId: string) {
           : (result?.error?.message ?? result?.message ?? "Unknown error");
 
       if (response.ok && result?.success !== false) {
-        alert(`Successfully completed ${completedCount ?? 0} orders!`);
+        toast({
+          title: "Success",
+          description: `Successfully completed ${completedCount ?? 0} orders!`,
+          variant: "success",
+        });
         onComplete();
       } else {
-        alert(`Error completing orders: ${errorMessage}`);
+        toast({
+          title: "Error",
+          description: `Error completing orders: ${errorMessage}`,
+          variant: "destructive",
+        });
       }
     } catch (_err) {
-      alert("Error completing orders. Please try again.");
+      toast({
+        title: "Error",
+        description: "Error completing orders. Please try again.",
+        variant: "destructive",
+      });
     } finally {
       setIsBulkCompleting(false);
     }

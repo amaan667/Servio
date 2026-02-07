@@ -73,6 +73,8 @@ export default function LiveOrdersClient({
     todayWindow,
     setOrders,
     setAllTodayOrders,
+    refreshOrders,
+    pagination,
   } = useOrderManagement(venueId);
 
   const { data: tabCounts, refetch: refetchCounts } = useTabCounts(venueId, "Europe/London", 30);
@@ -167,7 +169,7 @@ export default function LiveOrdersClient({
       ["PLACED", "IN_PREP", "READY", "SERVING", "SERVED"].includes(order.order_status)
     );
     bulkCompleteAllOrders(activeOrders, () => {
-      window.location.reload();
+      refreshOrders();
     });
   };
 
@@ -282,8 +284,8 @@ export default function LiveOrdersClient({
         showActions={showActions}
         onActionComplete={() => {
           refetchCounts();
-          // Force page reload to refresh orders with updated payment status
-          window.location.reload();
+          // Refresh orders with updated payment status without full page reload
+          refreshOrders();
         }}
       />
     );
@@ -566,6 +568,19 @@ export default function LiveOrdersClient({
                         )}
                       </div>
                     ))}
+                    
+                    {/* Load More Button for History */}
+                    {pagination.historyHasMore && (
+                      <div className="flex justify-center mt-6">
+                        <Button
+                          variant="outline"
+                          onClick={pagination.loadMoreHistory}
+                          disabled={pagination.historyLoading}
+                        >
+                          {pagination.historyLoading ? "Loading..." : "Load More"}
+                        </Button>
+                      </div>
+                    )}
                   </>
                 );
               })()

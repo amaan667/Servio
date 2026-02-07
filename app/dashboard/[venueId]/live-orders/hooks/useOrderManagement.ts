@@ -1,6 +1,6 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { supabaseBrowser as createClient } from "@/lib/supabase";
-import { todayWindowForTZ } from "@/lib/time";
+import { todayWindowForLocal } from "@/lib/dates";
 import { PersistentCache } from "@/lib/persistent-cache";
 import { Order } from "../types";
 
@@ -23,19 +23,30 @@ export function useOrderManagement(venueId: string) {
   const [historyOrders, setHistoryOrders] = useState<Order[]>(cachedHistory);
   const [groupedHistoryOrders, setGroupedHistoryOrders] =
     useState<Record<string, Order[]>>(cachedGroupedHistory);
+  
+  // Pagination state for history
+  const [historyPage, setHistoryPage] = useState(1);
+  const [historyHasMore, setHistoryHasMore] = useState(true);
+  const [historyLoading, setHistoryLoading] = useState(false);
+  
   // Always show loading until first fetch completes to avoid flashing "No Orders"
   const [loading, setLoading] = useState(true);
   const [todayWindow, setTodayWindow] = useState<{ startUtcISO: string; endUtcISO: string } | null>(
     null
   );
+  
+  // Use ref to track mounted state and avoid state updates on unmounted components
+  const isMountedRef = useRef(true);
 
   const loadOrders = useCallback(async () => {
-    const window = todayWindowForTZ("Europe/London");
+    const window = todayWindowForLocal();
     if (window.startUtcISO && window.endUtcISO) {
-      setTodayWindow({
-        startUtcISO: window.startUtcISO,
-        endUtcISO: window.endUtcISO,
-      });
+      if (isMountedRef.current) {
+        setTodayWindow({
+          startUtcISO: window.startUtcISO,
+          endUtcISO: window.endUtcISO,
+        });
+      }
     }
 
     const liveOrdersCutoff = new Date(Date.now() - LIVE_ORDER_WINDOW_MS).toISOString();
@@ -71,7 +82,7 @@ export function useOrderManagement(venueId: string) {
       .order("created_at", { ascending: false })
       .limit(100);
 
-    if (!liveError && liveData) {
+    if (!liveError && liveData && isMountedRef.current) {
       const liveOrders = liveData as Order[];
       // Sort orders: COMPLETED orders go to bottom, active orders at top (newest first)
       const sortedLiveOrders = [...liveOrders].sort((a, b) => {
@@ -91,7 +102,7 @@ export function useOrderManagement(venueId: string) {
       PersistentCache.set(`live_orders_${venueId}`, sortedLiveOrders, 2 * 60 * 1000); // 2 min TTL
     }
 
-    if (!allError && allData) {
+    if (!allError && allData && isMountedRef.current) {
       const liveOrderIds = new Set(
         (liveData || []).map((order: Record<string, unknown>) => order.id)
       );
@@ -240,6 +251,78 @@ export function useOrderManagement(venueId: string) {
     }
   };
 
+  // Load history with pagination
+  const loadHistoryPage = useCallback(async (page: number) => {
+    if (!isMountedRef.current || historyLoading) return;
+
+    setHistoryLoading(true);
+    const window = todayWindowForLocal();
+    
+    try {
+      const pageSize = 50;
+      const offset = (page - 1) * pageSize;
+      
+      const { data, error } = await createClient()
+        .from("orders")
+        .select("*")
+        .eq("venue_id", venueId)
+        .lt("created_at", window.startUtcISO)
+        .in("payment_status", ["PAID", "UNPAID"])
+        .order("created_at", { ascending: false })
+        .range(offset, offset + pageSize);
+
+      if (!error && data && isMountedRef.current) {
+        const processedHistory = (data as Order[]).map((order: Order) => ({
+          ...order,
+          payment_status: "PAID",
+          order_status: "COMPLETED" as const,
+        }));
+
+        if (page === 1) {
+          setHistoryOrders(processedHistory);
+          const grouped = processedHistory.reduce(
+            (acc: Record<string, Order[]>, order) => {
+              const date = new Date(order.created_at).toLocaleDateString("en-GB", {
+                day: "2-digit",
+                month: "short",
+                year: "numeric",
+              });
+              if (!acc[date]) acc[date] = [];
+              acc[date].push(order);
+              return acc;
+            },
+            {}
+          );
+          setGroupedHistoryOrders(grouped);
+        } else {
+          setHistoryOrders(prev => [...prev, ...processedHistory]);
+          setGroupedHistoryOrders(prev => {
+            const newGrouped = { ...prev };
+            processedHistory.forEach(order => {
+              const date = new Date(order.created_at).toLocaleDateString("en-GB", {
+                day: "2-digit",
+                month: "short",
+                year: "numeric",
+              });
+              if (!newGrouped[date]) newGrouped[date] = [];
+              newGrouped[date].push(order);
+            });
+            return newGrouped;
+          });
+        }
+
+        // Check if there are more records
+        setHistoryHasMore(data.length === pageSize);
+      }
+    } catch (error) {
+      console.error("Error loading history page:", error);
+    } finally {
+      if (isMountedRef.current) {
+        setHistoryLoading(false);
+      }
+    }
+  }, [venueId, historyLoading]);
+
   const handleOrderUpdate = useCallback(() => {
     // Always reload orders on update to ensure we get fresh data from database
     // This is especially important for payment_status updates
@@ -260,7 +343,13 @@ export function useOrderManagement(venueId: string) {
     loading,
     todayWindow,
     setOrders,
-      setAllTodayOrders,
-    refreshOrders: () => loadOrders(),
+    setAllTodayOrders,
+    refreshOrders: loadOrders,
+    pagination: {
+      historyPage,
+      historyHasMore,
+      loadMoreHistory: () => loadHistoryPage(historyPage + 1),
+      historyLoading,
+    },
   };
 }
