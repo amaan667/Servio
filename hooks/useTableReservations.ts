@@ -602,8 +602,23 @@ export function useDeleteTable(venueId: string) {
   return useMutation({
     mutationFn: async ({ tableId, force = false }: { tableId: string; force?: boolean }) => {
       const { apiClient } = await import("@/lib/api-client");
-      const url = force ? `/api/tables/${tableId}?force=true` : `/api/tables/${tableId}`;
-      const response = await apiClient.delete(url);
+      // Try normal delete first
+      let url = `/api/tables/${tableId}`;
+      let response = await apiClient.delete(url);
+      
+      // If 400 error with active reservations and force=true not already set, retry with force
+      if (!response.ok && force === false) {
+        const errorData = await response.json();
+        
+        // Check if error is about active reservations
+        const hasActiveReservations = errorData?.error?.includes?.("active reservations") || 
+                                       errorData?.hasActiveReservations === true;
+        if (hasActiveReservations) {
+          // Retry with force=true
+          url = `/api/tables/${tableId}?force=true`;
+          response = await apiClient.delete(url);
+        }
+      }
 
       if (!response.ok) {
         const errorData = await response.json();

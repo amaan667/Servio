@@ -40,6 +40,7 @@ export async function getDashboardCounts(
     reservationsRes,
     ordersTodayRes,
     ordersLiveRes,
+    ordersHistoryRes,
   ] = await Promise.all([
     supabase
       .from("tables")
@@ -74,6 +75,13 @@ export async function getDashboardCounts(
       .lte("created_at", now.toISOString())
       .neq("order_status", "CANCELLED")
       .neq("order_status", "REFUNDED"),
+    supabase
+      .from("orders")
+      .select("id", { count: "exact", head: true })
+      .eq("venue_id", normalizedVenueId)
+      .lt("created_at", window.startUtcISO)
+      .neq("order_status", "CANCELLED")
+      .neq("order_status", "REFUNDED"),
   ]);
 
   const allTables = tablesRes.data ?? [];
@@ -81,11 +89,12 @@ export async function getDashboardCounts(
   const todayOrders = ordersTodayRes.data ?? [];
   const liveOrders = ordersLiveRes.data ?? [];
   const earlierTodayCount = Math.max(0, todayOrders.length - liveOrders.length);
+  const historyCount = ordersHistoryRes.count ?? 0;
 
   return {
     live_count: liveOrders.length,
     earlier_today_count: earlierTodayCount,
-    history_count: 0,
+    history_count: historyCount,
     today_orders_count: todayOrders.length,
     active_tables_count: activeTables.length,
     tables_set_up: activeTables.length,

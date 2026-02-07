@@ -36,12 +36,11 @@ export const POST = withUnifiedAuth(async (req: NextRequest, context) => {
     // Use admin client - no auth needed
     const supabase = createAdminClient();
 
-    // Get reservation to validate it exists
+    // Get reservation to validate it exists and get venue_id
     const { data: reservation, error: reservationError } = await supabase
       .from("reservations")
-      .select("venue_id")
+      .select("id, venue_id")
       .eq("id", reservationId)
-      .eq("venue_id", context.venueId)
       .single();
 
     if (reservationError || !reservation) {
@@ -51,6 +50,18 @@ export const POST = withUnifiedAuth(async (req: NextRequest, context) => {
           error: "Reservation not found",
         },
         { status: 404 }
+      );
+    }
+
+    // Validate venue access - use venue_id from the reservation record
+    const reservationVenueId = reservation.venue_id;
+    if (reservationVenueId !== context.venueId) {
+      return NextResponse.json(
+        {
+          ok: false,
+          error: "Reservation venue mismatch",
+        },
+        { status: 403 }
       );
     }
 
