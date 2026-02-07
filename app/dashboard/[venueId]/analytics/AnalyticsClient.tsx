@@ -285,8 +285,8 @@ export default function AnalyticsClient({
                   <div className="flex items-center gap-2 text-sm">
                     <TrendingUp className="h-4 w-4 text-green-600" />
                       <span className={`font-semibold ${periodComparison.change >= 0 ? "text-green-600" : "text-red-600"}`}>
-                      {periodComparison.change >= 0 ? `+${periodComparison.change.toFixed(1)}` : periodComparison.change.toFixed(1)}%</span>
-                      {periodComparison.change >= 0 ? `+${periodComparison.change.toFixed(1)}` : periodComparison.change.toFixed(1)}%
+                      {periodComparison.change >= 0 ? `+${Math.round(periodComparison.change)}` : Math.round(periodComparison.change)}%</span>
+                      {periodComparison.change >= 0 ? `+${Math.round(periodComparison.change)}` : Math.round(periodComparison.change)}%
                     <span className="text-muted-foreground">vs last week</span>
                   </div>
                 </div>
@@ -305,21 +305,21 @@ export default function AnalyticsClient({
                     <span className="text-sm font-medium">Orders</span>
                     <div className="flex items-center gap-2">
                       <TrendingUp className="h-3 w-3 text-green-600" />
-                      <span className="text-sm font-semibold text-green-600">{trends.orders >= 0 ? `+${trends.orders.toFixed(1)}` : trends.orders.toFixed(1)}%</span>
+                      <span className="text-sm font-semibold text-green-600">{trends.orders >= 0 ? `+${Math.round(trends.orders)}` : Math.round(trends.orders)}%</span>
                     </div>
                   </div>
                   <div className="flex items-center justify-between">
                     <span className="text-sm font-medium">Revenue</span>
                     <div className="flex items-center gap-2">
                       <TrendingUp className="h-3 w-3 text-green-600" />
-                      <span className="text-sm font-semibold text-green-600">{trends.revenue >= 0 ? `+${trends.revenue.toFixed(1)}` : trends.revenue.toFixed(1)}%</span>
+                      <span className="text-sm font-semibold text-green-600">{trends.revenue >= 0 ? `+${Math.round(trends.revenue)}` : Math.round(trends.revenue)}%</span>
                     </div>
                   </div>
                   <div className="flex items-center justify-between">
                     <span className="text-sm font-medium">Avg Order Value</span>
                     <div className="flex items-center gap-2">
                       <TrendingDown className="h-3 w-3 text-red-600" />
-                      <span className="text-sm font-semibold text-red-600">{trends.aov >= 0 ? `+${trends.aov.toFixed(1)}` : trends.aov.toFixed(1)}%</span>
+                      <span className="text-sm font-semibold text-red-600">{trends.aov >= 0 ? `+${Math.round(trends.aov)}` : Math.round(trends.aov)}%</span>
                     </div>
                   </div>
                   <div className="flex items-center justify-between">
