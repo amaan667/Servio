@@ -5,13 +5,42 @@ import RoleBasedNavigation from "@/components/RoleBasedNavigation";
 import { useAuthRedirect } from "../hooks/useAuthRedirect";
 import type { UserRole } from "@/lib/permissions";
 
+interface PaymentTransaction {
+  id: string;
+  order_number: string | null;
+  customer_name: string | null;
+  table_label: string | null;
+  counter_label: string | null;
+  total_amount: number;
+  payment_status: string;
+  payment_method: string | null;
+  order_status: string;
+  created_at: string;
+  refunded_at: string | null;
+  refund_amount: number | null;
+  refund_reason: string | null;
+}
+
+interface PaymentStats {
+  todayRevenue: number;
+  pendingPayments: number;
+  completedPayments: number;
+  refundTotal: number;
+  unpaidOrdersCount: number;
+  paidOrdersCount: number;
+}
+
 export default function PaymentsClientPage({
   venueId,
   role,
+  initialTransactions,
+  initialStats,
 }: {
   venueId: string;
   tier: string;
   role: string;
+  initialTransactions?: PaymentTransaction[];
+  initialStats?: PaymentStats;
 }) {
   const { user } = useAuthRedirect();
   const userRole = role as UserRole;
@@ -41,7 +70,11 @@ export default function PaymentsClientPage({
           </p>
         </div>
 
-        <PaymentsClient venueId={venueId} />
+        <PaymentsClient
+          venueId={venueId}
+          initialTransactions={initialTransactions}
+          initialStats={initialStats}
+        />
       </div>
     </div>
   );

@@ -37,6 +37,15 @@ import { detectColorsFromImage } from "@/app/dashboard/[venueId]/menu-management
 import { BillSplittingDialog } from "@/components/pos/BillSplittingDialog";
 
 type PaymentsClientProps = {
+  initialTransactions?: PaymentTransaction[];
+  initialStats?: {
+    todayRevenue: number;
+    pendingPayments: number;
+    completedPayments: number;
+    refundTotal: number;
+    unpaidOrdersCount: number;
+    paidOrdersCount: number;
+  };
   venueId: string;
 };
 
@@ -53,6 +62,22 @@ interface RefundOrder extends PaymentOrder {
   refund_reason?: string;
   refunded_at?: string;
   refund_id?: string;
+}
+
+interface PaymentTransaction {
+  id: string;
+  order_number: string | null;
+  customer_name: string | null;
+  table_label: string | null;
+  counter_label: string | null;
+  total_amount: number;
+  payment_status: string;
+  payment_method: string | null;
+  order_status: string;
+  created_at: string;
+  refunded_at: string | null;
+  refund_amount: number | null;
+  refund_reason: string | null;
 }
 
 interface RefundStats {
@@ -307,9 +332,10 @@ interface GroupedReceipts {
   [date: string]: PaymentOrder[];
 }
 
-const PaymentsClient: React.FC<PaymentsClientProps> = ({ venueId }) => {
-  const [unpaidOrders, setUnpaidOrders] = useState<PaymentOrder[]>([]);
-  const [todayReceipts, setTodayReceipts] = useState<PaymentOrder[]>([]);
+const PaymentsClient: React.FC<PaymentsClientProps> = ({ venueId, initialTransactions, initialStats }) => {
+  void initialStats; // Initial stats available for future use
+  const [unpaidOrders, setUnpaidOrders] = useState<PaymentOrder[]>(initialTransactions?.filter((o: PaymentTransaction) => o.payment_status === "UNPAID") as unknown as PaymentOrder[] || []);
+  const [todayReceipts, setTodayReceipts] = useState<PaymentOrder[]>(initialTransactions?.filter((o: PaymentTransaction) => o.payment_status === "PAID") as unknown as PaymentOrder[] || []);
   const [historyReceipts, setHistoryReceipts] = useState<PaymentOrder[]>([]);
   const [groupedHistoryReceipts, setGroupedHistoryReceipts] = useState<GroupedReceipts>({});
   const [selectedReceipt, setSelectedReceipt] = useState<PaymentOrder | null>(null);

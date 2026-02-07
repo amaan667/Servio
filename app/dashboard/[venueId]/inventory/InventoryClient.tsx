@@ -5,17 +5,29 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { InventoryOverview } from "@/components/inventory/InventoryOverview";
 import { InventoryMovements } from "@/components/inventory/InventoryMovements";
 import { Package, History } from "lucide-react";
+import type { StockLevel } from "@/types/inventory";
+
+interface InventoryStats {
+  totalItems: number;
+  lowStockItems: number;
+  outOfStockItems: number;
+  totalValue: number;
+}
 
 interface InventoryClientProps {
   venueId: string;
   venueName: string;
   canEdit?: boolean;
+  initialInventory?: StockLevel[];
+  initialStats?: InventoryStats;
 }
 
 export default function InventoryClient({
   venueId,
   venueName: _venueName,
   canEdit = true,
+  initialInventory,
+  initialStats,
 }: InventoryClientProps) {
   const [activeTab, setActiveTab] = useState("overview");
 
@@ -34,7 +46,12 @@ export default function InventoryClient({
         </TabsList>
 
         <TabsContent value="overview" className="mt-6">
-          <InventoryOverview venueId={venueId} canEdit={canEdit} />
+          <InventoryOverview
+            venueId={venueId}
+            canEdit={canEdit}
+            initialInventory={initialInventory}
+            initialStats={initialStats}
+          />
         </TabsContent>
 
         <TabsContent value="movements" className="mt-6">

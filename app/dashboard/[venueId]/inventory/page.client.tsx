@@ -5,17 +5,29 @@ import { supabaseBrowser } from "@/lib/supabase";
 import InventoryClient from "./InventoryClient";
 import RoleBasedNavigation from "@/components/RoleBasedNavigation";
 import type { UserRole } from "@/lib/permissions";
+import type { StockLevel } from "@/types/inventory";
+
+interface InventoryStats {
+  totalItems: number;
+  lowStockItems: number;
+  outOfStockItems: number;
+  totalValue: number;
+}
 
 interface InventoryClientPageProps {
   venueId: string;
   tier: string;
   role: string;
+  initialInventory?: StockLevel[];
+  initialStats?: InventoryStats;
 }
 
 export default function InventoryClientPage({
   venueId,
   tier: _tier,
   role,
+  initialInventory,
+  initialStats,
 }: InventoryClientPageProps) {
   const [venueName, setVenueName] = useState<string>("Your Venue");
 
@@ -48,7 +60,12 @@ export default function InventoryClientPage({
           <p className="text-lg text-foreground mt-2">Track and manage your inventory</p>
         </div>
 
-        <InventoryClient venueId={venueId} venueName={venueName} />
+        <InventoryClient
+          venueId={venueId}
+          venueName={venueName}
+          initialInventory={initialInventory}
+          initialStats={initialStats}
+        />
       </div>
     </div>
   );

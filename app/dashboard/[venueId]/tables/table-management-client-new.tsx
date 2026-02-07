@@ -28,10 +28,23 @@ import { TableGridSection } from "./components/TableGridSection";
 
 interface TableManagementClientNewProps {
   venueId: string;
+  initialTables?: Record<string, unknown>[] | null;
+  initialReservations?: Record<string, unknown>[] | null;
+  initialStats?: {
+    total_tables: number;
+    occupied: number;
+    reserved: number;
+    available: number;
+  } | null;
 }
 
-export function TableManagementClientNew({ venueId }: TableManagementClientNewProps) {
-  const state = useTableManagementState(venueId);
+export function TableManagementClientNew({
+  venueId,
+  initialTables,
+  initialReservations: _initialReservations,
+  initialStats,
+}: TableManagementClientNewProps) {
+  const state = useTableManagementState(venueId, initialTables, initialStats);
 
   const handleManualReset = () => {
     const hasActiveOrders = state.counterOrders.length > 0 || state.tableOrders.length > 0;

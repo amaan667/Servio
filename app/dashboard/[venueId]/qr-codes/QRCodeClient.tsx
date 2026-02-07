@@ -40,12 +40,40 @@ const getTypeLabel = (type: string) => {
   }
 };
 
+interface TableItem {
+  id?: string;
+  table_id?: string;
+  label?: string;
+  table_number?: string | number | null;
+  name?: string;
+}
+
+interface CounterItem {
+  id?: string;
+  counter_id?: string;
+  name?: string;
+  label?: string;
+  counter_name?: string;
+}
+
+interface GeneratedQR {
+  name: string;
+  url: string;
+  type: "table" | "counter" | "table_pickup";
+}
+
 export default function QRCodeClient({
   venueId,
   venueName,
+  initialTables = [],
+  initialCounters = [],
+  initialLoading = false,
 }: {
   venueId: string;
   venueName: string;
+  initialTables?: TableItem[];
+  initialCounters?: CounterItem[];
+  initialLoading?: boolean;
 }) {
   const searchParams = useSearchParams();
   const [qrType, setQrType] = useState<"table" | "counter" | "table_pickup">("table");
@@ -53,6 +81,40 @@ export default function QRCodeClient({
   const [bulkCount, setBulkCount] = useState("10");
   const [bulkPrefix, setBulkPrefix] = useState("");
   const [showBulkDialog, setShowBulkDialog] = useState(false);
+  const [initialDataLoaded, setInitialDataLoaded] = useState(false);
+
+  // Build initial QRs from server-fetched tables and counters
+  const [serverGeneratedQRs, setServerGeneratedQRs] = useState<GeneratedQR[]>([]);
+
+  useEffect(() => {
+    if (initialDataLoaded || initialLoading) return;
+
+    if (initialTables.length > 0 || initialCounters.length > 0) {
+      const baseUrl = typeof window !== "undefined" ? window.location.origin : "";
+
+      const qrs: GeneratedQR[] = [
+        ...initialTables
+          .filter((t) => t.label || t.table_number)
+          .map((t) => ({
+            name: String(t.label || t.table_number || ""),
+            url: `${baseUrl}/order?venue=${venueId}&table=${encodeURIComponent(String(t.label || t.table_number || ""))}`,
+            type: "table" as const,
+          })),
+        ...initialCounters
+          .filter((c) => c.name)
+          .map((c) => ({
+            name: String(c.name || c.label || ""),
+            url: `${baseUrl}/order?venue=${venueId}&counter=${encodeURIComponent(String(c.name || c.label || ""))}`,
+            type: "counter" as const,
+          })),
+      ];
+
+      setServerGeneratedQRs(qrs);
+      setInitialDataLoaded(true);
+    } else {
+      setInitialDataLoaded(true);
+    }
+  }, [initialTables, initialCounters, initialLoading, venueId, initialDataLoaded]);
 
   const qrManagement = useQRCodeManagement(venueId);
   const hasProcessedParams = useRef<string | null>(null);
@@ -132,7 +194,7 @@ export default function QRCodeClient({
         }
       }
     }
-  }, [searchParams, venueId]);
+  }, [searchParams, venueId, qrManagement]);
 
   // Generate single QR code
   const handleGenerateSingle = () => {
@@ -162,7 +224,7 @@ export default function QRCodeClient({
 
   // Copy all URLs as JSON
   const copyAllAsJSON = () => {
-    const urls = qrManagement.generatedQRs.map((qr) => ({
+    const urls = [...serverGeneratedQRs, ...qrManagement.generatedQRs].map((qr) => ({
       name: qr.name,
       type: qr.type,
       url: qr.url,
@@ -177,7 +239,7 @@ export default function QRCodeClient({
       const { default: jsPDF } = await import("jspdf");
       const QRCode = await import("qrcode");
 
-      const qrCodes = qrManagement.generatedQRs;
+      const qrCodes = [...serverGeneratedQRs, ...qrManagement.generatedQRs];
       const pdf = new jsPDF({
         orientation: "portrait",
         unit: "mm",
@@ -261,7 +323,7 @@ export default function QRCodeClient({
     const printWindow = window.open("", "_blank");
     if (!printWindow) return;
 
-    const qrCodes = qrManagement.generatedQRs;
+    const qrCodes = [...serverGeneratedQRs, ...qrManagement.generatedQRs];
     const pages: string[] = [];
 
     // Group QR codes into pages of 4
@@ -319,6 +381,9 @@ export default function QRCodeClient({
     // Trigger print dialog
     setTimeout(() => printWindow.print(), 250);
   };
+
+  // Combined QR list (server + client generated)
+  const allQRCodes = [...serverGeneratedQRs, ...qrManagement.generatedQRs];
 
   return (
     <div className="space-y-6 pb-32 md:pb-8">
@@ -437,24 +502,24 @@ export default function QRCodeClient({
       </Card>
 
       {/* Generated QR Codes */}
-      {qrManagement.generatedQRs.length > 0 && (
+      {allQRCodes.length > 0 && (
         <>
           <div className="flex items-center justify-between flex-wrap gap-3">
             <h2 className="text-xl font-semibold text-gray-900">
-              Generated QR Codes ({qrManagement.generatedQRs.length})
+              Generated QR Codes ({allQRCodes.length})
             </h2>
             <div className="flex gap-2 flex-wrap">
               <Button variant="outline" size="sm" onClick={copyAllAsJSON}>
                 <FileJson className="h-4 w-4 mr-2" />
-                Copy {qrManagement.generatedQRs.length > 1 ? "All " : ""}URLs (JSON)
+                Copy {allQRCodes.length > 1 ? "All " : ""}URLs (JSON)
               </Button>
               <Button variant="outline" size="sm" onClick={downloadAllAsPDF}>
                 <Download className="h-4 w-4 mr-2" />
-                {qrManagement.generatedQRs.length === 1 ? "Download" : "Download All"} (PDF)
+                {allQRCodes.length === 1 ? "Download" : "Download All"} (PDF)
               </Button>
               <Button variant="outline" size="sm" onClick={printAll}>
                 <Printer className="h-4 w-4 mr-2" />
-                {qrManagement.generatedQRs.length === 1 ? "Print" : "Print All"}
+                {allQRCodes.length === 1 ? "Print" : "Print All"}
               </Button>
               <Button
                 variant="outline"
@@ -469,7 +534,7 @@ export default function QRCodeClient({
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 qr-code-print">
-            {qrManagement.generatedQRs.map((qr, index) => (
+            {allQRCodes.map((qr, index) => (
               <Card
                 key={`${qr.name}-${qr.type}-${index}`}
                 className="shadow-lg rounded-xl print:shadow-none print:border print:border-black"
@@ -523,7 +588,7 @@ export default function QRCodeClient({
       )}
 
       {/* Empty State */}
-      {qrManagement.generatedQRs.length === 0 && (
+      {allQRCodes.length === 0 && (
         <Card className="shadow-lg rounded-xl border-gray-200">
           <CardContent className="p-12 text-center">
             <div className="text-gray-400 mb-4">

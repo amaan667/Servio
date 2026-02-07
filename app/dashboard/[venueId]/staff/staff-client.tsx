@@ -28,6 +28,14 @@ if (typeof window !== "undefined" && process.env.NODE_ENV === "development") {
  * Original: 725 lines → Now: ~150 lines
  */
 
+interface StaffStats {
+  total_staff: number;
+  owners: number;
+  managers: number;
+  staff_count: number;
+  active_staff: number;
+}
+
 export default function StaffClient({
   venueId,
   initialStaff,
@@ -35,7 +43,7 @@ export default function StaffClient({
 }: {
   venueId: string;
   initialStaff?: StaffRow[];
-  initialCounts?: unknown;
+  initialCounts?: StaffStats;
 }) {
   // Component mount logging (development only, removed in production)
   useEffect(() => {
@@ -72,7 +80,7 @@ export default function StaffClient({
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-gray-900">
-              {staffManagement.staff?.length || 0}
+              {initialCounts?.total_staff ?? staffManagement.staff?.length ?? 0}
             </div>
           </CardContent>
         </Card>
@@ -83,7 +91,7 @@ export default function StaffClient({
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-green-600">
-              {staffManagement.staff?.filter((s) => s.active !== false).length || 0}
+              {initialCounts?.active_staff ?? staffManagement.staff?.filter((s) => s.active !== false).length ?? 0}
             </div>
           </CardContent>
         </Card>

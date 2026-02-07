@@ -27,14 +27,28 @@ import { StocktakeDialog } from "./StocktakeDialog";
 import { ImportCSVDialog } from "./ImportCSVDialog";
 import { ReceiveStockDialog } from "./ReceiveStockDialog";
 
+interface InventoryStats {
+  totalItems: number;
+  lowStockItems: number;
+  outOfStockItems: number;
+  totalValue: number;
+}
+
 interface InventoryOverviewProps {
   venueId: string;
   canEdit?: boolean;
+  initialInventory?: StockLevel[];
+  initialStats?: InventoryStats;
 }
 
-export function InventoryOverview({ venueId, canEdit: _canEdit = true }: InventoryOverviewProps) {
-  const [ingredients, setIngredients] = useState<StockLevel[]>([]);
-  const [loading, setLoading] = useState(true);
+export function InventoryOverview({
+  venueId,
+  canEdit: _canEdit = true,
+  initialInventory,
+  initialStats,
+}: InventoryOverviewProps) {
+  const [ingredients, setIngredients] = useState<StockLevel[]>(initialInventory || []);
+  const [loading, setLoading] = useState(!initialInventory);
   const [searchQuery, setSearchQuery] = useState("");
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [showReceiveDialog, setShowReceiveDialog] = useState(false);
@@ -58,8 +72,13 @@ export function InventoryOverview({ venueId, canEdit: _canEdit = true }: Invento
   };
 
   useEffect(() => {
-    fetchIngredients();
-  }, [venueId]);
+    // Only fetch if no initial data provided
+    if (!initialInventory) {
+      fetchIngredients();
+    } else {
+      setLoading(false);
+    }
+  }, [venueId, initialInventory]);
 
   const handleExportCSV = async () => {
     try {
@@ -115,12 +134,67 @@ export function InventoryOverview({ venueId, canEdit: _canEdit = true }: Invento
       ing.sku?.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const lowStockCount = ingredients.filter(
+  // Use initial stats if available, otherwise calculate from ingredients
+  const lowStockCount = initialStats?.lowStockItems ?? ingredients.filter(
     (ing) => ing.on_hand <= ing.reorder_level && ing.reorder_level > 0
+  ).length;
+
+  const outOfStockCount = initialStats?.outOfStockItems ?? ingredients.filter(
+    (ing) => ing.on_hand <= 0
   ).length;
 
   return (
     <div className="space-y-4">
+      {/* Stats Summary */}
+      {initialStats && (
+        <div className="grid grid-cols-4 gap-4">
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground">
+                Total Items
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{initialStats.totalItems}</div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground">
+                Total Value
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">${initialStats.totalValue.toFixed(2)}</div>
+            </CardContent>
+          </Card>
+          <Card className="border-amber-500">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium text-amber-700 dark:text-amber-300">
+                Low Stock
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-amber-700 dark:text-amber-300">
+                {initialStats.lowStockItems}
+              </div>
+            </CardContent>
+          </Card>
+          <Card className="border-red-500">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium text-red-700 dark:text-red-300">
+                Out of Stock
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-red-700 dark:text-red-300">
+                {initialStats.outOfStockItems}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
       {lowStockCount > 0 && (
         <Card className="border-amber-500 bg-amber-50 dark:bg-amber-950">
           <CardHeader className="pb-3">
@@ -130,6 +204,7 @@ export function InventoryOverview({ venueId, canEdit: _canEdit = true }: Invento
             </div>
             <CardDescription className="text-amber-800 dark:text-amber-200">
               {lowStockCount} ingredient{lowStockCount > 1 ? "s" : ""} at or below reorder level
+              {outOfStockCount > 0 && ` (${outOfStockCount} out of stock)`}
             </CardDescription>
           </CardHeader>
         </Card>

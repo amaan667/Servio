@@ -4,14 +4,27 @@ import StaffManagementClient from "./staff-client";
 import RoleBasedNavigation from "@/components/RoleBasedNavigation";
 import { useAuthRedirect } from "../hooks/useAuthRedirect";
 import type { UserRole } from "@/lib/permissions";
+import type { StaffRow } from "./hooks/useStaffManagement";
+
+interface StaffStats {
+  total_staff: number;
+  owners: number;
+  managers: number;
+  staff_count: number;
+  active_staff: number;
+}
 
 export default function StaffClientPage({
   venueId,
   role,
+  initialStaff,
+  initialStats,
 }: {
   venueId: string;
   tier: string;
   role: string;
+  initialStaff?: StaffRow[];
+  initialStats?: StaffStats;
 }) {
   const { user } = useAuthRedirect();
   const userRole = role as UserRole;
@@ -40,7 +53,11 @@ export default function StaffClientPage({
           <p className="text-lg text-foreground mt-2">Manage staff roles and permissions</p>
         </div>
 
-        <StaffManagementClient venueId={venueId} />
+        <StaffManagementClient
+          venueId={venueId}
+          initialStaff={initialStaff}
+          initialCounts={initialStats}
+        />
       </div>
     </div>
   );

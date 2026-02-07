@@ -5,14 +5,28 @@ import RoleBasedNavigation from "@/components/RoleBasedNavigation";
 import { useAuthRedirect } from "../hooks/useAuthRedirect";
 import type { UserRole } from "@/lib/permissions";
 
-export default function TablesClientPage({
-  venueId,
-  role,
-}: {
+interface TablesClientPageProps {
   venueId: string;
   tier: string;
   role: string;
-}) {
+  initialTables?: Record<string, unknown>[] | null;
+  initialReservations?: Record<string, unknown>[] | null;
+  initialStats?: {
+    total_tables: number;
+    occupied: number;
+    reserved: number;
+    available: number;
+  } | null;
+}
+
+export default function TablesClientPage({
+  venueId,
+  tier: _tier,
+  role,
+  initialTables,
+  initialReservations,
+  initialStats,
+}: TablesClientPageProps) {
   const { user } = useAuthRedirect();
   const userRole = role as UserRole;
 
@@ -39,7 +53,12 @@ export default function TablesClientPage({
           <p className="text-lg text-foreground mt-2">Manage tables, reservations, and seating</p>
         </div>
 
-        <TableManagementClientNew venueId={venueId} />
+        <TableManagementClientNew
+          venueId={venueId}
+          initialTables={initialTables}
+          initialReservations={initialReservations}
+          initialStats={initialStats}
+        />
       </div>
     </div>
   );
