@@ -4,7 +4,7 @@
  */
 
 import { createAdminClient } from "@/lib/supabase";
-import AnalyticsClientPage from "./page.client";
+import AnalyticsClientPage from "./AnalyticsClient";
 import { requirePageAuth } from "@/lib/auth/page-auth-helper";
 
 export const metadata = {
@@ -24,6 +24,12 @@ export default async function AnalyticsPage({ params }: { params: { venueId: str
     fetchMenuAnalytics(venueId),
     fetchRevenueAnalytics(venueId),
   ]);
+
+  // Calculate trends on server from real data
+  const trends = calculateTrends(ordersData, revenueData);
+
+  // Calculate period comparison on server
+  const periodComparison = calculatePeriodComparison(revenueData);
 
   const tier = auth?.tier ?? "starter";
 
@@ -51,17 +57,128 @@ export default async function AnalyticsPage({ params }: { params: { venueId: str
         ordersData={ordersData}
         menuData={menuData}
         revenueData={revenueData}
-        tier={tier}
-        role={auth?.role ?? "viewer"}
+        trends={trends}
+        periodComparison={periodComparison}
+        currentTier={tier}
+        
       />
     </>
   );
 }
 
 /**
+ * Calculate trends from actual data
+ */
+function calculateTrends(ordersData: OrdersAnalytics, revenueData: RevenueAnalytics) {
+  const revenueByDay = revenueData.revenueByDay || {};
+  const dayKeys = Object.keys(revenueByDay).sort();
+  const midPoint = Math.floor(dayKeys.length / 2);
+  
+  let currentPeriodRevenue = 0;
+  let previousPeriodRevenue = 0;
+  
+  dayKeys.forEach((day, index) => {
+    const revenue = revenueByDay[day] || 0;
+    if (index >= midPoint) {
+      currentPeriodRevenue += revenue;
+    } else {
+      previousPeriodRevenue += revenue;
+    }
+  });
+
+  // Calculate revenue trend percentage from real data
+  const revenueTrend = previousPeriodRevenue > 0 
+    ? ((currentPeriodRevenue - previousPeriodRevenue) / previousPeriodRevenue) * 100 
+    : 0;
+
+  // Calculate orders trend from actual data
+  const firstHalfOrders = dayKeys.slice(0, midPoint).reduce((sum, day) => {
+    return sum + (revenueByDay[day] || 0) / (ordersData.avgOrderValue || 1);
+  }, 0);
+  const secondHalfOrders = dayKeys.slice(midPoint).reduce((sum, day) => {
+    return sum + (revenueByDay[day] || 0) / (ordersData.avgOrderValue || 1);
+  }, 0);
+  const ordersTrend = firstHalfOrders > 0 
+    ? ((secondHalfOrders - firstHalfOrders) / firstHalfOrders) * 100 
+    : 0;
+
+  return {
+    revenue: revenueTrend,
+    orders: ordersTrend,
+    aov: 0, // Would need historical AOV data
+  };
+}
+
+/**
+ * Calculate period comparison from real data
+ */
+function calculatePeriodComparison(revenueData: RevenueAnalytics) {
+  const revenueByDay = revenueData.revenueByDay || {};
+  const dayKeys = Object.keys(revenueByDay).sort();
+  
+  const today = new Date();
+  let thisWeekRevenue = 0;
+  let lastWeekRevenue = 0;
+  
+  dayKeys.forEach((dayStr) => {
+    const dayDate = new Date(dayStr);
+    const daysDiff = Math.floor((today.getTime() - dayDate.getTime()) / (1000 * 60 * 60 * 24));
+    const revenue = revenueByDay[dayStr] || 0;
+    
+    if (daysDiff <= 7) {
+      thisWeekRevenue += revenue;
+    } else if (daysDiff <= 14) {
+      lastWeekRevenue += revenue;
+    }
+  });
+  
+  const change = lastWeekRevenue > 0 
+    ? ((thisWeekRevenue - lastWeekRevenue) / lastWeekRevenue) * 100 
+    : 0;
+  
+  return {
+    thisWeek: thisWeekRevenue,
+    lastWeek: lastWeekRevenue,
+    change,
+  };
+}
+
+interface OrdersAnalytics {
+  totalOrders: number;
+  pendingOrders: number;
+  completedOrders: number;
+  avgOrderValue: number;
+  ordersByStatus: Record<string, number>;
+  ordersByDay?: Record<string, number>;
+}
+
+interface MenuAnalytics {
+  totalItems: number;
+  activeItems: number;
+  topSellingItems: Array<{
+    name: string;
+    quantity: number;
+    revenue: number;
+    category?: string;
+    ordersCount?: number;
+    price?: number;
+  }>;
+  itemsWithImages: number;
+  itemsByCategory: Record<string, number>;
+}
+
+interface RevenueAnalytics {
+  totalOrders: number;
+  totalRevenue: number;
+  averageOrderValue: number;
+  revenueByHour: unknown[];
+  revenueByDay: Record<string, number>;
+}
+
+/**
  * Fetch order analytics
  */
-async function fetchOrderAnalytics(venueId: string) {
+async function fetchOrderAnalytics(venueId: string): Promise<OrdersAnalytics> {
   const supabase = createAdminClient();
 
   // Get orders from last 30 days
@@ -105,14 +222,13 @@ async function fetchOrderAnalytics(venueId: string) {
       (orders?.reduce((sum, o) => sum + (o.total_amount || 0), 0) || 0) / (orders?.length || 1),
     ordersByStatus,
     ordersByDay: groupByDay(orders || []),
-    recentOrders: orders?.slice(0, 10) || [],
   };
 }
 
 /**
  * Fetch menu analytics
  */
-async function fetchMenuAnalytics(venueId: string) {
+async function fetchMenuAnalytics(venueId: string): Promise<MenuAnalytics> {
   const supabase = createAdminClient();
 
   const thirtyDaysAgo = new Date();
@@ -127,14 +243,13 @@ async function fetchMenuAnalytics(venueId: string) {
     return {
       totalItems: 0,
       activeItems: 0,
-      itemsByCategory: {},
-      itemsWithImages: 0,
-      unavailableItems: 0,
       topSellingItems: [],
+      itemsWithImages: 0,
+      itemsByCategory: {},
     };
   }
 
-  // Get orders with items JSONB array (items are stored in orders.items, not a separate table)
+  // Get orders with items JSONB array
   const { data: orders } = await supabase
     .from("orders")
     .select("items")
@@ -193,17 +308,16 @@ async function fetchMenuAnalytics(venueId: string) {
   return {
     totalItems: menuItems?.length || 0,
     activeItems: menuItems?.filter((i) => i.is_available).length || 0,
-    itemsByCategory: groupBy(menuItems || [], "category"),
-    itemsWithImages: menuItems?.filter((i) => i.image_url).length || 0,
-    unavailableItems: menuItems?.filter((i) => !i.is_available).length || 0,
     topSellingItems: topItems,
+    itemsWithImages: menuItems?.filter((i) => i.image_url).length || 0,
+    itemsByCategory: groupBy(menuItems || [], "category"),
   };
 }
 
 /**
  * Fetch revenue analytics
  */
-async function fetchRevenueAnalytics(venueId: string) {
+async function fetchRevenueAnalytics(venueId: string): Promise<RevenueAnalytics> {
   const supabase = createAdminClient();
 
   const thirtyDaysAgo = new Date();
@@ -217,17 +331,15 @@ async function fetchRevenueAnalytics(venueId: string) {
     .neq("order_status", "CANCELLED")
     .neq("order_status", "REFUNDED");
 
-  // Calculate revenue from all non-cancelled orders (matches dashboard logic)
   const totalRevenue = orders?.reduce((sum, o) => sum + (o.total_amount || 0), 0) || 0;
   const totalOrders = orders?.length || 0;
 
   return {
     totalRevenue,
     totalOrders,
-    avgOrderValue: totalRevenue / (totalOrders || 1),
     averageOrderValue: totalRevenue / (totalOrders || 1),
     revenueByDay: groupByDay(orders || [], "total_amount"),
-    revenueByHour: [], // Placeholder - can be calculated if needed
+    revenueByHour: [],
   };
 }
 

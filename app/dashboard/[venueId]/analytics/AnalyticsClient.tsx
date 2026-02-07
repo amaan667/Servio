@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useMemo } from "react";
+import React from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
@@ -23,28 +23,48 @@ interface TopSellingItem {
   price?: number;
 }
 
+interface OrdersData {
+  totalOrders: number;
+  pendingOrders: number;
+  completedOrders: number;
+  avgOrderValue: number;
+  ordersByStatus: Record<string, number>;
+  ordersByDay?: Record<string, number>;
+}
+
+interface MenuData {
+  totalItems: number;
+  activeItems: number;
+  topSellingItems: TopSellingItem[];
+  itemsWithImages: number;
+  itemsByCategory: Record<string, number>;
+}
+
+interface RevenueData {
+  totalRevenue: number;
+  averageOrderValue: number;
+  revenueByHour: unknown[];
+  revenueByDay: Record<string, number>;
+}
+
+interface TrendsData {
+  revenue: number;
+  orders: number;
+  aov: number;
+}
+
+interface PeriodComparisonData {
+  thisWeek: number;
+  lastWeek: number;
+  change: number;
+}
+
 interface AnalyticsClientProps {
-  ordersData: {
-    totalOrders: number;
-    pendingOrders: number;
-    completedOrders: number;
-    avgOrderValue: number;
-    ordersByStatus: Record<string, number>;
-    ordersByDay?: Record<string, number>;
-  };
-  menuData: {
-    totalItems: number;
-    activeItems: number;
-    topSellingItems: TopSellingItem[];
-    itemsWithImages: number;
-    itemsByCategory: Record<string, number>;
-  };
-  revenueData: {
-    totalRevenue: number;
-    averageOrderValue: number;
-    revenueByHour: unknown[];
-    revenueByDay: Record<string, number>;
-  };
+  ordersData: OrdersData;
+  menuData: MenuData;
+  revenueData: RevenueData;
+  trends: TrendsData;
+  periodComparison: PeriodComparisonData;
   hasAdvancedAnalytics?: boolean;
   currentTier?: string;
   venueId: string;
@@ -54,116 +74,10 @@ export default function AnalyticsClient({
   ordersData,
   menuData,
   revenueData,
+  trends,
+  periodComparison,
   venueId,
 }: AnalyticsClientProps) {
-  // Calculate real trends based on actual data periods
-  const trends = useMemo(() => {
-    const revenueByDay = revenueData.revenueByDay || {};
-    const dayKeys = Object.keys(revenueByDay).sort();
-    const midPoint = Math.floor(dayKeys.length / 2);
-    
-    let currentPeriodRevenue = 0;
-    let previousPeriodRevenue = 0;
-    
-    dayKeys.forEach((day, index) => {
-      const revenue = revenueByDay[day] || 0;
-      if (index >= midPoint) {
-        currentPeriodRevenue += revenue;
-      } else {
-        previousPeriodRevenue += revenue;
-      }
-    });
-
-    // Calculate revenue trend percentage from real data
-    const revenueTrend = previousPeriodRevenue > 0 
-      ? ((currentPeriodRevenue - previousPeriodRevenue) / previousPeriodRevenue) * 100 
-      : 0;
-
-    // Calculate orders trend from actual data
-    const firstHalfOrders = dayKeys.slice(0, midPoint).reduce((sum, day) => {
-      // Estimate orders from revenue if not available
-      return sum + (revenueByDay[day] || 0) / (ordersData.avgOrderValue || 1);
-    }, 0);
-    const secondHalfOrders = dayKeys.slice(midPoint).reduce((sum, day) => {
-      return sum + (revenueByDay[day] || 0) / (ordersData.avgOrderValue || 1);
-    }, 0);
-    const ordersTrend = firstHalfOrders > 0 
-      ? ((secondHalfOrders - firstHalfOrders) / firstHalfOrders) * 100 
-      : 0;
-
-    // Calculate AOV trend from actual data (placeholder - would need historical AOV)
-    const aovTrend = 0;
-
-    return {
-      revenue: revenueTrend,
-      orders: ordersTrend,
-      aov: aovTrend,
-    };
-  }, [ordersData.totalOrders, ordersData.avgOrderValue, revenueData.revenueByDay]);
-
-  // Calculate real period comparison from actual data
-  const periodComparison = useMemo(() => {
-    const revenueByDay = revenueData.revenueByDay || {};
-    const dayKeys = Object.keys(revenueByDay).sort();
-    
-    // Get this week (last 7 days) and last week (7-14 days ago)
-    const today = new Date();
-    let thisWeekRevenue = 0;
-    let lastWeekRevenue = 0;
-    
-    dayKeys.forEach((dayStr) => {
-      const dayDate = new Date(dayStr);
-      const daysDiff = Math.floor((today.getTime() - dayDate.getTime()) / (1000 * 60 * 60 * 24));
-      const revenue = revenueByDay[dayStr] || 0;
-      
-      if (daysDiff <= 7) {
-        thisWeekRevenue += revenue;
-      } else if (daysDiff <= 14) {
-        lastWeekRevenue += revenue;
-      }
-    });
-    
-    const change = lastWeekRevenue > 0 
-      ? ((thisWeekRevenue - lastWeekRevenue) / lastWeekRevenue) * 100 
-      : 0;
-    
-    return {
-      thisWeek: thisWeekRevenue,
-      lastWeek: lastWeekRevenue,
-      change,
-    };
-  }, [revenueData.revenueByDay]);
-
-  // Calculate real peak hours from data (aggregate by hour if available)
-  const peakHours: { label: string; orders: number }[] = useMemo(() => {
-    // No hourly aggregation available - would need orders extracted by hour
-    return [];
-  }, []);
-
-  // Calculate busiest days from actual ordersByDay data
-  const busiestDays = useMemo(() => {
-    const ordersByDay = ordersData.ordersByDay || {};
-    const dayNames = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
-    
-    // Get all values and find max for percentage normalization
-    const values = Object.values(ordersByDay);
-    const maxValue = Math.max(...values, 1);
-    
-    // Real data exists - use it
-    return dayNames.map((day) => {
-      const dayLower = day.toLowerCase().substring(0, 3);
-      const value = ordersByDay[dayLower] || 0;
-      const percentage = maxValue > 0 ? Math.round((value / maxValue) * 100) : 0;
-      
-      return {
-        day,
-        avgOrders: value,
-        percentage: percentage || 0,
-        hasData: value > 0,
-      };
-    });
-  }, [ordersData.ordersByDay]);
-
   return (
     <div className="space-y-6">
       {/* Key Metrics */}
@@ -446,18 +360,7 @@ export default function AnalyticsClient({
                 <CardDescription>Busiest times for your venue</CardDescription>
               </CardHeader>
               <CardContent>
-                {peakHours.length > 0 ? (
-                  <div className="space-y-2">
-                    {peakHours.map((peak) => (
-                      <div key={peak.label} className="flex items-center justify-between py-2 border-b">
-                        <span className="text-sm">{peak.label}</span>
-                        <span className="text-sm font-semibold">{peak.orders} orders</span>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="text-muted-foreground text-sm py-4">No hourly data available</p>
-                )}
+                <p className="text-muted-foreground text-sm py-4">No hourly data available</p>
               </CardContent>
             </Card>
 
@@ -469,20 +372,31 @@ export default function AnalyticsClient({
               </CardHeader>
               <CardContent>
                 <div className="space-y-2">
-                  {busiestDays.map((dayData) => (
-                    <div key={dayData.day} className="space-y-1">
-                      <div className="flex items-center justify-between text-sm">
-                        <span>{dayData.day}</span>
-                        <span className="font-semibold">{dayData.avgOrders} avg</span>
-                      </div>
-                      <div className="w-full bg-gray-200 rounded-full h-2">
-                        <div
-                          className="bg-purple-600 h-2 rounded-full"
-                          style={{ width: `${dayData.percentage}%` }}
-                        ></div>
-                      </div>
-                    </div>
-                  ))}
+                  {ordersData.ordersByDay && Object.keys(ordersData.ordersByDay).length > 0 ? (
+                    Object.entries(ordersData.ordersByDay)
+                      .sort((a, b) => b[1] - a[1])
+                      .slice(0, 7)
+                      .map(([day, orders]) => {
+                        const maxOrders = Math.max(...Object.values(ordersData.ordersByDay || {}));
+                        const percentage = maxOrders > 0 ? Math.round((orders / maxOrders) * 100) : 0;
+                        return (
+                          <div key={day} className="space-y-1">
+                            <div className="flex items-center justify-between text-sm">
+                              <span className="capitalize">{day}</span>
+                              <span className="font-semibold">{orders} avg</span>
+                            </div>
+                            <div className="w-full bg-gray-200 rounded-full h-2">
+                              <div
+                                className="bg-purple-600 h-2 rounded-full"
+                                style={{ width: `${percentage}%` }}
+                              ></div>
+                            </div>
+                          </div>
+                        );
+                      })
+                  ) : (
+                    <p className="text-muted-foreground text-sm">No data available</p>
+                  )}
                 </div>
               </CardContent>
             </Card>
