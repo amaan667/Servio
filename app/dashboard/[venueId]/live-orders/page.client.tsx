@@ -7,8 +7,25 @@ import RoleBasedNavigation from "@/components/RoleBasedNavigation";
 import type { UserRole } from "@/lib/permissions";
 import { isValidUserRole } from "@/lib/utils/userRole";
 import { useAuthRedirect } from "../hooks/useAuthRedirect";
+import type { Order } from "./types";
 
-export default function LiveOrdersClientPage({ venueId }: { venueId: string }) {
+interface LiveOrdersClientPageProps {
+  venueId: string;
+  venueName?: string;
+  initialOrders?: Order[];
+  initialStats?: {
+    pending: number;
+    preparing: number;
+    ready: number;
+    serving: number;
+    totalRevenue: number;
+  };
+}
+
+export default function LiveOrdersClientPage({
+  venueId,
+  venueName: venueNameProp,
+}: LiveOrdersClientPageProps) {
   const { user } = useAuthRedirect();
   const [userRole, setUserRole] = useState<UserRole | null>(null);
 
@@ -81,7 +98,10 @@ export default function LiveOrdersClientPage({ venueId }: { venueId: string }) {
           </p>
         </div>
 
-        <LiveOrdersClient venueId={venueId} />
+        <LiveOrdersClient
+          venueId={venueId}
+          venueName={venueNameProp}
+        />
       </div>
     </div>
   );

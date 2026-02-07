@@ -7,22 +7,22 @@ import { Order } from "../types";
 const LIVE_ORDER_WINDOW_MS = 30 * 60 * 1000; // 30 minutes
 const LIVE_WINDOW_STATUSES = ["PLACED", "IN_PREP", "READY", "SERVING", "SERVED", "COMPLETED"];
 
-export function useOrderManagement(venueId: string) {
-  // ANTI-FLICKER: Get cached data immediately
-  const cachedLiveOrders = PersistentCache.get<Order[]>(`live_orders_${venueId}`) || [];
-  const cachedAllToday = PersistentCache.get<Order[]>(`all_today_orders_${venueId}`) || [];
-  const cachedHistory = PersistentCache.get<Order[]>(`history_orders_${venueId}`) || [];
-  const cachedGroupedHistory =
-    PersistentCache.get<Record<string, Order[]>>(`grouped_history_${venueId}`) ||
-    {
-      /* Empty */
-    };
-
-  const [orders, setOrders] = useState<Order[]>(cachedLiveOrders);
-  const [allTodayOrders, setAllTodayOrders] = useState<Order[]>(cachedAllToday);
-  const [historyOrders, setHistoryOrders] = useState<Order[]>(cachedHistory);
-  const [groupedHistoryOrders, setGroupedHistoryOrders] =
-    useState<Record<string, Order[]>>(cachedGroupedHistory);
+export function useOrderManagement(
+  venueId: string,
+  initialOrders?: Order[],
+  _initialStats?: {
+    pending: number;
+    preparing: number;
+    ready: number;
+    serving: number;
+    totalRevenue: number;
+  }
+) {
+  // SSR DATA HYDRATION: Use initial orders from server if available
+  const [orders, setOrders] = useState<Order[]>(initialOrders || []);
+  const [allTodayOrders, setAllTodayOrders] = useState<Order[]>([]);
+  const [historyOrders, setHistoryOrders] = useState<Order[]>([]);
+  const [groupedHistoryOrders, setGroupedHistoryOrders] = useState<Record<string, Order[]>>({});
   
   // Pagination state for history
   const [historyPage, setHistoryPage] = useState(1);
@@ -30,7 +30,7 @@ export function useOrderManagement(venueId: string) {
   const [historyLoading, setHistoryLoading] = useState(false);
   
   // Always show loading until first fetch completes to avoid flashing "No Orders"
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(!initialOrders);
   const [todayWindow, setTodayWindow] = useState<{ startUtcISO: string; endUtcISO: string } | null>(
     null
   );
@@ -148,9 +148,12 @@ export function useOrderManagement(venueId: string) {
     setLoading(false);
   }, [venueId]);
 
+  // Only fetch on mount if we don't have SSR data
   useEffect(() => {
-    loadOrders();
-  }, [loadOrders]);
+    if (!initialOrders) {
+      loadOrders();
+    }
+  }, [loadOrders, initialOrders]);
 
   useEffect(() => {
     // Set up real-time subscription
