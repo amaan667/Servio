@@ -96,7 +96,7 @@ export class StaffService extends BaseService {
       .eq("venue_id", venueId)
 
     if (error) throw error;
-    await this.invalidateCachePattern(`staff:*:${venueId}:*`);
+    await this.invalidateCachePattern(`staff:list:${venueId}`);
   }
 
   /**
@@ -144,7 +144,7 @@ export class StaffService extends BaseService {
       .single();
 
     if (error) throw error;
-    await this.invalidateCachePattern(`staff:*:${venueId}:*`);
+    await this.invalidateCachePattern(`staff:list:${venueId}`);
     return staff as StaffMember;
   }
 
