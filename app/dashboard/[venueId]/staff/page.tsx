@@ -19,24 +19,24 @@ async function fetchStaffData(venueId: string): Promise<{ staff: StaffRow[]; sta
   try {
     const supabase = createAdminClient();
 
-    // Fetch all user_venue_roles for this venue
-    const { data: staffRoles, error } = await supabase
-      .from("user_venue_roles")
-      .select("id, user_id, venue_id, role, created_at")
+    // Fetch all staff for this venue from the staff table
+    const { data: staffData, error } = await supabase
+      .from("staff")
+      .select("id, venue_id, user_id, role, name, email, active, created_at")
       .eq("venue_id", venueId);
 
     if (error) {
-      logger.error("Failed to fetch staff roles", { venueId, error: error.message });
+      logger.error("Failed to fetch staff data", { venueId, error: error.message });
       return null;
     }
 
     // Transform to StaffRow format
-    const staff: StaffRow[] = (staffRoles || []).map((role) => ({
-      id: role.id,
-      name: role.user_id, // In a real app, we'd join with users table for names
-      role: role.role,
-      active: true,
-      created_at: role.created_at,
+    const staff: StaffRow[] = (staffData || []).map((s) => ({
+      id: s.id,
+      name: s.name || s.email || s.user_id,
+      role: s.role || "staff",
+      active: s.active !== false,
+      created_at: s.created_at,
     }));
 
     // Calculate statistics
