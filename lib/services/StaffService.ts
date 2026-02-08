@@ -43,7 +43,8 @@ export class StaffService extends BaseService {
         const { data: byNormalized, error: errNorm } = await supabase
           .from("staff")
           .select("*")
-          .eq("venue_id", venueId);
+          .eq("venue_id", venueId)
+          .neq("role", "owner");
         if (errNorm) throw errNorm;
 
         let byRaw: unknown[] = [];
@@ -51,7 +52,8 @@ export class StaffService extends BaseService {
           const res = await supabase
             .from("staff")
             .select("*")
-            .eq("venue_id", rawVenueId);
+            .eq("venue_id", rawVenueId)
+            .neq("role", "owner");
           if (res.error) throw res.error;
           byRaw = res.data ?? [];
         }
@@ -91,7 +93,7 @@ export class StaffService extends BaseService {
       .from("staff")
       .update({ active })
       .eq("id", staffId)
-      .eq("venue_id", venueId);
+      .eq("venue_id", venueId)
 
     if (error) throw error;
     await this.invalidateCachePattern(`staff:*:${venueId}:*`);
