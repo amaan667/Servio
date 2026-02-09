@@ -119,6 +119,30 @@ export default function QRCodeClient({
   const qrManagement = useQRCodeManagement(venueId);
   const hasProcessedParams = useRef<string | null>(null);
 
+  // Match table/counter name flexibly so we don't duplicate when server already has a QR for it
+  const tableAlreadyInServer = (tableName: string) =>
+    initialTables.some((t) => {
+      const n = String(t.label ?? t.table_number ?? "").trim();
+      if (!n) return false;
+      const a = n.toLowerCase();
+      const b = tableName.trim().toLowerCase();
+      if (a === b) return true;
+      const aNum = a.replace(/^table\s+/, "");
+      const bNum = b.replace(/^table\s+/, "");
+      return aNum === bNum || `table ${aNum}` === b || `table ${bNum}` === a;
+    });
+  const counterAlreadyInServer = (counterName: string) =>
+    initialCounters.some((c) => {
+      const n = String(c.name ?? c.label ?? "").trim();
+      if (!n) return false;
+      const a = n.toLowerCase();
+      const b = counterName.trim().toLowerCase();
+      if (a === b) return true;
+      const aNum = a.replace(/^counter\s+/, "");
+      const bNum = b.replace(/^counter\s+/, "");
+      return aNum === bNum || `counter ${aNum}` === b || `counter ${bNum}` === a;
+    });
+
   // Handle URL parameter for pre-selected table and AI generation
   useEffect(() => {
     const tableParam = searchParams.get("table");
@@ -144,7 +168,7 @@ export default function QRCodeClient({
     // Mark as processed FIRST to prevent duplicate calls
     hasProcessedParams.current = paramKey;
 
-    // Auto-generate QR code for a specific table
+    // Auto-generate QR code for a specific table (only if not already in server list)
     if (tableParam) {
       let tableName = decodeURIComponent(tableParam).trim();
       // Normalize table name: ensure "Table" is capitalized if it starts with "table"
@@ -157,11 +181,12 @@ export default function QRCodeClient({
       }
       setSingleName(tableName);
       setQrType("table");
-      // Generate QR code immediately
-      qrManagement.generateQRForName(tableName, "table");
+      if (!tableAlreadyInServer(tableName)) {
+        qrManagement.generateQRForName(tableName, "table");
+      }
     }
 
-    // Auto-generate QR code for a specific counter
+    // Auto-generate QR code for a specific counter (only if not already in server list)
     if (counterParam) {
       let counterName = decodeURIComponent(counterParam).trim();
       // Normalize counter name: ensure "Counter" is capitalized if it starts with "counter"
@@ -174,8 +199,9 @@ export default function QRCodeClient({
       }
       setSingleName(counterName);
       setQrType("counter");
-      // Generate QR code immediately
-      qrManagement.generateQRForName(counterName, "counter");
+      if (!counterAlreadyInServer(counterName)) {
+        qrManagement.generateQRForName(counterName, "counter");
+      }
     }
 
     // Auto-generate bulk QR codes
@@ -194,7 +220,7 @@ export default function QRCodeClient({
         }
       }
     }
-  }, [searchParams, venueId, qrManagement]);
+  }, [searchParams, venueId, qrManagement, initialTables, initialCounters]);
 
   // Generate single QR code
   const handleGenerateSingle = () => {
