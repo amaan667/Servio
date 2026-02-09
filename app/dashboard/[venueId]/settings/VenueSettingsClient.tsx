@@ -124,8 +124,14 @@ export default function VenueSettingsClient({
               setVenuePhone={venueSettings.setVenuePhone}
               venueAddress={venueSettings.venueAddress}
               setVenueAddress={venueSettings.setVenueAddress}
+              country={venueSettings.country}
+              setCountry={venueSettings.setCountry}
+              countryOptions={venueSettings.countryOptions}
+              applyCountryLocale={venueSettings.applyCountryLocale}
               timezone={venueSettings.timezone}
               setTimezone={venueSettings.setTimezone}
+              currency={venueSettings.currency}
+              setCurrency={venueSettings.setCurrency}
               venueType={venueSettings.venueType}
               setVenueType={venueSettings.setVenueType}
               serviceType={venueSettings.serviceType}

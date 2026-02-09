@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import ServiceWorkerRegistration from "@/components/ServiceWorkerRegistration";
 import { getQueryClient } from "@/lib/query-client";
 import { Toaster } from "@/components/ui/toaster";
+import { LocaleProvider } from "@/context/LocaleContext";
 
 export default function Providers({ children }: { children: React.ReactNode }) {
   // Create optimized QueryClient instance (with anti-flicker settings)
@@ -55,10 +56,12 @@ export default function Providers({ children }: { children: React.ReactNode }) {
   return (
     <QueryClientProvider client={queryClient}>
       <ThemeProvider attribute="class" defaultTheme="light" enableSystem>
-        <ServiceWorkerRegistration>
-          {children}
-          <Toaster />
-        </ServiceWorkerRegistration>
+        <LocaleProvider>
+          <ServiceWorkerRegistration>
+            {children}
+            <Toaster />
+          </ServiceWorkerRegistration>
+        </LocaleProvider>
       </ThemeProvider>
     </QueryClientProvider>
   );

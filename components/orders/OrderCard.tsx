@@ -13,7 +13,7 @@ import { OrderForCard } from "@/types/orders";
 import { deriveEntityKind, shouldShowUnpaidChip } from "@/lib/orders/entity-types";
 import { deriveQrTypeFromOrder } from "@/lib/orders/qr-payment-validation";
 import { OrderStatusChip, PaymentStatusChip } from "@/components/ui/chips";
-import { formatCurrency, formatOrderTime } from "@/lib/orders/mapOrderToCardData";
+import { useLocale } from "@/context/LocaleContext";
 import { supabaseBrowser as createClient } from "@/lib/supabase";
 // Payment confirmations are handled on the Payments page only
 import { ReceiptModal } from "@/components/receipt/ReceiptModal";
@@ -36,6 +36,7 @@ export function OrderCard({
   onActionComplete,
   className = "",
 }: OrderCardProps) {
+  const { formatCurrency, formatTime } = useLocale();
   const [showHoverRemove, setShowHoverRemove] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   // Payments are confirmed on the Payments page only
@@ -636,7 +637,7 @@ export function OrderCard({
               </Badge>
               <div className="flex items-center gap-2 text-sm font-medium text-slate-600">
                 <Clock className="h-4 w-4" />
-                <span>{formatOrderTime(order.placed_at)}</span>
+                <span>{formatTime(order.placed_at)}</span>
               </div>
             </div>
 
@@ -684,7 +685,7 @@ export function OrderCard({
           <div className="flex flex-col items-end gap-3">
             <div className="text-right">
               <div className="text-3xl font-bold text-green-600">
-                {formatCurrency(order.total_amount, order.currency)}
+                {formatCurrency(order.total_amount, order.currency || undefined)}
               </div>
             </div>
             <div className="flex items-center gap-2">

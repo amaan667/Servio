@@ -2,7 +2,11 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { supabaseBrowser as createClient } from "@/lib/supabase";
 import { toast } from "@/hooks/use-toast";
-import { TIMEZONES } from "../constants";
+import {
+  detectBrowserLocale,
+  getLocaleForCountry,
+  COUNTRY_OPTIONS,
+} from "@/lib/locale";
 
 export const DAYS_OF_WEEK = [
   "monday",
@@ -21,6 +25,8 @@ export interface Venue {
   phone?: string;
   address?: string;
   timezone?: string;
+  currency?: string;
+  country?: string | null;
   venue_type?: string;
   service_type?: string;
   operating_hours?: OperatingHours;
@@ -74,7 +80,11 @@ export function useVenueSettings(venue: Venue) {
   const [venueEmail, setVenueEmail] = useState(venue.email || "");
   const [venuePhone, setVenuePhone] = useState(venue.phone || "");
   const [venueAddress, setVenueAddress] = useState(venue.address || "");
+  const [country, setCountry] = useState<string>(venue.country || "");
   const [timezone, setTimezone] = useState(venue.timezone || "Europe/London");
+  const [currency, setCurrency] = useState(
+    (venue as { currency?: string }).currency || "GBP"
+  );
   const [venueType, setVenueType] = useState(venue.venue_type || "restaurant");
   const [serviceType, setServiceType] = useState(venue.service_type || "table_service");
   const [operatingHours, setOperatingHours] = useState<OperatingHours>(
@@ -111,26 +121,27 @@ export function useVenueSettings(venue: Venue) {
     venue.notify_customer_on_ready ?? defaultNotifyOnReady
   );
 
-  // Auto-detect timezone on mount
+  // Auto-detect locale (country, currency, timezone) on mount when not set
   useEffect(() => {
-    if (!venue.timezone) {
-      const detectedTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-      const matchingTimezone = TIMEZONES.find((tz) => tz.value === detectedTimezone);
-      if (matchingTimezone) {
-        setTimezone(detectedTimezone);
-      }
-    }
-  }, [venue.timezone]);
+    if (venue.country && venue.timezone && (venue as { currency?: string }).currency) return;
+    const detected = detectBrowserLocale();
+    if (!venue.country) setCountry(detected.countryCode);
+    if (!venue.timezone) setTimezone(detected.timezone);
+    if (!(venue as { currency?: string }).currency) setCurrency(detected.currency);
+  }, [venue.country, venue.timezone, (venue as { currency?: string }).currency]);
 
   // Track unsaved changes
   useEffect(() => {
     const defaultNotify = venue.service_type === "counter_pickup" || venue.service_type === "both";
+    const venueCurrency = (venue as { currency?: string }).currency || "GBP";
     const changed =
       venueName !== venue.venue_name ||
       venueEmail !== (venue.email || "") ||
       venuePhone !== (venue.phone || "") ||
       venueAddress !== (venue.address || "") ||
+      country !== (venue.country || "") ||
       timezone !== (venue.timezone || "Europe/London") ||
+      currency !== venueCurrency ||
       venueType !== (venue.venue_type || "restaurant") ||
       serviceType !== (venue.service_type || "table_service") ||
       autoEmailReceipts !==
@@ -149,7 +160,9 @@ export function useVenueSettings(venue: Venue) {
     venueEmail,
     venuePhone,
     venueAddress,
+    country,
     timezone,
+    currency,
     venueType,
     serviceType,
     venue,
@@ -174,7 +187,9 @@ export function useVenueSettings(venue: Venue) {
           email: venueEmail || null,
           phone: venuePhone || null,
           address: venueAddress || null,
-          timezone: timezone,
+          country: country || null,
+          timezone,
+          currency: currency || "GBP",
           venue_type: venueType,
           service_type: serviceType,
           operating_hours: Object.keys(operatingHours).length > 0 ? operatingHours : null,
@@ -245,8 +260,12 @@ export function useVenueSettings(venue: Venue) {
     setVenuePhone,
     venueAddress,
     setVenueAddress,
+    country,
+    setCountry,
     timezone,
     setTimezone,
+    currency,
+    setCurrency,
     venueType,
     setVenueType,
     serviceType,
@@ -271,5 +290,14 @@ export function useVenueSettings(venue: Venue) {
     setNotifyCustomerOnReady,
     updateVenueSettings,
     updateDayHours,
+    countryOptions: COUNTRY_OPTIONS,
+    applyCountryLocale: (countryCode: string) => {
+      const info = getLocaleForCountry(countryCode);
+      if (info) {
+        setCountry(info.countryCode);
+        setCurrency(info.currency);
+        setTimezone(info.timezone);
+      }
+    },
   };
 }

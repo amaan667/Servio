@@ -18,6 +18,7 @@ export interface VenueRow {
   email: string | null;
   timezone: string;
   currency: string;
+  country?: string | null;
   logo_url: string | null;
   created_at: string;
   updated_at: string;
