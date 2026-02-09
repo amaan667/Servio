@@ -29,7 +29,6 @@ export default function QRCodeClientPage({
   role,
   tier,
   venueName: initialVenueName,
-  stats,
   initialTables = [],
   initialCounters = [],
 }: {
@@ -41,7 +40,6 @@ export default function QRCodeClientPage({
   initialTables?: Array<{ id: string; label: string; table_number: string | number | null }>;
   initialCounters?: Array<{ id: string; name: string }>;
 }) {
-  // Use tier if needed, otherwise suppress unused warning
   void tier;
   const { user } = useAuthRedirect();
   const userRole = role as UserRole;
@@ -145,28 +143,6 @@ export default function QRCodeClientPage({
             userRole={userRole || "staff"}
             userName={user?.user_metadata?.full_name || user?.email?.split("@")[0] || "User"}
           />
-        )}
-
-        {/* Stats Cards */}
-        {stats && (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-            <div className="bg-card rounded-lg border p-4">
-              <div className="text-sm text-muted-foreground">Total QR Codes</div>
-              <div className="text-2xl font-bold">{stats.totalQRCodes}</div>
-            </div>
-            <div className="bg-card rounded-lg border p-4">
-              <div className="text-sm text-muted-foreground">Active Codes</div>
-              <div className="text-2xl font-bold text-green-600">{stats.activeCodes}</div>
-            </div>
-            <div className="bg-card rounded-lg border p-4">
-              <div className="text-sm text-muted-foreground">Tables</div>
-              <div className="text-2xl font-bold">{stats.tableCount}</div>
-            </div>
-            <div className="bg-card rounded-lg border p-4">
-              <div className="text-sm text-muted-foreground">Counters</div>
-              <div className="text-2xl font-bold">{stats.counterCount}</div>
-            </div>
-          </div>
         )}
 
         <div className="mb-8 mt-4">

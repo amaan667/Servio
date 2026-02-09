@@ -82,7 +82,7 @@ export default function QRCodeClient({
   const [bulkPrefix, setBulkPrefix] = useState("");
   const [showBulkDialog, setShowBulkDialog] = useState(false);
   const [initialDataLoaded, setInitialDataLoaded] = useState(false);
-  // Keys "name|type" for server QRs the user has chosen to remove from the list
+  // Keys "name|type" for server QRs the user has removed (persisted via API)
   const [hiddenServerQRKeys, setHiddenServerQRKeys] = useState<string[]>([]);
 
   // Build initial QRs from server-fetched tables and counters
@@ -92,6 +92,27 @@ export default function QRCodeClient({
   const visibleServerQRs = serverGeneratedQRs.filter(
     (qr) => !hiddenServerQRKeys.includes(getQRKey(qr.name, qr.type))
   );
+
+  // Load persisted hidden QR keys from API so removals survive refresh/navigation
+  useEffect(() => {
+    if (!venueId || typeof window === "undefined") return;
+
+    const loadHidden = async () => {
+      try {
+        const { apiClient } = await import("@/lib/api-client");
+        const res = await apiClient.get(`/api/venues/${venueId}/qr-hidden`);
+        if (res.ok) {
+          const data = await res.json();
+          const keys = data?.data?.hiddenKeys ?? data?.hiddenKeys ?? [];
+          setHiddenServerQRKeys(Array.isArray(keys) ? keys : []);
+        }
+      } catch {
+        // Ignore - hidden list stays empty
+      }
+    };
+
+    void loadHidden();
+  }, [venueId]);
 
   useEffect(() => {
     if (initialDataLoaded || initialLoading) return;
@@ -418,25 +439,95 @@ export default function QRCodeClient({
   // Combined QR list (server + client generated); server QRs can be hidden by user
   const allQRCodes = [...visibleServerQRs, ...qrManagement.generatedQRs];
 
-  const handleRemoveQR = (qr: GeneratedQR) => {
+  // Live-updating counts from current visible list (no need to remove table to update)
+  const liveStats = {
+    total: allQRCodes.length,
+    tables: allQRCodes.filter((q) => q.type === "table" || q.type === "table_pickup").length,
+    counters: allQRCodes.filter((q) => q.type === "counter").length,
+  };
+
+  const handleRemoveQR = async (qr: GeneratedQR) => {
     const key = getQRKey(qr.name, qr.type);
     const isServerQR = serverGeneratedQRs.some(
       (s) => s.name === qr.name && s.type === qr.type
     );
     if (isServerQR) {
-      setHiddenServerQRKeys((prev) => (prev.includes(key) ? prev : [...prev, key]));
+      try {
+        const { apiClient } = await import("@/lib/api-client");
+        const res = await apiClient.post(`/api/venues/${venueId}/qr-hidden`, {
+          name: qr.name,
+          type: qr.type,
+        });
+        if (res.ok) {
+          setHiddenServerQRKeys((prev) => (prev.includes(key) ? prev : [...prev, key]));
+          const { invalidateCountsForVenue } = await import("@/lib/cache/count-cache");
+          invalidateCountsForVenue(venueId);
+        } else {
+          toast({
+            title: "Could not remove QR",
+            description: "The change could not be saved. Try again.",
+            variant: "destructive",
+          });
+        }
+      } catch {
+        toast({
+          title: "Could not remove QR",
+          description: "Something went wrong. Try again.",
+          variant: "destructive",
+        });
+      }
     } else {
       qrManagement.removeQR(qr.name, qr.type);
+      const { invalidateCountsForVenue } = await import("@/lib/cache/count-cache");
+      invalidateCountsForVenue(venueId);
     }
   };
 
-  const handleClearAllQRs = () => {
-    setHiddenServerQRKeys(serverGeneratedQRs.map((qr) => getQRKey(qr.name, qr.type)));
-    qrManagement.clearAllQRs();
+  const handleClearAllQRs = async () => {
+    // Persist hidden for all server QRs
+    try {
+      const { apiClient } = await import("@/lib/api-client");
+      for (const qr of serverGeneratedQRs) {
+        await apiClient.post(`/api/venues/${venueId}/qr-hidden`, {
+          name: qr.name,
+          type: qr.type,
+        });
+      }
+      setHiddenServerQRKeys(serverGeneratedQRs.map((qr) => getQRKey(qr.name, qr.type)));
+      qrManagement.clearAllQRs();
+      const { invalidateCountsForVenue } = await import("@/lib/cache/count-cache");
+      invalidateCountsForVenue(venueId);
+    } catch {
+      // Still clear locally
+      setHiddenServerQRKeys(serverGeneratedQRs.map((qr) => getQRKey(qr.name, qr.type)));
+      qrManagement.clearAllQRs();
+    }
   };
 
   return (
     <div className="space-y-6 pb-32 md:pb-8">
+      {/* Live-updating stats from current QR list */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <Card className="shadow rounded-lg border">
+          <CardContent className="pt-4">
+            <div className="text-sm text-muted-foreground">Total QR Codes</div>
+            <div className="text-2xl font-bold">{liveStats.total}</div>
+          </CardContent>
+        </Card>
+        <Card className="shadow rounded-lg border">
+          <CardContent className="pt-4">
+            <div className="text-sm text-muted-foreground">Tables</div>
+            <div className="text-2xl font-bold">{liveStats.tables}</div>
+          </CardContent>
+        </Card>
+        <Card className="shadow rounded-lg border">
+          <CardContent className="pt-4">
+            <div className="text-sm text-muted-foreground">Counters</div>
+            <div className="text-2xl font-bold">{liveStats.counters}</div>
+          </CardContent>
+        </Card>
+      </div>
+
       {/* Generator Card */}
       <Card className="shadow-lg rounded-xl border-gray-200">
         <CardHeader>
