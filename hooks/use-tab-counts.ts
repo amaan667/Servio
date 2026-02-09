@@ -41,15 +41,16 @@ export function useTabCounts(venueId: string, tz: string, liveWindowMins = 30) {
 
   const fetchCounts = useCallback(
     async (_forceRefresh = false) => {
-      if (!venueId || !tz) return;
+      if (!venueId) return;
 
       setIsLoading(true);
       setError(null);
+      const timezone = tz || "Europe/London";
 
       try {
         const { apiClient } = await import("@/lib/api-client");
         const res = await apiClient.get(`/api/dashboard/counts`, {
-          params: { venueId, tz, live_window_mins: String(liveWindowMins) },
+          params: { venueId, tz: timezone, live_window_mins: String(liveWindowMins) },
         });
 
         if (res.status === 429) {
@@ -66,7 +67,19 @@ export function useTabCounts(venueId: string, tz: string, liveWindowMins = 30) {
         const body = await res.json();
         const result = body?.data ?? body;
         if (result) {
-          const counts = result as TabCounts;
+          const raw = result as Record<string, unknown>;
+          const counts: TabCounts = {
+            live_count: Number(raw.live_count) || 0,
+            earlier_today_count: Number(raw.earlier_today_count) || 0,
+            history_count: Number(raw.history_count) || 0,
+            today_orders_count: Number(raw.today_orders_count) || 0,
+            active_tables_count: Number(raw.active_tables_count) || 0,
+            tables_set_up: Number(raw.tables_set_up) || 0,
+            in_use_now: Number((raw as { in_use_now?: number; tables_in_use?: number }).in_use_now ?? (raw as { tables_in_use?: number }).tables_in_use) || 0,
+            reserved_now: Number((raw as { reserved_now?: number; tables_reserved_now?: number }).reserved_now ?? (raw as { tables_reserved_now?: number }).tables_reserved_now) || 0,
+            reserved_later: Number(raw.reserved_later) || 0,
+            waiting: Number(raw.waiting) || 0,
+          };
           setData(counts);
           setCachedCounts(venueId, counts);
         }
