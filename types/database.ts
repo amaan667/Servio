@@ -22,7 +22,7 @@ export interface VenueRow {
   created_at: string;
   updated_at: string;
   is_active: boolean;
-  subscription_tier: "free" | "enterprise" | "enterprise";
+  subscription_tier: "starter" | "pro" | "enterprise";
   trial_ends_at: string | null;
   daily_reset_time: string;
   last_reset_at: string | null;

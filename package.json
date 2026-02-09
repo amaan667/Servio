@@ -42,7 +42,8 @@
     "cleanup:console-logs": "tsx scripts/cleanup-console-logs.ts",
     "track:todos": "tsx scripts/track-todos.ts",
     "prepare": "husky install",
-    "validate": "pnpm run format:check && pnpm run lint && pnpm run typecheck && pnpm run test",
+    "check:rls": "tsx scripts/check-rls-coverage.ts",
+    "validate": "pnpm run format:check && pnpm run lint && pnpm run typecheck && pnpm run check:rls && pnpm run test",
     "test:all": "pnpm run test && pnpm run test:e2e && pnpm run test:integration"
   },
   "lint-staged": {

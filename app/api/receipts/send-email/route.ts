@@ -1,7 +1,6 @@
 import { NextRequest } from "next/server";
 import { createClient } from "@/lib/supabase";
 
-import { sendEmail } from "@/lib/email";
 import { withUnifiedAuth } from "@/lib/auth/unified-auth";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import { env, isDevelopment } from "@/lib/env";
@@ -148,17 +147,14 @@ export const POST = withUnifiedAuth(
         </html>
       `;
 
-      // Send email
-      const emailSent = await sendEmail({
+      // Enqueue email for async delivery
+      const { jobHelpers } = await import("@/lib/queue");
+      await jobHelpers.addEmailJob({
         to: body.email,
         subject: `Receipt for Order #${body.orderId.slice(-6).toUpperCase()} - ${venueName}`,
         html: receiptHtml,
         text: `Receipt for Order #${body.orderId.slice(-6).toUpperCase()}\n\n${venueName}\n\nOrder Number: #${body.orderId.slice(-6).toUpperCase()}\nTotal: £${subtotal.toFixed(2)}\n\nThank you for your order!`,
       });
-
-      if (!emailSent) {
-        return apiErrors.internal("Failed to send email");
-      }
 
       // Update order with receipt sent info
       await supabase

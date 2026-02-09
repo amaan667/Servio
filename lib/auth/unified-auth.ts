@@ -1,9 +1,9 @@
 /**
  * UNIFIED AUTHENTICATION, AUTHORIZATION, AND TIER SYSTEM
  *
- * @deprecated Prefer createUnifiedHandler from @/lib/api/unified-handler for new routes.
- * withUnifiedAuth remains supported; new API routes should use createUnifiedHandler with
- * requireVenueAccess and venueIdSource for consistency (rate limit, idempotency, APM, version headers).
+ * NOTE: For NEW API routes, prefer createUnifiedHandler from @/lib/api/unified-handler
+ * for consistency (rate limit, idempotency, APM, version headers).
+ * withUnifiedAuth is the primary auth wrapper for 60+ existing routes and is fully supported.
  *
  * This is the SINGLE SOURCE OF TRUTH for all auth/role/tier checks.
  *

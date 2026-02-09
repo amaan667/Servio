@@ -5,6 +5,7 @@
 
 import { getErrorDetails } from "@/lib/utils/errors";
 import { captureException, captureMessage } from "./sentry";
+import { alertCritical } from "@/lib/alerting/slack";
 
 export interface ErrorContext {
   userId?: string;
@@ -36,6 +37,19 @@ export function trackError(
   switch (severity) {
     case "critical":
       captureException(error, { ...context, severity });
+      // Fire-and-forget Slack alert for critical errors
+      alertCritical(
+        `Critical Error: ${context.action || "unknown"}`,
+        errorMessage,
+        {
+          ...(context.userId && { userId: context.userId }),
+          ...(context.venueId && { venueId: context.venueId }),
+          ...(context.orderId && { orderId: context.orderId }),
+          action: context.action || "unknown",
+        }
+      ).catch(() => {
+        // Alerting must never crash the application
+      });
       break;
     case "high":
       captureException(error, { ...context, severity });

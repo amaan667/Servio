@@ -7,6 +7,7 @@ import { stripe } from "@/lib/stripe-client";
 import { env } from "@/lib/env";
 import { apiErrors } from "@/lib/api/standard-response";
 import { trackError } from "@/lib/monitoring/error-tracking";
+import { syncVenueTiersForOrg } from "@/lib/stripe/sync-venue-tiers";
 
 // Extend Invoice type to include subscription property
 interface InvoiceWithSubscription extends Stripe.Invoice {
@@ -333,6 +334,9 @@ export async function handleSubscriptionCreated(subscription: Stripe.Subscriptio
     }
   }
 
+  // Propagate tier to all venues for this organization
+  await syncVenueTiersForOrg(organizationId, tier);
+
   await supabase.from("subscription_history").insert({
     organization_id: organizationId,
     event_type: "subscription_created",
@@ -442,6 +446,9 @@ export async function handleSubscriptionUpdated(subscription: Stripe.Subscriptio
     }
   }
 
+  // Propagate tier to all venues for this organization
+  await syncVenueTiersForOrg(organizationId, tier);
+
   await supabase.from("subscription_history").insert({
     organization_id: organizationId,
     event_type: "subscription_updated",
@@ -477,6 +484,9 @@ export async function handleSubscriptionDeleted(subscription: Stripe.Subscriptio
       updated_at: new Date().toISOString(),
     })
     .eq("id", organizationId);
+
+  // Propagate downgrade to all venues
+  await syncVenueTiersForOrg(organizationId, "starter");
 
   await supabase.from("subscription_history").insert({
     organization_id: organizationId,

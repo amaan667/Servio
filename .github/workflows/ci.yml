@@ -40,6 +40,9 @@ jobs:
       - name: Format check
         run: pnpm run format:check
 
+      - name: Check RLS coverage (all tables must have RLS)
+        run: pnpm run check:rls
+
   # Unit Tests
   test:
     name: Unit Tests

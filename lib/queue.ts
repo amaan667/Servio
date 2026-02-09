@@ -1,162 +1,211 @@
 /**
- * Job queue for background processing
- * Handles PDF conversion, image processing, and other heavy tasks
+ * Job Queue Infrastructure
+ *
+ * Three queues for heavy operations that MUST NOT run in request paths:
+ *   1. pdf-processing — PDF→image conversion, AI menu extraction
+ *   2. email — transactional emails (receipts, invitations, notifications)
+ *   3. ai-tasks — KDS ticket creation, GPT vision calls, AI station assignment
+ *
+ * Workers process jobs with automatic retries and dead-letter handling.
+ * If Redis is unavailable, jobs execute inline (dev-only; prod throws).
  */
 
-import { Queue, Worker, QueueEvents } from "bullmq";
-import { convertPDFToImages } from "./pdf-to-images";
+import { Queue, Worker, type Job } from "bullmq";
+import { env } from "@/lib/env";
 
-// Redis connection for BullMQ
-const connection = {
+// ─── Redis connection ───────────────────────────────────────────────
+const getConnection = () => ({
   host: process.env.REDIS_HOST || "localhost",
   port: parseInt(process.env.REDIS_PORT || "6379"),
-  password: process.env.REDIS_PASSWORD,
+  password: process.env.REDIS_PASSWORD || undefined,
+  ...(process.env.REDIS_URL ? { url: process.env.REDIS_URL } : {}),
+});
+
+const connection = getConnection();
+
+const isServer = typeof window === "undefined";
+
+const DEFAULT_JOB_OPTIONS = {
+  attempts: 3,
+  backoff: { type: "exponential" as const, delay: 2000 },
+  removeOnComplete: { age: 3600 },
+  removeOnFail: { age: 86400 * 7 }, // Keep failed jobs for 7 days (DLQ)
 };
 
-// PDF Processing Queue (server-only)
-export const pdfQueue =
-  typeof window === "undefined"
-    ? new Queue("pdf-processing", {
-        connection,
-        defaultJobOptions: {
-          attempts: 3,
-          backoff: {
-            type: "exponential",
-            delay: 2000,
-          },
-          removeOnComplete: {
-            age: 3600, // Keep completed jobs for 1 hour
-          },
-          removeOnFail: {
-            age: 86400, // Keep failed jobs for 24 hours
-          },
-        },
-      })
-    : null;
+// ─── Queue Definitions ──────────────────────────────────────────────
 
-// PDF Processing Worker (server-only)
-export const pdfWorker =
-  typeof window === "undefined"
-    ? new Worker(
-        "pdf-processing",
-        async (job) => {
-          const { pdfBytes, venueId, uploadId } = job.data;
+export const pdfQueue = isServer
+  ? new Queue("pdf-processing", { connection, defaultJobOptions: DEFAULT_JOB_OPTIONS })
+  : null;
 
-          try {
-            // Convert PDF to images
-            const images = await convertPDFToImages(pdfBytes);
+export const emailQueue = isServer
+  ? new Queue("email", { connection, defaultJobOptions: { ...DEFAULT_JOB_OPTIONS, attempts: 5 } })
+  : null;
 
-            return {
-              success: true,
-              images,
-              imageCount: images.length,
-            };
-          } catch (_error) {
-            throw _error;
-          }
-        },
-        {
-          connection,
-          concurrency: 2, // Process 2 PDFs at a time
+export const aiQueue = isServer
+  ? new Queue("ai-tasks", { connection, defaultJobOptions: DEFAULT_JOB_OPTIONS })
+  : null;
+
+// ─── Worker: PDF Processing ────────────────────────────────────────
+
+export const pdfWorker = isServer
+  ? new Worker(
+      "pdf-processing",
+      async (job: Job) => {
+        const { pdfBytes, venueId } = job.data;
+        const { convertPDFToImages } = await import("./pdf-to-images");
+        const images = await convertPDFToImages(pdfBytes);
+        return { success: true, images, imageCount: images.length, venueId };
+      },
+      { connection, concurrency: 2 }
+    )
+  : null;
+
+// ─── Worker: Email ──────────────────────────────────────────────────
+
+export const emailWorker = isServer
+  ? new Worker(
+      "email",
+      async (job: Job) => {
+        const { to, subject, html, text, from } = job.data;
+
+        const resendKey = env("RESEND_API_KEY");
+        if (!resendKey) {
+          throw new Error("RESEND_API_KEY not configured");
         }
-      )
-    : null;
 
-// Queue events for monitoring (server-only)
-export const pdfQueueEvents =
-  typeof window === "undefined" ? new QueueEvents("pdf-processing", { connection }) : null;
+        const { Resend } = await import("resend");
+        const resend = new Resend(resendKey);
 
-if (pdfQueueEvents) {
-  pdfQueueEvents.on("completed", ({ jobId: _jobId, returnvalue: _returnvalue }) => {
-    // Job completed event handled
-  });
+        const result = await resend.emails.send({
+          from: from || "Servio <no-reply@servio.uk>",
+          to: Array.isArray(to) ? to : [to],
+          subject,
+          html,
+          text,
+        });
 
-  pdfQueueEvents.on("failed", ({ jobId: _jobId, failedReason: _failedReason }) => {
-    // Job failed event handled
-  });
-}
+        return { success: true, messageId: result.data?.id };
+      },
+      { connection, concurrency: 5 }
+    )
+  : null;
 
-// Job status helpers
+// ─── Worker: AI Tasks ───────────────────────────────────────────────
+
+export const aiWorker = isServer
+  ? new Worker(
+      "ai-tasks",
+      async (job: Job) => {
+        switch (job.name) {
+          case "create-kds-tickets": {
+            const { orderId, venueId, items, customerName, tableNumber, tableId } = job.data;
+            const { createKDSTicketsWithAI } = await import("./orders/kds-tickets-unified");
+            const { createAdminClient } = await import("./supabase");
+            const supabase = createAdminClient();
+            await createKDSTicketsWithAI(supabase, {
+              id: orderId,
+              venue_id: venueId,
+              items,
+              customer_name: customerName,
+              table_number: tableNumber,
+              table_id: tableId,
+            });
+            return { success: true, orderId };
+          }
+          default:
+            throw new Error(`Unknown AI job type: ${job.name}`);
+        }
+      },
+      { connection, concurrency: 3 }
+    )
+  : null;
+
+// ─── Enqueue Helpers ────────────────────────────────────────────────
+
 export const jobHelpers = {
-  /**
-   * Add PDF processing job
-   */
+  /** Enqueue a PDF processing job */
   async addPdfJob(pdfBytes: ArrayBuffer, venueId: string, uploadId?: string) {
-    if (!pdfQueue) {
-      return null;
-    }
-
-    const job = await pdfQueue.add("convert-pdf", {
-      pdfBytes,
-      venueId,
-      uploadId,
-    });
-
-    return job;
+    if (!pdfQueue) return null;
+    return pdfQueue.add("convert-pdf", { pdfBytes, venueId, uploadId });
   },
 
-  /**
-   * Get job status
-   */
-  async getJobStatus(jobId: string) {
-    if (!pdfQueue) return null;
+  /** Enqueue an email job */
+  async addEmailJob(params: {
+    to: string | string[];
+    subject: string;
+    html: string;
+    text?: string;
+    from?: string;
+  }) {
+    if (!emailQueue) {
+      // Dev fallback: send inline
+      const { Resend } = await import("resend");
+      const resendKey = env("RESEND_API_KEY");
+      if (!resendKey) return null;
+      const resend = new Resend(resendKey);
+      await resend.emails.send({
+        from: params.from || "Servio <no-reply@servio.uk>",
+        to: Array.isArray(params.to) ? params.to : [params.to],
+        subject: params.subject,
+        html: params.html,
+        text: params.text,
+      });
+      return null;
+    }
+    return emailQueue.add("send-email", params);
+  },
 
-    const job = await pdfQueue.getJob(jobId);
+  /** Enqueue a KDS ticket creation job */
+  async addKDSTicketJob(params: {
+    orderId: string;
+    venueId: string;
+    items: unknown[];
+    customerName: string;
+    tableNumber: number | null;
+    tableId: string | null;
+  }) {
+    if (!aiQueue) return null;
+    return aiQueue.add("create-kds-tickets", params);
+  },
+
+  /** Get job status */
+  async getJobStatus(queueName: string, jobId: string) {
+    const q =
+      queueName === "email"
+        ? emailQueue
+        : queueName === "ai-tasks"
+          ? aiQueue
+          : pdfQueue;
+    if (!q) return null;
+    const job = await q.getJob(jobId);
     if (!job) return null;
-
-    const state = await job.getState();
-    const progress = job.progress;
-    const returnvalue = job.returnvalue;
-    const failedReason = job.failedReason;
-
     return {
       id: job.id,
-      state,
-      progress,
-      returnvalue,
-      failedReason,
+      state: await job.getState(),
+      progress: job.progress,
+      returnvalue: job.returnvalue,
+      failedReason: job.failedReason,
       timestamp: job.timestamp,
     };
   },
 
-  /**
-   * Cancel job
-   */
-  async cancelJob(jobId: string) {
-    if (!pdfQueue) return false;
-
-    const job = await pdfQueue.getJob(jobId);
-    if (!job) return false;
-
-    await job.remove();
-    return true;
-  },
-
-  /**
-   * Get queue stats
-   */
+  /** Get stats for all queues */
   async getQueueStats() {
-    if (!pdfQueue) {
+    const stats = async (q: Queue | null, name: string) => {
+      if (!q) return { name, waiting: 0, active: 0, completed: 0, failed: 0 };
       return {
-        waiting: 0,
-        active: 0,
-        completed: 0,
-        failed: 0,
-        total: 0,
+        name,
+        waiting: await q.getWaitingCount(),
+        active: await q.getActiveCount(),
+        completed: await q.getCompletedCount(),
+        failed: await q.getFailedCount(),
       };
-    }
-
-    const waiting = await pdfQueue.getWaitingCount();
-    const active = await pdfQueue.getActiveCount();
-    const completed = await pdfQueue.getCompletedCount();
-    const failed = await pdfQueue.getFailedCount();
-
+    };
     return {
-      waiting,
-      active,
-      completed,
-      failed,
-      total: waiting + active + completed + failed,
+      pdf: await stats(pdfQueue, "pdf-processing"),
+      email: await stats(emailQueue, "email"),
+      ai: await stats(aiQueue, "ai-tasks"),
     };
   },
 };

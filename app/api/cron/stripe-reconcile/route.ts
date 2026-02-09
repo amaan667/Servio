@@ -6,13 +6,20 @@ import { env } from "@/lib/env";
 
 import { getCorrelationIdFromRequest } from "@/lib/middleware/correlation-id";
 import { runStripeReconcile } from "@/app/api/stripe/reconcile/route";
+import { reconcileAllSubscriptions } from "@/lib/stripe/sync-venue-tiers";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 /**
- * Cron-safe endpoint to replay Stripe webhook events in bounded batches.
+ * Cron-safe endpoint for Stripe reconciliation.
+ * Runs TWO passes:
+ *   1. Replay failed/stale webhook events (existing behaviour)
+ *   2. Compare every organization's tier against Stripe's actual subscription
+ *      state and correct any drift (new behaviour)
+ *
  * Auth: Bearer CRON_SECRET
+ * Schedule: daily via Railway cron or external scheduler
  */
 export async function POST(req: NextRequest) {
   const rateResult = await rateLimit(req, RATE_LIMITS.GENERAL);
@@ -32,12 +39,30 @@ export async function POST(req: NextRequest) {
   const limitParam = searchParams.get("limit");
   const windowParam = searchParams.get("windowHours");
 
-  const result = await runStripeReconcile({
+  // Pass 1: Replay failed/stale webhook events
+  const replayResult = await runStripeReconcile({
     supabase,
     limit: limitParam ? Number(limitParam) : undefined,
     windowHours: windowParam ? Number(windowParam) : undefined,
     requestId,
   });
 
-  return success(result);
+  // Pass 2: Compare Stripe subscription state against DB and correct drift
+  let driftResult: { checked: number; corrected: number; errors: string[] } = {
+    checked: 0,
+    corrected: 0,
+    errors: [],
+  };
+  try {
+    driftResult = await reconcileAllSubscriptions();
+  } catch (err) {
+    driftResult.errors.push(
+      `reconciliation_failed: ${err instanceof Error ? err.message : String(err)}`
+    );
+  }
+
+  return success({
+    replay: replayResult,
+    drift: driftResult,
+  });
 }

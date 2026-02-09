@@ -28,7 +28,7 @@ const LEGACY_PATTERNS = [
   {
     pattern: /console\.(log|error|warn|info)/,
     description: 'Console statements that should be replaced with structured logging',
-    recommendation: 'Use structuredLogger from lib/structured-logger.ts',
+    recommendation: 'Use logger from lib/monitoring/structured-logger.ts',
   },
   {
     pattern: /JSON\.parse\(/g,

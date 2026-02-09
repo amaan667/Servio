@@ -63,6 +63,9 @@ const envSchema = z.object({
   STRIPE_BASIC_PRICE_ID: z.string().optional(),
   STRIPE_STANDARD_PRICE_ID: z.string().optional(),
   STRIPE_PREMIUM_PRICE_ID: z.string().optional(),
+
+  // Alerting (Optional)
+  SLACK_ALERT_WEBHOOK_URL: z.string().url().optional(),
 });
 
 export type Env = z.infer<typeof envSchema>;

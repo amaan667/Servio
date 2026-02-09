@@ -1,6 +1,4 @@
-import { createClient } from "@/lib/supabase";
 import { createOrderSchema } from "@/lib/api/validation-schemas";
-import { createKDSTicketsWithAI } from "@/lib/orders/kds-tickets-unified";
 import { orderService } from "@/lib/services/OrderService";
 import { createUnifiedHandler } from "@/lib/api/unified-handler";
 import { RATE_LIMITS } from "@/lib/rate-limit";
@@ -56,31 +54,32 @@ export const POST = createUnifiedHandler(
       throw error;
     }
 
-    // 2. Async KDS Ticket Creation (Non-blocking)
+    // 2. Enqueue KDS Ticket Creation (fully async via BullMQ)
     try {
-      const supabase = await createClient();
       const paymentMethod = (body.payment_method || "PAY_NOW").toUpperCase();
       const paymentStatus = (body.payment_status || "UNPAID").toUpperCase();
 
       const shouldCreateTickets = paymentMethod !== "PAY_NOW" || paymentStatus === "PAID";
 
       if (shouldCreateTickets) {
-        // Run in background
-        createKDSTicketsWithAI(supabase, {
-          id: result.id,
-          venue_id: result.venue_id,
-          items: result.items.map((item) => ({
-            item_name: item.item_name,
-            quantity: item.quantity,
-            specialInstructions: (item.special_instructions || undefined) as string | undefined,
-            modifiers: item.modifiers,
-          })),
-          customer_name: result.customer_name,
-          table_number: result.table_number ? parseInt(String(result.table_number), 10) : null,
-          table_id: result.table_id as string,
-        }).catch((_err) => {
-          // Silent error in production
-        });
+        const { jobHelpers } = await import("@/lib/queue");
+        jobHelpers
+          .addKDSTicketJob({
+            orderId: result.id,
+            venueId: result.venue_id,
+            items: result.items.map((item) => ({
+              item_name: item.item_name,
+              quantity: item.quantity,
+              specialInstructions: (item.special_instructions || undefined) as string | undefined,
+              modifiers: item.modifiers,
+            })),
+            customerName: result.customer_name,
+            tableNumber: result.table_number ? parseInt(String(result.table_number), 10) : null,
+            tableId: result.table_id as string,
+          })
+          .catch(() => {
+            // Queue enqueue failure is non-critical
+          });
 
         if (paymentMethod === "PAY_LATER" || paymentMethod === "PAY_AT_TILL") {
           await orderService.updateOrderStatus(result.id, result.venue_id, "IN_PREP");
