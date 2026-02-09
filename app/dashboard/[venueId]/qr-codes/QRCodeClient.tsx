@@ -82,9 +82,16 @@ export default function QRCodeClient({
   const [bulkPrefix, setBulkPrefix] = useState("");
   const [showBulkDialog, setShowBulkDialog] = useState(false);
   const [initialDataLoaded, setInitialDataLoaded] = useState(false);
+  // Keys "name|type" for server QRs the user has chosen to remove from the list
+  const [hiddenServerQRKeys, setHiddenServerQRKeys] = useState<string[]>([]);
 
   // Build initial QRs from server-fetched tables and counters
   const [serverGeneratedQRs, setServerGeneratedQRs] = useState<GeneratedQR[]>([]);
+
+  const getQRKey = (name: string, type: string) => `${name}|${type}`;
+  const visibleServerQRs = serverGeneratedQRs.filter(
+    (qr) => !hiddenServerQRKeys.includes(getQRKey(qr.name, qr.type))
+  );
 
   useEffect(() => {
     if (initialDataLoaded || initialLoading) return;
@@ -248,9 +255,9 @@ export default function QRCodeClient({
     setBulkPrefix("");
   };
 
-  // Copy all URLs as JSON
+  // Copy all URLs as JSON (visible list only)
   const copyAllAsJSON = () => {
-    const urls = [...serverGeneratedQRs, ...qrManagement.generatedQRs].map((qr) => ({
+    const urls = [...visibleServerQRs, ...qrManagement.generatedQRs].map((qr) => ({
       name: qr.name,
       type: qr.type,
       url: qr.url,
@@ -265,7 +272,7 @@ export default function QRCodeClient({
       const { default: jsPDF } = await import("jspdf");
       const QRCode = await import("qrcode");
 
-      const qrCodes = [...serverGeneratedQRs, ...qrManagement.generatedQRs];
+      const qrCodes = [...visibleServerQRs, ...qrManagement.generatedQRs];
       const pdf = new jsPDF({
         orientation: "portrait",
         unit: "mm",
@@ -344,12 +351,12 @@ export default function QRCodeClient({
     }
   };
 
-  // Print all (opens print dialog)
+  // Print all (opens print dialog; visible list only)
   const printAll = async () => {
     const printWindow = window.open("", "_blank");
     if (!printWindow) return;
 
-    const qrCodes = [...serverGeneratedQRs, ...qrManagement.generatedQRs];
+    const qrCodes = [...visibleServerQRs, ...qrManagement.generatedQRs];
     const pages: string[] = [];
 
     // Group QR codes into pages of 4
@@ -408,8 +415,25 @@ export default function QRCodeClient({
     setTimeout(() => printWindow.print(), 250);
   };
 
-  // Combined QR list (server + client generated)
-  const allQRCodes = [...serverGeneratedQRs, ...qrManagement.generatedQRs];
+  // Combined QR list (server + client generated); server QRs can be hidden by user
+  const allQRCodes = [...visibleServerQRs, ...qrManagement.generatedQRs];
+
+  const handleRemoveQR = (qr: GeneratedQR) => {
+    const key = getQRKey(qr.name, qr.type);
+    const isServerQR = serverGeneratedQRs.some(
+      (s) => s.name === qr.name && s.type === qr.type
+    );
+    if (isServerQR) {
+      setHiddenServerQRKeys((prev) => (prev.includes(key) ? prev : [...prev, key]));
+    } else {
+      qrManagement.removeQR(qr.name, qr.type);
+    }
+  };
+
+  const handleClearAllQRs = () => {
+    setHiddenServerQRKeys(serverGeneratedQRs.map((qr) => getQRKey(qr.name, qr.type)));
+    qrManagement.clearAllQRs();
+  };
 
   return (
     <div className="space-y-6 pb-32 md:pb-8">
@@ -550,11 +574,11 @@ export default function QRCodeClient({
               <Button
                 variant="outline"
                 size="sm"
-                onClick={qrManagement.clearAllQRs}
+                onClick={handleClearAllQRs}
                 className="text-red-600 hover:text-red-700"
               >
                 <Trash2 className="h-4 w-4 mr-2" />
-                Clear{qrManagement.generatedQRs.length > 1 ? " All" : ""}
+                Clear All
               </Button>
             </div>
           </div>
@@ -599,7 +623,7 @@ export default function QRCodeClient({
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => qrManagement.removeQR(qr.name, qr.type)}
+                      onClick={() => handleRemoveQR(qr)}
                       className="w-full text-red-600 hover:text-red-700"
                     >
                       <Trash2 className="h-4 w-4 mr-1" />

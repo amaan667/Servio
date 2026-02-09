@@ -33,6 +33,7 @@ export interface Venue {
   latitude?: number;
   longitude?: number;
   notify_customer_on_ready?: boolean;
+  updated_at?: string;
 }
 
 export interface User {
@@ -129,6 +130,28 @@ export function useVenueSettings(venue: Venue) {
     if (!venue.timezone) setTimezone(detected.timezone);
     if (!(venue as { currency?: string }).currency) setCurrency(detected.currency);
   }, [venue.country, venue.timezone, (venue as { currency?: string }).currency]);
+
+  // Sync state from venue when server data changes (e.g. after save + router.refresh)
+  useEffect(() => {
+    setVenueName(venue.venue_name);
+    setVenueEmail(venue.email || "");
+    setVenuePhone(venue.phone || "");
+    setVenueAddress(venue.address || "");
+    setCountry(venue.country || "");
+    setTimezone(venue.timezone || "Europe/London");
+    setCurrency((venue as { currency?: string }).currency || "GBP");
+    setVenueType(venue.venue_type || "restaurant");
+    setServiceType(venue.service_type || "table_service");
+    setOperatingHours(venue.operating_hours || {});
+    setLatitude(venue.latitude);
+    setLongitude(venue.longitude);
+    setAutoEmailReceipts((venue as { auto_email_receipts?: boolean }).auto_email_receipts ?? false);
+    setShowVATBreakdown((venue as { show_vat_breakdown?: boolean }).show_vat_breakdown ?? true);
+    setAllowEmailInput((venue as { allow_email_input?: boolean }).allow_email_input ?? true);
+    setReceiptLogoUrl((venue as { receipt_logo_url?: string }).receipt_logo_url || "");
+    setReceiptFooterText((venue as { receipt_footer_text?: string }).receipt_footer_text || "");
+    setNotifyCustomerOnReady(venue.notify_customer_on_ready ?? (venue.service_type === "counter_pickup" || venue.service_type === "both"));
+  }, [venue.venue_id, venue.updated_at]);
 
   // Track unsaved changes
   useEffect(() => {
