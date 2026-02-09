@@ -46,6 +46,11 @@ export async function updateOrderStatus(
   const error = response && !response.ok ? new Error("Status update failed") : null;
 
   if (!error) {
+    if (typeof window !== "undefined") {
+      import("@/lib/cache/count-cache").then(({ invalidateCountsForVenue }) =>
+        invalidateCountsForVenue(venueId)
+      );
+    }
     if (TERMINAL_STATUSES.includes(orderStatus)) {
       onRemove(orderId);
 

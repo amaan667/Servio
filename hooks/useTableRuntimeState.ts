@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabaseBrowser as createClient } from "@/lib/supabase";
+import { invalidateCountsForVenue } from "@/lib/cache/count-cache";
 
 const supabase = createClient();
 
@@ -133,10 +134,10 @@ export function useSeatParty() {
         throw error;
       }
     },
-    onSuccess: (_, { tableId: _tableId }) => {
-      // Invalidate all table-related queries
+    onSuccess: (_, { venueId: vId }) => {
       qc.invalidateQueries({ queryKey: ["tables"] });
       qc.invalidateQueries({ queryKey: ["reservations"] });
+      if (typeof window !== "undefined") invalidateCountsForVenue(vId);
     },
   });
 }
@@ -154,8 +155,9 @@ export function useCloseTable() {
         throw error;
       }
     },
-    onSuccess: () => {
+    onSuccess: (_, { venueId: vId }) => {
       qc.invalidateQueries({ queryKey: ["tables"] });
+      if (typeof window !== "undefined") invalidateCountsForVenue(vId);
     },
   });
 }
@@ -164,16 +166,25 @@ export function useCloseTable() {
 export function useAssignReservation() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async ({ reservationId, tableId }: { reservationId: string; tableId: string }) => {
+    mutationFn: async ({
+      reservationId,
+      tableId,
+      venueId: _vId,
+    }: {
+      reservationId: string;
+      tableId: string;
+      venueId?: string;
+    }) => {
       const { error } = await supabase.rpc("api_assign_reservation", {
         p_reservation_id: reservationId,
         p_table_id: tableId,
       });
       if (error) throw error;
     },
-    onSuccess: () => {
+    onSuccess: (_, { venueId: vId }) => {
       qc.invalidateQueries({ queryKey: ["tables"] });
       qc.invalidateQueries({ queryKey: ["reservations"] });
+      if (vId && typeof window !== "undefined") invalidateCountsForVenue(vId);
     },
   });
 }
@@ -182,15 +193,22 @@ export function useAssignReservation() {
 export function useCancelReservation() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async ({ reservationId }: { reservationId: string }) => {
+    mutationFn: async ({
+      reservationId,
+      venueId: _vId,
+    }: {
+      reservationId: string;
+      venueId?: string;
+    }) => {
       const { error } = await supabase.rpc("api_cancel_reservation", {
         p_reservation_id: reservationId,
       });
       if (error) throw error;
     },
-    onSuccess: () => {
+    onSuccess: (_, { venueId: vId }) => {
       qc.invalidateQueries({ queryKey: ["tables"] });
       qc.invalidateQueries({ queryKey: ["reservations"] });
+      if (vId && typeof window !== "undefined") invalidateCountsForVenue(vId);
     },
   });
 }
@@ -199,15 +217,22 @@ export function useCancelReservation() {
 export function useNoShowReservation() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async ({ reservationId }: { reservationId: string }) => {
+    mutationFn: async ({
+      reservationId,
+      venueId: _vId,
+    }: {
+      reservationId: string;
+      venueId?: string;
+    }) => {
       const { error } = await supabase.rpc("api_no_show_reservation", {
         p_reservation_id: reservationId,
       });
       if (error) throw error;
     },
-    onSuccess: () => {
+    onSuccess: (_, { venueId: vId }) => {
       qc.invalidateQueries({ queryKey: ["tables"] });
       qc.invalidateQueries({ queryKey: ["reservations"] });
+      if (vId && typeof window !== "undefined") invalidateCountsForVenue(vId);
     },
   });
 }
@@ -255,6 +280,7 @@ export function useRemoveTable() {
       qc.invalidateQueries({ queryKey: ["tables", "counters"] });
       qc.invalidateQueries({ queryKey: ["tables", "runtime-state", variables.venueId] });
       qc.invalidateQueries({ queryKey: ["tables", "counters", variables.venueId] });
+      if (typeof window !== "undefined") invalidateCountsForVenue(variables.venueId);
     },
     onError: (_error) => {
       // Error handled silently
@@ -289,6 +315,7 @@ export function useClearAllTables() {
       qc.invalidateQueries({ queryKey: ["tables", "counters"] });
       qc.invalidateQueries({ queryKey: ["tables", "runtime-state", variables.venueId] });
       qc.invalidateQueries({ queryKey: ["tables", "counters", variables.venueId] });
+      if (typeof window !== "undefined") invalidateCountsForVenue(variables.venueId);
     },
     onError: (_error) => {
       // Error handled silently

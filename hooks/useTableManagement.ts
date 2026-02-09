@@ -61,6 +61,10 @@ export function useTableManagement() {
         throw error;
       }
 
+      if (params.venue_id && typeof window !== "undefined") {
+        const { invalidateCountsForVenue } = await import("@/lib/cache/count-cache");
+        invalidateCountsForVenue(params.venue_id);
+      }
       return data.table;
     } catch (_err) {
       const errorMessage = _err instanceof Error ? _err.message : "Failed to create table";

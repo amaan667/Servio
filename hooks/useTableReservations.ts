@@ -356,9 +356,14 @@ export function useSeatWalkIn() {
       });
       if (error) throw error;
     },
-    onSuccess: (_, { venueId }) => {
-      qc.invalidateQueries({ queryKey: ["tables", "grid", venueId] });
-      qc.invalidateQueries({ queryKey: ["tables", "counters", venueId] });
+    onSuccess: (_, { venueId: vId }) => {
+      qc.invalidateQueries({ queryKey: ["tables", "grid", vId] });
+      qc.invalidateQueries({ queryKey: ["tables", "counters", vId] });
+      if (typeof window !== "undefined") {
+        import("@/lib/cache/count-cache").then(({ invalidateCountsForVenue }) =>
+          invalidateCountsForVenue(vId)
+        );
+      }
     },
   });
 }
@@ -400,10 +405,15 @@ export function useReserveTable() {
 
       return response.json();
     },
-    onSuccess: (_, { venueId }) => {
-      qc.invalidateQueries({ queryKey: ["tables", "counters", venueId] });
-      qc.invalidateQueries({ queryKey: ["reservations", venueId] });
-      qc.invalidateQueries({ queryKey: ["tables", "grid", venueId] }); // Also invalidate table grid to update reservation status
+    onSuccess: (_, { venueId: vId }) => {
+      qc.invalidateQueries({ queryKey: ["tables", "counters", vId] });
+      qc.invalidateQueries({ queryKey: ["reservations", vId] });
+      qc.invalidateQueries({ queryKey: ["tables", "grid", vId] });
+      if (typeof window !== "undefined") {
+        import("@/lib/cache/count-cache").then(({ invalidateCountsForVenue }) =>
+          invalidateCountsForVenue(vId)
+        );
+      }
     },
   });
 }
@@ -412,7 +422,15 @@ export function useReserveTable() {
 export function useCheckInReservation() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async ({ reservationId, tableId }: { reservationId: string; tableId: string }) => {
+    mutationFn: async ({
+      reservationId,
+      tableId,
+      venueId: _vId,
+    }: {
+      reservationId: string;
+      tableId: string;
+      venueId?: string;
+    }) => {
       const response = await fetch("/api/reservations/checkin", {
         method: "POST",
         headers: {
@@ -429,10 +447,15 @@ export function useCheckInReservation() {
 
       return response.json();
     },
-    onSuccess: () => {
+    onSuccess: (_, { venueId: vId }) => {
       qc.invalidateQueries({ queryKey: ["tables"] });
       qc.invalidateQueries({ queryKey: ["reservations"] });
-      qc.invalidateQueries({ queryKey: ["tables", "grid"] }); // Also invalidate table grid
+      qc.invalidateQueries({ queryKey: ["tables", "grid"] });
+      if (vId && typeof window !== "undefined") {
+        import("@/lib/cache/count-cache").then(({ invalidateCountsForVenue }) =>
+          invalidateCountsForVenue(vId)
+        );
+      }
     },
   });
 }
@@ -448,8 +471,13 @@ export function useCloseTable() {
       });
       if (error) throw error;
     },
-    onSuccess: () => {
+    onSuccess: (_, { venueId: vId }) => {
       qc.invalidateQueries({ queryKey: ["tables"] });
+      if (typeof window !== "undefined") {
+        import("@/lib/cache/count-cache").then(({ invalidateCountsForVenue }) =>
+          invalidateCountsForVenue(vId)
+        );
+      }
     },
   });
 }
@@ -458,17 +486,29 @@ export function useCloseTable() {
 export function useCancelReservation() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async ({ reservationId }: { reservationId: string }) => {
+    mutationFn: async ({
+      reservationId,
+      venueId: _vId,
+    }: {
+      reservationId: string;
+      venueId?: string;
+    }) => {
       const { error } = await supabase
         .from("reservations")
         .update({ status: "CANCELLED", updated_at: new Date().toISOString() })
         .eq("id", reservationId);
       if (error) throw error;
     },
-    onSuccess: () => {
+    onSuccess: (_, variables) => {
       qc.invalidateQueries({ queryKey: ["reservations"] });
       qc.invalidateQueries({ queryKey: ["tables", "counters"] });
-      qc.invalidateQueries({ queryKey: ["tables", "grid"] }); // Also invalidate table grid
+      qc.invalidateQueries({ queryKey: ["tables", "grid"] });
+      const vId = "venueId" in variables && typeof variables.venueId === "string" ? variables.venueId : null;
+      if (vId && typeof window !== "undefined") {
+        import("@/lib/cache/count-cache").then(({ invalidateCountsForVenue }) =>
+          invalidateCountsForVenue(vId)
+        );
+      }
     },
   });
 }
@@ -494,10 +534,15 @@ export function useAutoCompleteReservations() {
 
       return response.json();
     },
-    onSuccess: () => {
+    onSuccess: (_, { venueId: vId }) => {
       qc.invalidateQueries({ queryKey: ["reservations"] });
       qc.invalidateQueries({ queryKey: ["tables", "counters"] });
       qc.invalidateQueries({ queryKey: ["tables", "grid"] });
+      if (typeof window !== "undefined") {
+        import("@/lib/cache/count-cache").then(({ invalidateCountsForVenue }) =>
+          invalidateCountsForVenue(vId)
+        );
+      }
     },
   });
 }
@@ -523,10 +568,15 @@ export function useCheckReservationCompletion() {
 
       return response.json();
     },
-    onSuccess: () => {
+    onSuccess: (_, { venueId: vId }) => {
       qc.invalidateQueries({ queryKey: ["reservations"] });
       qc.invalidateQueries({ queryKey: ["tables", "counters"] });
       qc.invalidateQueries({ queryKey: ["tables", "grid"] });
+      if (typeof window !== "undefined") {
+        import("@/lib/cache/count-cache").then(({ invalidateCountsForVenue }) =>
+          invalidateCountsForVenue(vId)
+        );
+      }
     },
   });
 }
@@ -675,11 +725,17 @@ export function useDeleteTable(venueId: string) {
       queryClient.invalidateQueries({ queryKey: ["tables", "counters", venueId] });
     },
     onSuccess: async () => {
+      if (typeof window !== "undefined") {
+        const { invalidateCountsForVenue } = await import("@/lib/cache/count-cache");
+        invalidateCountsForVenue(venueId);
+      }
+
+      const normalizedVenueId = normalizeVenueId(venueId) ?? venueId;
+
       // Immediately fetch updated table count and dispatch event for instant dashboard update
       try {
         const { supabaseBrowser } = await import("@/lib/supabase");
         const supabase = supabaseBrowser();
-        const normalizedVenueId = normalizeVenueId(venueId) ?? venueId;
 
         const { data: activeTables } = await supabase
           .from("tables")

@@ -440,12 +440,11 @@ export default function MenuManagementClient({
                 // Refresh menu items list (client-side)
                 await loadMenuItems();
 
-                // Clear dashboard cache to force fresh count
+                // Clear dashboard cache and invalidate counts so nav/dashboard refresh
                 if (typeof window !== "undefined") {
                   sessionStorage.removeItem(`dashboard_stats_${venueId}`);
-                  sessionStorage.removeItem(`dashboard_counts_${venueId}`);
-
-                  // Dispatch custom event to trigger dashboard refresh
+                  const { invalidateCountsForVenue } = await import("@/lib/cache/count-cache");
+                  invalidateCountsForVenue(venueId);
                   window.dispatchEvent(
                     new CustomEvent("menuChanged", {
                       detail: { venueId, action: "uploaded" },

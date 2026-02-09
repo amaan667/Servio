@@ -174,6 +174,7 @@ export function TableManagementClientNew({
 
       {/* Reservations Panel */}
       <ReservationsPanel
+        venueId={venueId}
         reservations={state.reservations}
         onActionComplete={handleTableActionComplete}
       />

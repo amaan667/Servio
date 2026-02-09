@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Order } from "../types";
 import { toast } from "@/hooks/use-toast";
+import { invalidateCountsForVenue } from "@/lib/cache/count-cache";
 
 export function useBulkOperations(venueId: string) {
   const [isBulkCompleting, setIsBulkCompleting] = useState(false);
@@ -38,6 +39,7 @@ export function useBulkOperations(venueId: string) {
           : (result?.error?.message ?? result?.message ?? "Unknown error");
 
       if (response.ok && result?.success !== false) {
+        invalidateCountsForVenue(venueId);
         toast({
           title: "Success",
           description: `Successfully completed ${completedCount ?? 0} orders!`,

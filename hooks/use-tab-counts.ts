@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 
 import { getCachedCounts, setCachedCounts } from "@/lib/cache/count-cache";
+import { normalizeVenueId } from "@/lib/utils/venueId";
 
 export interface TabCounts {
   live_count: number;
@@ -125,6 +126,22 @@ export function useTabCounts(venueId: string, tz: string, liveWindowMins = 30) {
     }, 60000); // Refresh every 60 seconds
 
     return () => clearInterval(interval);
+  }, [venueId, fetchCounts]);
+
+  // Refetch when any mutation invalidates counts for this venue
+  useEffect(() => {
+    if (!venueId) return;
+
+    const handler = (e: Event) => {
+      const detail = (e as CustomEvent<{ venueId: string }>).detail;
+      if (!detail?.venueId) return;
+      const n = normalizeVenueId(venueId) ?? venueId;
+      const d = normalizeVenueId(detail.venueId) ?? detail.venueId;
+      if (n === d) void fetchCounts(true);
+    };
+
+    window.addEventListener("countsInvalidated", handler);
+    return () => window.removeEventListener("countsInvalidated", handler);
   }, [venueId, fetchCounts]);
 
   return { data, isLoading, error, refetch: () => fetchCounts(true) };

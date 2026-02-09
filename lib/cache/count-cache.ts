@@ -3,6 +3,8 @@
  * Ensures counts persist across navigation and prevents unnecessary refreshes
  */
 
+import { normalizeVenueId } from "@/lib/utils/venueId";
+
 const CACHE_DURATION_MS = 5 * 60 * 1000; // 5 minutes - counts don't need to be super fresh
 const CACHE_KEY_PREFIX = "dashboard_counts_";
 const CACHE_TIME_KEY_PREFIX = "dashboard_counts_time_";
@@ -106,6 +108,24 @@ export function clearCachedCounts(venueId: string): void {
   try {
     sessionStorage.removeItem(`${CACHE_KEY_PREFIX}${venueId}`);
     sessionStorage.removeItem(`${CACHE_TIME_KEY_PREFIX}${venueId}`);
+  } catch {
+    // Ignore errors
+  }
+}
+
+/**
+ * Invalidate counts after any mutation (orders, tables, sessions, reservations).
+ * Clears cache for venueId and normalized id, and dispatches countsInvalidated
+ * so mounted dashboard/nav can refetch.
+ */
+export function invalidateCountsForVenue(venueId: string): void {
+  if (typeof window === "undefined") return;
+
+  try {
+    clearCachedCounts(venueId);
+    const normalized = normalizeVenueId(venueId);
+    if (normalized && normalized !== venueId) clearCachedCounts(normalized);
+    window.dispatchEvent(new CustomEvent("countsInvalidated", { detail: { venueId } }));
   } catch {
     // Ignore errors
   }

@@ -21,7 +21,7 @@ interface UnassignedReservationsPanelProps {
 }
 
 export function UnassignedReservationsPanel({
-  venueId: _venueId,
+  venueId,
   reservations,
   onActionComplete,
   availableTables,
@@ -41,14 +41,15 @@ export function UnassignedReservationsPanel({
             await assignReservation.mutateAsync({
               reservationId,
               tableId,
+              venueId,
             });
           }
           break;
         case "cancel":
-          await cancelReservation.mutateAsync({ reservationId });
+          await cancelReservation.mutateAsync({ reservationId, venueId });
           break;
         case "no-show":
-          await noShowReservation.mutateAsync({ reservationId });
+          await noShowReservation.mutateAsync({ reservationId, venueId });
           break;
       }
       onActionComplete();

@@ -35,6 +35,7 @@ import { ReceiptModal } from "@/components/receipt/ReceiptModal";
 import { Order, type OrderStatus } from "@/types/order";
 import { detectColorsFromImage } from "@/app/dashboard/[venueId]/menu-management/utils/colorDetection";
 import { BillSplittingDialog } from "@/components/pos/BillSplittingDialog";
+import { invalidateCountsForVenue } from "@/lib/cache/count-cache";
 
 type PaymentsClientProps = {
   initialTransactions?: PaymentTransaction[];
@@ -89,10 +90,12 @@ interface RefundStats {
 
 // Refund Dialog Component
 function RefundDialog({
+  venueId,
   onRefundProcessed,
   isOpen,
   setIsOpen,
 }: {
+  venueId: string;
   onRefundProcessed: () => void;
   isOpen: boolean;
   setIsOpen: (open: boolean) => void;
@@ -167,6 +170,7 @@ function RefundDialog({
         throw new Error(errorData.error || "Failed to process refund");
       }
 
+      invalidateCountsForVenue(venueId);
       onRefundProcessed();
       setIsOpen(false);
       setSelectedOrder(null);
@@ -655,6 +659,7 @@ const PaymentsClient: React.FC<PaymentsClientProps> = ({ venueId, initialTransac
         throw new Error(errorData.error || "Failed to process refund");
       }
 
+      invalidateCountsForVenue(venueId);
       const result = await response.json();
 
       // Refresh both payments and refunds data
@@ -767,6 +772,7 @@ const PaymentsClient: React.FC<PaymentsClientProps> = ({ venueId, initialTransac
         return;
       }
 
+      invalidateCountsForVenue(venueId);
       // Single refresh; skip dispatching event to avoid duplicate loadPayments and request storm
       await loadPayments();
     } catch (error) {
@@ -1387,6 +1393,7 @@ const PaymentsClient: React.FC<PaymentsClientProps> = ({ venueId, initialTransac
         Process Refund
       </Button>
       <RefundDialog
+        venueId={venueId}
         onRefundProcessed={() => {
           loadRefunds();
           setIsRefundDialogOpen(false);

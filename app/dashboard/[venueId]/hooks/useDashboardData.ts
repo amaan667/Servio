@@ -210,7 +210,6 @@ export function useDashboardData(
     });
 
     // Always use initial data immediately to prevent showing 0 values
-    // Only fetch fresh data if we don't have valid server data
     if (initialCounts) {
       setCounts(initialCounts);
     }
@@ -219,20 +218,13 @@ export function useDashboardData(
     }
     setLoading(false);
 
-    // Only fetch fresh data if server data is missing or invalid
-    // This prevents flickering by avoiding unnecessary refetches
-    const shouldFetchFresh =
-      !initialCounts ||
-      !initialStats ||
-      initialStats.menuItems === undefined ||
-      initialStats.menuItems < 0;
-
-    if (shouldFetchFresh) {
-      const loadData = async () => {
-        await Promise.all([fetchCounts(true), fetchStats(true)]);
-      };
-      loadData();
-    }
+    // Always refetch counts and stats shortly after mount so navigation from other
+    // pages (e.g. after deleting a table) shows up-to-date numbers
+    const t = setTimeout(() => {
+      void fetchCounts(true);
+      void fetchStats(true);
+    }, 150);
+    return () => clearTimeout(t);
   }, [venueId, venueTz, initialCounts, initialStats, fetchCounts, fetchStats]);
 
   // Set up real-time subscriptions for live updates
@@ -366,6 +358,22 @@ export function useDashboardData(
       supabase.removeChannel(reservationsChannel);
     };
   }, [venueId, loading, fetchCounts, fetchStats]);
+
+  // Refetch counts when any mutation invalidates counts for this venue
+  useEffect(() => {
+    if (!venueId) return;
+
+    const handler = (e: Event) => {
+      const detail = (e as CustomEvent<{ venueId: string }>).detail;
+      if (!detail?.venueId) return;
+      const n = normalizeVenueId(venueId) ?? venueId;
+      const d = normalizeVenueId(detail.venueId) ?? detail.venueId;
+      if (n === d) void fetchCounts(true);
+    };
+
+    window.addEventListener("countsInvalidated", handler);
+    return () => window.removeEventListener("countsInvalidated", handler);
+  }, [venueId, fetchCounts]);
 
   // Manual refresh function
   const refreshCounts = useCallback(async () => {

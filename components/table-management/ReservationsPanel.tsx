@@ -19,11 +19,12 @@ import {
 } from "@/hooks/useTableReservations";
 
 interface ReservationsPanelProps {
+  venueId?: string;
   reservations: Reservation[];
   onActionComplete?: () => void;
 }
 
-export function ReservationsPanel({ reservations, onActionComplete }: ReservationsPanelProps) {
+export function ReservationsPanel({ venueId, reservations, onActionComplete }: ReservationsPanelProps) {
   const [isLoading, setIsLoading] = useState<string | null>(null);
   const checkInReservation = useCheckInReservation();
   const cancelReservation = useCancelReservation();
@@ -31,7 +32,7 @@ export function ReservationsPanel({ reservations, onActionComplete }: Reservatio
   const handleCheckIn = async (reservationId: string, tableId: string) => {
     try {
       setIsLoading(reservationId);
-      await checkInReservation.mutateAsync({ reservationId, tableId });
+      await checkInReservation.mutateAsync({ reservationId, tableId, venueId: venueId ?? "" });
       onActionComplete?.();
     } catch {
       // Error silently handled
@@ -43,7 +44,7 @@ export function ReservationsPanel({ reservations, onActionComplete }: Reservatio
   const handleCancel = async (reservationId: string) => {
     try {
       setIsLoading(reservationId);
-      await cancelReservation.mutateAsync({ reservationId });
+      await cancelReservation.mutateAsync({ reservationId, venueId: venueId ?? "" });
       onActionComplete?.();
     } catch {
       // Error silently handled

@@ -421,6 +421,8 @@ export function OrderCard({
         }
       }
 
+      const { invalidateCountsForVenue } = await import("@/lib/cache/count-cache");
+      invalidateCountsForVenue(venueId);
       // After status update, refresh order data to get updated status and payment info
       await onActionComplete?.();
 
