@@ -107,7 +107,7 @@
     "date-fns-tz": "^3.2.0",
     "dotenv": "^17.2.1",
     "embla-carousel-react": "8.5.1",
-    "framer-motion": "^12.23.22",
+    "framer-motion": "^12.34.0",
     "graphql": "^16.12.0",
     "input-otp": "1.4.1",
     "ioredis": "^5.8.1",
