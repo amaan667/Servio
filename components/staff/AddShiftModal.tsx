@@ -47,7 +47,6 @@ export function AddShiftModal({
     setError(null);
 
     try {
-      // Combine date and time into proper timestamp format
       const startTimestamp = `${date}T${startTime}:00`;
       const endTimestamp = `${date}T${endTime}:00`;
 
@@ -68,7 +67,7 @@ export function AddShiftModal({
         throw new Error(data.error || "Failed to add shift");
       }
 
-      // Reset form and close modal
+      // Reset form
       setDate("");
       setStartTime("09:00");
       setEndTime("17:00");
@@ -77,7 +76,6 @@ export function AddShiftModal({
         onShiftAdded();
       }
 
-      // Close modal after callback
       onClose();
     } catch (_err) {
       setError(_err instanceof Error ? _err.message : "Failed to add shift");
@@ -86,11 +84,16 @@ export function AddShiftModal({
     }
   };
 
-  // Get today's date in YYYY-MM-DD format for min attribute
-  const today = new Date().toISOString().split("T")[0];
+  const handleClose = () => {
+    setError(null);
+    setDate("");
+    setStartTime("09:00");
+    setEndTime("17:00");
+    onClose();
+  };
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
+    <Dialog open={isOpen} onOpenChange={handleClose}>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
@@ -106,7 +109,6 @@ export function AddShiftModal({
               type="date"
               value={date}
               onChange={(e) => setDate(e.target.value)}
-              min={today}
             />
           </div>
           <div className="grid grid-cols-2 gap-4">
@@ -132,7 +134,7 @@ export function AddShiftModal({
           {error && <p className="text-sm text-red-600">{error}</p>}
         </div>
         <DialogFooter>
-          <Button variant="outline" onClick={onClose} disabled={adding}>
+          <Button variant="outline" onClick={handleClose} disabled={adding}>
             Cancel
           </Button>
           <Button onClick={handleAddShift} disabled={adding || !date}>

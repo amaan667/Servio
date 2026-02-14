@@ -1,9 +1,18 @@
 "use client";
 
 import React, { useState, useMemo, useEffect } from "react";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, Pencil, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 type LegacyShift = {
   id: string;
@@ -30,11 +39,22 @@ interface SimpleStaffGridProps {
   shifts?: LegacyShift[];
   onStaffAdded?: () => void;
   onStaffToggle?: (staffId: string, currentActive: boolean) => Promise<void>;
+  onDeleteShift?: (shiftId: string) => Promise<void>;
+  onUpdateShift?: (
+    shiftId: string,
+    updates: { start_time?: string; end_time?: string; area?: string }
+  ) => Promise<void>;
+  onReloadShifts?: () => Promise<void>;
 }
 
 type CalendarView = "today" | "week" | "month";
 
-const SimpleStaffGrid: React.FC<SimpleStaffGridProps> = ({ venueId, shifts: shiftsFromParent }) => {
+const SimpleStaffGrid: React.FC<SimpleStaffGridProps> = ({
+  venueId,
+  shifts: shiftsFromParent,
+  onDeleteShift,
+  onUpdateShift,
+}) => {
   const [localShifts, setLocalShifts] = useState<LegacyShift[]>([]);
   const [currentDate, setCurrentDate] = useState(new Date());
   const [currentMonth, setCurrentMonth] = useState(new Date());
@@ -62,6 +82,96 @@ const SimpleStaffGrid: React.FC<SimpleStaffGridProps> = ({ venueId, shifts: shif
   }, [venueId, shiftsFromParent]);
 
   const shifts = shiftsFromParent ?? localShifts;
+
+  // Shift detail/edit/delete state
+  const [selectedShift, setSelectedShift] = useState<LegacyShift | null>(null);
+  const [shiftDetailOpen, setShiftDetailOpen] = useState(false);
+  const [editMode, setEditMode] = useState(false);
+  const [editDate, setEditDate] = useState("");
+  const [editStartTime, setEditStartTime] = useState("");
+  const [editEndTime, setEditEndTime] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [shiftError, setShiftError] = useState<string | null>(null);
+
+  const openShiftDetail = (shift: LegacyShift) => {
+    setSelectedShift(shift);
+    setShiftError(null);
+    setEditMode(false);
+
+    // Pre-populate edit fields
+    const startDate = new Date(shift.start_time);
+    setEditDate(startDate.toISOString().split("T")[0] ?? "");
+    setEditStartTime(
+      startDate.toLocaleTimeString("en-GB", {
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: false,
+      })
+    );
+    const endDate = new Date(shift.end_time);
+    setEditEndTime(
+      endDate.toLocaleTimeString("en-GB", {
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: false,
+      })
+    );
+
+    setShiftDetailOpen(true);
+  };
+
+  const handleUpdateShift = async () => {
+    if (!selectedShift || !onUpdateShift) return;
+    if (!editDate || !editStartTime || !editEndTime) {
+      setShiftError("Please fill in all fields");
+      return;
+    }
+
+    setSaving(true);
+    setShiftError(null);
+
+    try {
+      const startTimestamp = `${editDate}T${editStartTime}:00`;
+      const endTimestamp = `${editDate}T${editEndTime}:00`;
+
+      await onUpdateShift(selectedShift.id, {
+        start_time: startTimestamp,
+        end_time: endTimestamp,
+      });
+
+      setShiftDetailOpen(false);
+      setSelectedShift(null);
+      setEditMode(false);
+    } catch (_err) {
+      setShiftError(
+        _err instanceof Error ? _err.message : "Failed to update shift"
+      );
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDeleteShift = async () => {
+    if (!selectedShift || !onDeleteShift) return;
+
+    setDeleting(true);
+    setShiftError(null);
+
+    try {
+      await onDeleteShift(selectedShift.id);
+      setDeleteConfirmOpen(false);
+      setShiftDetailOpen(false);
+      setSelectedShift(null);
+    } catch (_err) {
+      setShiftError(
+        _err instanceof Error ? _err.message : "Failed to delete shift"
+      );
+    } finally {
+      setDeleting(false);
+    }
+  };
 
   // Filter shifts based on current view
   const visibleShifts = useMemo(() => {
@@ -371,6 +481,7 @@ const SimpleStaffGrid: React.FC<SimpleStaffGridProps> = ({ venueId, shifts: shif
                               key={`${shift.id}-${dateString}`}
                               className={`group relative p-1 ${bgColor} border ${borderColor} rounded hover:opacity-80 transition-colors cursor-pointer`}
                               title={`${shift.staff_name} - ${shift.staff_role}\n${formatTime(shift.start_time)} - ${formatTime(shift.end_time)}${shift.area ? `\n${shift.area}` : ""}${isOvernight ? "\n🌙 Overnight Shift" : ""}${isShiftActive(shift) ? "\n🟢 Active Now" : ""}${isOvernight && isStartDay ? "\n📅 Start Day" : ""}${isOvernight && isEndDay ? "\n📅 End Day" : ""}`}
+                              onClick={() => openShiftDetail(shift)}
                             >
                               <div className={`text-xs font-medium ${textColor} text-center`}>
                                 {shift.staff_name}
@@ -390,6 +501,9 @@ const SimpleStaffGrid: React.FC<SimpleStaffGridProps> = ({ venueId, shifts: shif
                                 {isOvernight && isStartDay && <div>📅 Start Day</div>}
                                 {isOvernight && isEndDay && <div>📅 End Day</div>}
                                 {isShiftActive(shift) && <div>🟢 Active Now</div>}
+                                <div className="text-center mt-1 text-purple-200">
+                                  Click to edit / delete
+                                </div>
                                 <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-900"></div>
                               </div>
                             </div>
@@ -404,6 +518,215 @@ const SimpleStaffGrid: React.FC<SimpleStaffGridProps> = ({ venueId, shifts: shif
           </div>
         </div>
       </CardContent>
+
+      {/* Shift Detail / Edit Dialog */}
+      <Dialog
+        open={shiftDetailOpen}
+        onOpenChange={(open) => {
+          if (!open) {
+            setShiftDetailOpen(false);
+            setSelectedShift(null);
+            setEditMode(false);
+            setShiftError(null);
+          }
+        }}
+      >
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center justify-between">
+              <span>{editMode ? "Edit Shift" : "Shift Details"}</span>
+              {!editMode && selectedShift && (
+                <div className="flex gap-1">
+                  {onUpdateShift && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setEditMode(true)}
+                    >
+                      <Pencil className="h-3.5 w-3.5 mr-1" />
+                      Edit
+                    </Button>
+                  )}
+                  {onDeleteShift && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                      onClick={() => setDeleteConfirmOpen(true)}
+                    >
+                      <Trash2 className="h-3.5 w-3.5 mr-1" />
+                      Delete
+                    </Button>
+                  )}
+                </div>
+              )}
+            </DialogTitle>
+          </DialogHeader>
+
+          {selectedShift && !editMode && (
+            <div className="space-y-3 py-2">
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-medium text-gray-500 w-16">
+                  Name
+                </span>
+                <span className="text-sm font-semibold">
+                  {selectedShift.staff_name}
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-medium text-gray-500 w-16">
+                  Role
+                </span>
+                <span className="text-sm">{selectedShift.staff_role}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-medium text-gray-500 w-16">
+                  Date
+                </span>
+                <span className="text-sm">
+                  {new Date(selectedShift.start_time).toLocaleDateString(
+                    "en-US",
+                    {
+                      weekday: "long",
+                      month: "long",
+                      day: "numeric",
+                      year: "numeric",
+                    }
+                  )}
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-medium text-gray-500 w-16">
+                  Time
+                </span>
+                <span className="text-sm">
+                  {formatTime(selectedShift.start_time)} -{" "}
+                  {formatTime(selectedShift.end_time)}
+                </span>
+              </div>
+              {selectedShift.area && (
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-medium text-gray-500 w-16">
+                    Area
+                  </span>
+                  <span className="text-sm">{selectedShift.area}</span>
+                </div>
+              )}
+              {isShiftActive(selectedShift) && (
+                <div className="flex items-center gap-2 p-2 bg-green-50 border border-green-200 rounded">
+                  <span className="text-sm text-green-700 font-medium">
+                    Currently Active
+                  </span>
+                </div>
+              )}
+            </div>
+          )}
+
+          {selectedShift && editMode && (
+            <div className="grid gap-4 py-2">
+              <div className="grid gap-2">
+                <Label htmlFor="edit-date">Date</Label>
+                <Input
+                  id="edit-date"
+                  type="date"
+                  value={editDate}
+                  onChange={(e) => setEditDate(e.target.value)}
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="grid gap-2">
+                  <Label htmlFor="edit-start-time">Start Time</Label>
+                  <Input
+                    id="edit-start-time"
+                    type="time"
+                    value={editStartTime}
+                    onChange={(e) => setEditStartTime(e.target.value)}
+                  />
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="edit-end-time">End Time</Label>
+                  <Input
+                    id="edit-end-time"
+                    type="time"
+                    value={editEndTime}
+                    onChange={(e) => setEditEndTime(e.target.value)}
+                  />
+                </div>
+              </div>
+              {shiftError && (
+                <p className="text-sm text-red-600">{shiftError}</p>
+              )}
+              <div className="flex justify-end gap-2">
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setEditMode(false);
+                    setShiftError(null);
+                    // Reset to original values
+                    if (selectedShift) {
+                      const startDate = new Date(selectedShift.start_time);
+                      setEditDate(startDate.toISOString().split("T")[0] ?? "");
+                      setEditStartTime(
+                        startDate.toLocaleTimeString("en-GB", {
+                          hour: "2-digit",
+                          minute: "2-digit",
+                          hour12: false,
+                        })
+                      );
+                      const endDate = new Date(selectedShift.end_time);
+                      setEditEndTime(
+                        endDate.toLocaleTimeString("en-GB", {
+                          hour: "2-digit",
+                          minute: "2-digit",
+                          hour12: false,
+                        })
+                      );
+                    }
+                  }}
+                  disabled={saving}
+                >
+                  Cancel
+                </Button>
+                <Button onClick={handleUpdateShift} disabled={saving}>
+                  {saving ? "Saving..." : "Save Changes"}
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete Shift</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete this shift for{" "}
+              {selectedShift?.staff_name}? This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          {shiftError && (
+            <p className="text-sm text-red-600">{shiftError}</p>
+          )}
+          <div className="flex justify-end gap-2 mt-4">
+            <Button
+              variant="outline"
+              onClick={() => setDeleteConfirmOpen(false)}
+              disabled={deleting}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleDeleteShift}
+              disabled={deleting}
+              className="bg-red-600 text-white hover:bg-red-700"
+            >
+              {deleting ? "Deleting..." : "Delete Shift"}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </Card>
   );
 };

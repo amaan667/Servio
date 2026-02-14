@@ -126,12 +126,14 @@ export default function StaffClient({
             venueId={venueId}
             staff={staffManagement.staff || []}
             onStaffAdded={async () => {
-              // Use the reloadStaff function from the hook which uses the API route
               if (staffManagement.reloadStaff) {
                 await staffManagement.reloadStaff();
               }
             }}
             onStaffToggle={staffManagement.toggleStaffActive}
+            onShiftAdded={async () => {
+              await shiftManagement.reloadShifts();
+            }}
           />
         </TabsContent>
 
@@ -140,6 +142,9 @@ export default function StaffClient({
             staff={staffManagement.staff || []}
             venueId={venueId}
             shifts={shiftManagement.allShifts}
+            onDeleteShift={shiftManagement.deleteShift}
+            onUpdateShift={shiftManagement.updateShift}
+            onReloadShifts={shiftManagement.reloadShifts}
           />
         </TabsContent>
       </Tabs>

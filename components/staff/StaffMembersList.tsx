@@ -39,6 +39,7 @@ interface StaffMembersListProps {
   venueId: string;
   onStaffAdded?: () => void;
   onStaffToggle?: (staffId: string, currentActive: boolean) => Promise<void>;
+  onShiftAdded?: () => void;
 }
 
 const StaffMembersList: React.FC<StaffMembersListProps> = ({
@@ -46,6 +47,7 @@ const StaffMembersList: React.FC<StaffMembersListProps> = ({
   venueId,
   onStaffAdded,
   onStaffToggle,
+  onShiftAdded,
 }) => {
   // Log when component renders
   useEffect(() => {
@@ -335,7 +337,7 @@ const StaffMembersList: React.FC<StaffMembersListProps> = ({
         staffMember={selectedStaffForShift}
         venueId={venueId}
         onShiftAdded={() => {
-          if (onStaffAdded) onStaffAdded();
+          if (onShiftAdded) onShiftAdded();
         }}
       />
 
