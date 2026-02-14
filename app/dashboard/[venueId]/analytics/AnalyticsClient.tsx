@@ -108,7 +108,10 @@ export default function AnalyticsClient({
       <Tabs defaultValue="overview" className="space-y-4">
         <TabsList>
           <TabsTrigger value="overview">Overview</TabsTrigger>
-          <TabsTrigger value="menu">Menu Performance</TabsTrigger>
+          <TabsTrigger value="menu">
+            <span className="sm:hidden">Menu</span>
+            <span className="hidden sm:inline">Menu Performance</span>
+          </TabsTrigger>
           <TabsTrigger value="costs">Cost Insights</TabsTrigger>
           <TabsTrigger value="trends">Trends</TabsTrigger>
         </TabsList>
