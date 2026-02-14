@@ -182,41 +182,47 @@ export default function MobileNav({
         style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
       >
         <div className="grid grid-cols-4 gap-1.5 px-2 py-2">
-          {navItems.slice(0, 4).map((item) => (
-            <button
-              key={item.id}
-              onClick={() => handleNavigation(item.href)}
-              className={`flex flex-col items-center justify-center gap-1 py-2 px-1 relative rounded-lg transition-all duration-200 bg-white border ${
-                item.isActive
-                  ? "shadow-[0_0_12px_rgba(124,58,237,0.4)] ring-2 ring-purple-200 border-transparent"
-                  : "border-purple-100 hover:border-purple-200 hover:shadow-[0_0_6px_rgba(124,58,237,0.25)]"
-              }`}
-              style={{ minHeight: "64px" }}
-            >
-              <div className="relative">
-                <item.icon
-                  className={`h-5 w-5 transition-colors ${
-                    item.isActive ? "text-purple-700" : "text-purple-600"
-                  }`}
-                />
-                {item.badge && item.badge > 0 && (
-                  <Badge
-                    variant="destructive"
-                    className="absolute -top-2 -right-2 h-5 w-5 p-0 text-xs flex items-center justify-center"
-                  >
-                    {item.badge > 99 ? "99+" : item.badge}
-                  </Badge>
-                )}
-              </div>
-              <span
-                className={`text-[10px] leading-tight text-center font-semibold transition-colors ${
-                  item.isActive ? "text-purple-700" : "text-purple-600"
+          {navItems.slice(0, 4).map((item) => {
+            const iconColor = item.isActive ? "#6d28d9" : "#7c3aed";
+            return (
+              <button
+                key={item.id}
+                onClick={() => handleNavigation(item.href)}
+                data-bottom-nav
+                className={`flex flex-col items-center justify-center gap-1 py-2 px-1 relative rounded-lg transition-all duration-200 bg-white border ${
+                  item.isActive
+                    ? "shadow-[0_0_12px_rgba(124,58,237,0.4)] ring-2 ring-purple-200 border-transparent"
+                    : "border-purple-100 hover:border-purple-200 hover:shadow-[0_0_6px_rgba(124,58,237,0.25)]"
                 }`}
+                style={{ minHeight: "64px", backgroundColor: "#ffffff", color: iconColor }}
               >
-                {item.label}
-              </span>
-            </button>
-          ))}
+                <div className="relative">
+                  <div style={{ color: iconColor }}>
+                    <item.icon className="h-5 w-5" />
+                  </div>
+                  {item.badge && item.badge > 0 && (
+                    <Badge
+                      variant="destructive"
+                      className="absolute -top-2 -right-2 h-5 w-5 p-0 text-xs flex items-center justify-center"
+                    >
+                      {item.badge > 99 ? "99+" : item.badge}
+                    </Badge>
+                  )}
+                </div>
+                <span
+                  style={{
+                    fontSize: "10px",
+                    lineHeight: "1.2",
+                    fontWeight: 600,
+                    color: iconColor,
+                    textAlign: "center",
+                  }}
+                >
+                  {item.label}
+                </span>
+              </button>
+            );
+          })}
         </div>
 
         {/* More Button */}
