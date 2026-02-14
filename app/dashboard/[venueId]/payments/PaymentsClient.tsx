@@ -995,7 +995,7 @@ const PaymentsClient: React.FC<PaymentsClientProps> = ({ venueId, initialTransac
         {/* Tab Navigation */}
         <section className="mb-6 sm:mb-8">
           <Tabs value={activeTab} onValueChange={setActiveTab}>
-            <TabsList className="grid w-full grid-cols-5">
+            <TabsList className="flex w-full overflow-x-auto gap-1">
               <TabsTrigger value="pay-at-till" className="flex items-center gap-2 relative">
                 <span className="flex-1 text-left">Pay at Till</span>
                 <span
@@ -1037,7 +1037,7 @@ const PaymentsClient: React.FC<PaymentsClientProps> = ({ venueId, initialTransac
                 </span>
               </TabsTrigger>
               <TabsTrigger value="today" className="flex items-center gap-2 relative">
-                <span className="flex-1 text-left">Today's Receipts</span>
+                <span className="flex-1 text-left">Today</span>
                 <span
                   className={`
                     ml-2 inline-flex min-w-[1.75rem] h-6 px-2 items-center justify-center rounded-full text-xs font-bold transition-all duration-200 border
@@ -1052,7 +1052,7 @@ const PaymentsClient: React.FC<PaymentsClientProps> = ({ venueId, initialTransac
                 </span>
               </TabsTrigger>
               <TabsTrigger value="history" className="flex items-center gap-2 relative">
-                <span className="flex-1 text-left">Receipt History</span>
+                <span className="flex-1 text-left">History</span>
                 <span
                   className={`
                     ml-2 inline-flex min-w-[1.75rem] h-6 px-2 items-center justify-center rounded-full text-xs font-bold transition-all duration-200 border

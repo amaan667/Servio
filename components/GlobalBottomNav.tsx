@@ -257,40 +257,30 @@ export default function GlobalBottomNav({
         }`}
         style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
       >
-        <div
-          className="grid grid-cols-4 gap-2 px-3 py-3 items-stretch"
-          style={{ minHeight: "88px" }}
-        >
+        <div className="grid grid-cols-4 gap-1.5 px-2 py-2 items-stretch">
           {navItems.map((item) => (
             <button
               key={item.id}
               onClick={() => handleNavigation(item.href)}
-              className={`flex flex-col items-center justify-center gap-2 py-2 px-1 transition-all duration-200 rounded-lg active:scale-95 ${
+              className={`flex flex-col items-center justify-center gap-1 py-2 px-1 transition-all duration-200 rounded-lg active:scale-95 ${
                 item.isActive
                   ? "border-2 border-purple-500 shadow-[0_0_16px_rgba(124,58,237,0.5)]"
                   : "border border-gray-200"
               }`}
-              style={{ minHeight: "72px", backgroundColor: "#ffffff" }}
+              style={{ minHeight: "64px", backgroundColor: "#ffffff" }}
             >
               <item.icon
-                className={`w-6 h-6 flex-shrink-0 ${
+                className={`w-5 h-5 flex-shrink-0 ${
                   item.isActive ? "text-purple-600" : "text-purple-400"
                 }`}
               />
-              <p
-                style={{
-                  fontSize: "11px",
-                  lineHeight: "1.2",
-                  fontWeight: 500,
-                  color: item.isActive ? "#7c3aed" : "#a855f7",
-                  margin: 0,
-                  padding: 0,
-                  textAlign: "center",
-                  whiteSpace: "nowrap",
-                }}
+              <span
+                className={`text-[10px] leading-tight font-medium text-center ${
+                  item.isActive ? "text-purple-600" : "text-purple-400"
+                }`}
               >
-                {item.id === "live-orders" ? `Orders` : item.label}
-              </p>
+                {item.id === "live-orders" ? "Orders" : item.label}
+              </span>
             </button>
           ))}
         </div>

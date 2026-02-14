@@ -181,18 +181,19 @@ export default function MobileNav({
         }`}
         style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
       >
-        <div className="grid grid-cols-4 h-20 gap-2 px-2">
+        <div className="grid grid-cols-4 gap-1.5 px-2 py-2">
           {navItems.slice(0, 4).map((item) => (
             <button
               key={item.id}
               onClick={() => handleNavigation(item.href)}
-              className={`flex flex-col items-center justify-center p-2 relative rounded-lg transition-all duration-200 bg-white border ${
+              className={`flex flex-col items-center justify-center gap-1 py-2 px-1 relative rounded-lg transition-all duration-200 bg-white border ${
                 item.isActive
                   ? "shadow-[0_0_12px_rgba(124,58,237,0.4)] ring-2 ring-purple-200 border-transparent"
                   : "border-purple-100 hover:border-purple-200 hover:shadow-[0_0_6px_rgba(124,58,237,0.25)]"
               }`}
+              style={{ minHeight: "64px" }}
             >
-              <div className="relative mb-1">
+              <div className="relative">
                 <item.icon
                   className={`h-5 w-5 transition-colors ${
                     item.isActive ? "text-purple-700" : "text-purple-600"
@@ -208,15 +209,9 @@ export default function MobileNav({
                 )}
               </div>
               <span
-                className={`text-xs leading-tight text-center px-1 font-bold max-w-[60px] truncate transition-colors ${
+                className={`text-[10px] leading-tight text-center font-semibold transition-colors ${
                   item.isActive ? "text-purple-700" : "text-purple-600"
                 }`}
-                style={{
-                  lineHeight: "1.2",
-                  fontSize: "10px",
-                  color: item.isActive ? "#6d28d9" : "#7c3aed",
-                  fontWeight: item.isActive ? 700 : 600,
-                }}
               >
                 {item.label}
               </span>
