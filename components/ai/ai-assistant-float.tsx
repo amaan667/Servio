@@ -2,7 +2,9 @@
 
 import { Sparkles } from "lucide-react";
 import { useEffect, useState } from "react";
+import { usePathname } from "next/navigation";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 interface AIAssistantFloatProps {
   onClick: () => void;
@@ -11,14 +13,19 @@ interface AIAssistantFloatProps {
 export function AIAssistantFloat({ onClick }: AIAssistantFloatProps) {
   const [mounted, setMounted] = useState(false);
   const [isMac, setIsMac] = useState(false);
+  const isMobile = useIsMobile();
+  const pathname = usePathname();
 
   useEffect(() => {
     setMounted(true);
-    // Detect if user is on Mac
     setIsMac(/(Mac|iPhone|iPod|iPad)/i.test(navigator.platform));
   }, []);
 
   if (!mounted) return null;
+
+  // On mobile dashboard pages, the bottom nav is visible so shift the button up
+  const hasBottomNav =
+    isMobile && (pathname?.startsWith("/dashboard") || pathname?.includes("/qr-codes"));
 
   const shortcutKey = isMac ? "⌘K" : "Ctrl+K";
 
@@ -28,7 +35,9 @@ export function AIAssistantFloat({ onClick }: AIAssistantFloatProps) {
         <TooltipTrigger asChild>
           <button
             onClick={onClick}
-            className="fixed bottom-6 right-6 z-50 h-14 w-14 rounded-full bg-gradient-to-r from-purple-500 to-purple-600 text-white shadow-lg hover:shadow-xl hover:scale-110 transition-all duration-200 flex items-center justify-center group"
+            className={`fixed right-4 sm:right-6 z-50 h-14 w-14 rounded-full bg-gradient-to-r from-purple-500 to-purple-600 text-white shadow-lg hover:shadow-xl hover:scale-110 transition-all duration-200 flex items-center justify-center group ${
+              hasBottomNav ? "bottom-28" : "bottom-6"
+            }`}
             aria-label="Open AI Assistant"
           >
             <Sparkles className="h-6 w-6 text-white group-hover:animate-pulse" fill="white" />
