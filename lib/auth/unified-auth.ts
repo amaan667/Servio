@@ -182,8 +182,8 @@ export async function requireAuthAndVenueAccess(
     };
   }
 
-  // 3. Venue access check (pass request so it can read headers instead of calling RPC)
-  const access = await verifyVenueAccess(venueId, user.id);
+  // 3. Venue access check (pass request so it can use Bearer token fallback)
+  const access = await verifyVenueAccess(venueId, user.id, request);
 
   if (!access) {
     return {
@@ -560,20 +560,83 @@ export function withUnifiedAuth(
 
       // Normalize so context.venueId and verifyVenueAccess use DB-consistent format everywhere
       const normalizedVenueId = normalizeVenueId(venueId) ?? venueId;
-      const authResult = await requireAuthAndVenueAccess(req, normalizedVenueId);
 
-      if (!authResult.success) {
-        return authResult.response;
+      // 1. Authentication check (reads x-user-id from middleware)
+      const { user, error: authError } = await getAuthUserFromRequest(req);
+      if (authError || !user) {
+        return NextResponse.json(
+          { error: "Unauthorized", message: authError || "Authentication required" },
+          { status: 401 }
+        );
       }
 
-      // Auth successful (context.venueId is already normalized from requireAuthAndVenueAccess)
-      const context = { ...authResult.context, venueId: normalizedVenueId };
+      // 2. Resolve tier/role - use the SAME approach as createUnifiedHandler for consistency.
+      //    Priority: middleware headers > getAccessContextWithRequest (cookies + Bearer fallback)
+      let tier = req.headers.get("x-user-tier");
+      let role = req.headers.get("x-user-role");
+      const headerVenueId = req.headers.get("x-venue-id");
 
-      // Feature check - use tier from context instead of making another RPC call
+      // Track whether we got access from headers or RPC
+      let venueData: Awaited<ReturnType<typeof verifyVenueAccess>> = null;
+
+      if (tier && role && headerVenueId === normalizedVenueId) {
+        // Middleware already resolved tier/role for this venue (fast path)
+        // Still need venue data for the context, so call verifyVenueAccess
+        venueData = await verifyVenueAccess(normalizedVenueId, user.id, req);
+        if (!venueData) {
+          return NextResponse.json(
+            { error: "Forbidden", message: "Access denied to this venue" },
+            { status: 403 }
+          );
+        }
+        // Override tier/role with middleware values (single source of truth)
+        venueData = { ...venueData, tier, role };
+      } else {
+        // Headers not set (e.g., venueId was in POST body, middleware couldn't resolve).
+        // Use getAccessContextWithRequest which tries cookies first, then Bearer token.
+        const { getAccessContextWithRequest } = await import("@/lib/access/getAccessContext");
+        const accessContext = await getAccessContextWithRequest(normalizedVenueId, req);
+
+        if (accessContext && accessContext.user_id === user.id) {
+          // RPC succeeded - use its tier/role
+          tier = accessContext.tier;
+          role = accessContext.role;
+
+          // Still need venue data for the handler context
+          venueData = await verifyVenueAccess(normalizedVenueId, user.id, req);
+          if (venueData) {
+            venueData = { ...venueData, tier: tier || venueData.tier, role: role || venueData.role };
+          }
+        }
+
+        // If getAccessContextWithRequest failed, try verifyVenueAccess directly
+        if (!venueData) {
+          venueData = await verifyVenueAccess(normalizedVenueId, user.id, req);
+        }
+
+        if (!venueData) {
+          return NextResponse.json(
+            { error: "Forbidden", message: "Access denied to this venue" },
+            { status: 403 }
+          );
+        }
+
+        // Use tier/role from whatever source succeeded
+        tier = tier || venueData.tier;
+        role = role || venueData.role;
+      }
+
+      const context: AuthContext = {
+        venue: venueData.venue,
+        user: venueData.user,
+        role: role || venueData.role,
+        venueId: normalizedVenueId,
+        tier: tier || venueData.tier || "starter",
+        venue_ids: venueData.venue_ids || [],
+      };
+
+      // Feature check - use tier from context (resolved from DB via consistent path)
       if (options?.requireFeature) {
-        // IMPORTANT: Feature access is based on the venue's subscription tier.
-        // Staff users should inherit the venue's plan.
-        // Use the tier from context (already retrieved from verifyVenueAccess) instead of making another RPC call
         const tierLimits = TIER_LIMITS[context.tier] ?? TIER_LIMITS.starter;
         const featureValue = tierLimits?.features[options.requireFeature];
 

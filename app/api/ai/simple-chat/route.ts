@@ -291,98 +291,19 @@ export const POST = withUnifiedAuth(
         navigation: navigationInfo,
       });
     } catch (_error) {
-      // CRITICAL: Log the full error immediately
-      const errorMessage =
-        _error instanceof Error ? _error.message : "An unexpected error occurred";
-      const errorStack = _error instanceof Error ? _error.stack : undefined;
-
-      // Graceful error handling - provide user-friendly messages
-      // Check if it's a feature access error (should be handled by withUnifiedAuth, but just in case)
-      if (errorMessage.includes("Feature not available") || errorMessage.includes("tier")) {
-        return NextResponse.json(
-          {
-            error: "Feature not available",
-            message:
-              "This feature requires a higher subscription tier. Please upgrade to access this functionality.",
-            response:
-              "I'm sorry, but this feature isn't available with your current plan. Please upgrade to access it.",
-          },
-          { status: 403 }
-        );
-      }
-
-      // Check if it's an authentication/authorization error
-      if (errorMessage.includes("Unauthorized") || errorMessage.includes("Forbidden")) {
-        return NextResponse.json(
-          {
-            error: errorMessage.includes("Unauthorized") ? "Unauthorized" : "Forbidden",
-            message:
-              "You don't have permission to perform this action. Please contact your manager if you believe this is an error.",
-            response:
-              "I'm sorry, but I don't have permission to perform that action. Please check with your manager.",
-          },
-          { status: errorMessage.includes("Unauthorized") ? 401 : 403 }
-        );
-      }
-
-      // Check if it's a validation/guardrail error
-      if (
-        errorMessage.includes("GUARDRAIL") ||
-        errorMessage.includes("exceeds limit") ||
-        errorMessage.includes("violation")
-      ) {
-        return NextResponse.json(
-          {
-            error: "Request exceeds safety limits",
-            message: errorMessage,
-            response: `I can't perform that action because it exceeds safety limits: ${errorMessage}. Please try a smaller change.`,
-          },
-          { status: 400 }
-        );
-      }
-
-      // Check if it's a context/data error
-      if (errorMessage.includes("context") || errorMessage.includes("Failed to load")) {
-        return NextResponse.json(
-          {
-            error: "Context loading failed",
-            message: "Unable to load necessary data. Please try again in a moment.",
-            response:
-              "I'm having trouble loading the necessary information. Please try again in a moment.",
-          },
-          { status: 503 }
-        );
-      }
-
-      // Log server errors for debugging
-      const errorPayload = {
-        venueId: context.venueId,
-        userId: context.user?.id,
-        message: errorMessage,
-        stack: errorStack,
-        errorType: _error?.constructor?.name || typeof _error,
-        fullError: JSON.stringify(_error, Object.getOwnPropertyNames(_error), 2),
-      };
-
-      // Return detailed error for debugging (will be removed later)
-      // Include error details in response to help identify the issue
+      // Graceful error handling - always return a user-friendly response
+      // Never expose raw error types like "Unauthorized" or "Forbidden" to the user
       return NextResponse.json(
         {
-          error: "Internal Server Error",
-          message: errorMessage, // Include actual error message for debugging
-          response: `I encountered an error: ${errorMessage}. Please try again or contact support if the issue persists.`,
-          // Include debug info in response (temporary for debugging)
-          debug: {
-            errorType: _error?.constructor?.name || typeof _error,
-            errorMessage,
-            ...(errorStack ? { stack: errorStack.substring(0, 500) } : {}), // Limit stack trace length
-          },
+          error: "Something went wrong",
+          response:
+            "I'm sorry, something went wrong while processing your request. Please try again.",
         },
         { status: 500 }
       );
     }
   },
   {
-    requireFeature: "aiAssistant", // AI Assistant requires Enterprise tier
+    requireFeature: "aiAssistant",
   }
 );

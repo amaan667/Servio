@@ -136,7 +136,8 @@ export async function middleware(request: NextRequest) {
 
   const session = user ? { user } : null;
 
-  // For API routes, inject user info into headers if session exists
+  // For API routes, inject user info AND tier/role into headers if session exists
+  // This is the same approach used for dashboard routes, ensuring consistent auth context
   if (pathname.startsWith("/api/")) {
     const requestHeaders = new Headers(request.headers);
     if (pathname.startsWith("/api/v1/")) {
@@ -145,6 +146,32 @@ export async function middleware(request: NextRequest) {
     if (session) {
       requestHeaders.set("x-user-id", session.user.id);
       requestHeaders.set("x-user-email", session.user.email || "");
+
+      // Try to extract venueId from query params so we can set tier/role headers
+      // (same RPC logic as dashboard routes for consistency)
+      const url = new URL(request.url);
+      const queryVenueId = url.searchParams.get("venueId") || url.searchParams.get("venue_id");
+      if (queryVenueId) {
+        const normalizedApiVenueId = queryVenueId.startsWith("venue-")
+          ? queryVenueId
+          : `venue-${queryVenueId}`;
+        try {
+          const { data: apiCtx, error: apiRpcErr } = await supabase.rpc("get_access_context", {
+            p_venue_id: normalizedApiVenueId,
+          });
+          if (!apiRpcErr && apiCtx) {
+            const apiRpc = apiCtx as { user_id?: string; role?: string; tier?: string };
+            if (apiRpc.user_id && apiRpc.role) {
+              const apiTier = apiRpc.tier?.toLowerCase().trim() || "starter";
+              requestHeaders.set("x-user-tier", apiTier);
+              requestHeaders.set("x-user-role", apiRpc.role);
+              requestHeaders.set("x-venue-id", normalizedApiVenueId);
+            }
+          }
+        } catch {
+          // RPC failed for API route - tier/role will be resolved downstream by withUnifiedAuth
+        }
+      }
 
       const newResponse = NextResponse.next({
         request: { headers: requestHeaders },

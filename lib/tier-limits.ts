@@ -62,7 +62,7 @@ export const TIER_LIMITS: Record<string, TierLimits> = {
       loyaltyTracking: true, // Loyalty & repeat customer tracking
       branding: "full+subdomain", // Full branding + custom subdomain
       apiAccess: false, // Available as add-on (light API)
-      aiAssistant: false, // AI Assistant is Enterprise only (Pro has AI insights in analytics, not full AI Assistant)
+      aiAssistant: false, // AI Assistant is Enterprise only
       multiVenue: true, // Up to 3 locations
       customIntegrations: false,
       supportLevel: "priority", // Priority email & live chat support
