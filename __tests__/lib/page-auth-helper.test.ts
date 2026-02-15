@@ -1,5 +1,15 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import type { Headers as HeadersLike } from "next/dist/server/web/spec-extension/adapters/headers";
+
+// React's cache() is server-only; in test env we stub it as a passthrough.
+vi.mock("react", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("react")>();
+  return {
+    ...actual,
+    cache: <T extends (...args: unknown[]) => unknown>(fn: T) => fn,
+  };
+});
+
 import { getAuthFromMiddlewareHeaders, requirePageAuth } from "@/lib/auth/page-auth-helper";
 
 // next/headers is used inside getAuthFromMiddlewareHeaders; we mock it to
@@ -60,6 +70,39 @@ describe("getAuthFromMiddlewareHeaders", () => {
 
     // Sanity-check feature access helper wiring (exact tiers/features tested elsewhere)
     expect(typeof result?.hasFeatureAccess).toBe("function");
+  });
+
+  it("defaults role to 'owner' when x-user-role header is missing", async () => {
+    headersMock.mockResolvedValue(
+      createHeaders({
+        "x-user-id": "user-456",
+        "x-user-email": "fallback@example.com",
+        "x-user-tier": "enterprise",
+        // x-user-role is intentionally missing
+        "x-venue-id": "venue-789",
+      })
+    );
+
+    const result = await getAuthFromMiddlewareHeaders();
+    expect(result).not.toBeNull();
+    expect(result?.role).toBe("owner");
+    expect(result?.tier).toBe("enterprise");
+  });
+
+  it("defaults tier to 'starter' when x-user-tier header is missing", async () => {
+    headersMock.mockResolvedValue(
+      createHeaders({
+        "x-user-id": "user-456",
+        "x-user-role": "manager",
+        // x-user-tier is intentionally missing
+        "x-venue-id": "venue-789",
+      })
+    );
+
+    const result = await getAuthFromMiddlewareHeaders();
+    expect(result).not.toBeNull();
+    expect(result?.tier).toBe("starter");
+    expect(result?.role).toBe("manager");
   });
 });
 
