@@ -8,6 +8,7 @@ import { NextRequest, NextResponse } from "next/server";
 import {
   createSupabaseClient,
   createServerSupabaseWithToken,
+  createAdminClient,
 } from "@/lib/supabase";
 import { getAuthenticatedUser as getAuthUser } from "@/lib/supabase";
 import { normalizeVenueId } from "@/lib/utils/venueId";
@@ -89,21 +90,71 @@ export async function verifyVenueAccess(
   };
 
   try {
+    // 1. Try cookie-based Supabase client (primary path)
     const supabase = await createSupabaseClient();
     const result = await tryWithSupabase(supabase);
     if (result) return result;
 
-    // Cookie-based auth failed. Try Bearer token if provided.
+    // 2. Cookie-based auth failed. Try Bearer token if provided.
     if (request) {
       const authHeader = request.headers.get("Authorization");
       const token = authHeader?.startsWith("Bearer ") ? authHeader.slice(7) : null;
       if (token) {
         const tokenSupabase = createServerSupabaseWithToken(token);
-        return tryWithSupabase(tokenSupabase);
+        const tokenResult = await tryWithSupabase(tokenSupabase);
+        if (tokenResult) return tokenResult;
       }
     }
 
-    return null;
+    // 3. Both cookie and Bearer token failed. Fall back to admin client.
+    //    The user's identity is already verified by middleware (x-user-id header),
+    //    so we can safely query the database directly to get venue access + tier.
+    try {
+      const admin = createAdminClient();
+
+      // Get venue data
+      const { data: venue, error: venueErr } = await admin
+        .from("venues")
+        .select("*")
+        .eq("venue_id", normalizedVenueId)
+        .single();
+
+      if (venueErr || !venue) return null;
+
+      // Check if user is the venue owner
+      let userRole: string | null = null;
+      if (venue.owner_user_id === userId) {
+        userRole = "owner";
+      } else {
+        // Check user_venue_roles for staff access
+        const { data: roleData } = await admin
+          .from("user_venue_roles")
+          .select("role")
+          .eq("venue_id", normalizedVenueId)
+          .eq("user_id", userId)
+          .maybeSingle();
+
+        if (roleData?.role) {
+          userRole = roleData.role;
+        }
+      }
+
+      if (!userRole) return null;
+
+      // Get tier from venue's subscription_tier (the single source of truth in the DB)
+      const tier = (venue.subscription_tier?.toLowerCase()?.trim() || "starter") as string;
+
+      return {
+        venue,
+        user: { id: userId },
+        role: userRole,
+        tier,
+        venue_ids: [],
+      };
+    } catch {
+      // Admin fallback also failed
+      return null;
+    }
   } catch {
     return null;
   }
