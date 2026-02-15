@@ -7,7 +7,7 @@ import VenueSettingsClient from "./VenueSettingsClient";
 import RoleBasedNavigation from "@/components/RoleBasedNavigation";
 import type { User } from "@supabase/supabase-js";
 import { useAuthRedirect } from "../hooks/useAuthRedirect";
-import { useAccessContext } from "@/lib/access/useAccessContext";
+import { apiClient } from "@/lib/api-client";
 
 interface Organization {
   id: string;
@@ -32,26 +32,38 @@ export default function SettingsPageClient({ venueId, initialData }: SettingsPag
   const { user } = useAuthRedirect();
   const { session } = useAuth();
 
-  // get_access_context RPC — the only client-side source for role/tier.
-  // No cache fallbacks, no __PLATFORM_AUTH__ — only the RPC result.
-  const { context: accessContext, loading: accessLoading } = useAccessContext(venueId);
-
   const [mounted, setMounted] = useState(false);
   const [data, setData] = useState(initialData || null);
+  const [clientRole, setClientRole] = useState<string | null>(null);
+  const [clientLoading, setClientLoading] = useState(!initialData);
 
   useEffect(() => {
     setMounted(true);
   }, []);
 
-  // When the server didn't provide initialData (e.g. the user was
-  // identified but the middleware RPC failed), fetch venue display data
-  // on the client.  Role/tier come from useAccessContext only.
+  // When the server didn't provide initialData (e.g. middleware + all
+  // server-side fallbacks failed), fetch via the canonical API endpoint.
+  // This uses the same resolveVenueAccess path as getAuthContext().
   useEffect(() => {
     if (initialData) return;
-    if (!mounted || !session?.user || !accessContext) return;
+    if (!mounted || !session?.user) return;
 
     const fetchData = async () => {
       try {
+        // 1. Get role/tier from the canonical endpoint (same DB path as server)
+        const ctxRes = await apiClient.get(
+          `/api/auth/access-context?venueId=${encodeURIComponent(venueId)}`
+        );
+        const ctx = await ctxRes.json();
+        const role = ctx.role ?? null;
+        setClientRole(role);
+
+        if (!role) {
+          setClientLoading(false);
+          return;
+        }
+
+        // 2. Fetch venue data for the settings UI
         const currentUser = session.user;
         const supabase = supabaseBrowser();
 
@@ -77,7 +89,6 @@ export default function SettingsPageClient({ venueId, initialData }: SettingsPag
           organization = orgData || null;
         }
 
-        const role = accessContext.role;
         setData({
           user: currentUser,
           venue,
@@ -89,23 +100,25 @@ export default function SettingsPageClient({ venueId, initialData }: SettingsPag
         });
       } catch {
         // Silently handled
+      } finally {
+        setClientLoading(false);
       }
     };
 
     fetchData();
-  }, [venueId, initialData, session, mounted, accessContext]);
+  }, [venueId, initialData, session, mounted]);
 
   if (!mounted || !user) {
     return null;
   }
 
   // Role comes from either:
-  //   a) initialData.userRole — server-side, resolved from resolveVenueAccess (DB)
-  //   b) accessContext.role  — client-side, resolved from get_access_context RPC (DB)
-  // Both read from the same database.  No fabricated values.
-  const effectiveRole = data?.userRole ?? accessContext?.role ?? null;
+  //   a) initialData.userRole — server-side, resolved from getAuthContext (DB)
+  //   b) clientRole           — client-side, resolved from /api/auth/access-context (same DB)
+  // Both use resolveVenueAccess.  No fabricated values.
+  const effectiveRole = data?.userRole ?? clientRole ?? null;
   const canAccessSettings = effectiveRole === "owner" || effectiveRole === "manager";
-  const isStillLoading = !data && accessLoading;
+  const isStillLoading = !data && clientLoading;
 
   return (
     <div className="min-h-screen bg-background">

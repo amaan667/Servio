@@ -1,30 +1,75 @@
 /**
- * Access context API - Bearer-token fallback for mobile
+ * GET /api/auth/access-context?venueId=xxx
  *
- * Use when cookies fail (e.g. iOS Safari) but client has session in localStorage.
- * Client sends Bearer token; we return role/tier from get_access_context RPC.
- * Single source of truth: database via RPC.
+ * Client-side endpoint that returns the resolved auth context for a venue.
+ * Uses the same resolveVenueAccess path as the server-side getAuthContext(),
+ * so the client always sees the same role/tier as the server.
+ *
+ * This endpoint is the ONLY client-side path for obtaining role/tier.
+ * Client components must NOT call the get_access_context RPC directly.
  */
 
-import { NextRequest } from "next/server";
-import { getAccessContextWithRequest } from "@/lib/access/getAccessContext";
-import { success, apiErrors } from "@/lib/api/standard-response";
+import { NextRequest, NextResponse } from "next/server";
+import { getAuthUserFromRequest } from "@/lib/auth/unified-auth";
+import { resolveVenueAccess } from "@/lib/auth/resolve-access";
+import { normalizeVenueId } from "@/lib/utils/venueId";
+import { TIER_LIMITS } from "@/lib/tier-restrictions";
 
 export async function GET(req: NextRequest) {
-  const venueId = req.nextUrl.searchParams.get("venueId");
+  const { user, error: authError } = await getAuthUserFromRequest(req);
+
+  if (authError || !user) {
+    return NextResponse.json(
+      {
+        userId: null,
+        venueId: null,
+        role: null,
+        tier: null,
+        isAuthenticated: false,
+      },
+      { status: 401 }
+    );
+  }
+
+  const url = new URL(req.url);
+  const rawVenueId = url.searchParams.get("venueId");
+  const venueId = normalizeVenueId(rawVenueId);
+
   if (!venueId) {
-    return apiErrors.badRequest("venueId is required");
+    return NextResponse.json(
+      { error: "venueId query parameter is required" },
+      { status: 400 }
+    );
   }
 
-  const ctx = await getAccessContextWithRequest(venueId, req);
-  if (!ctx?.user_id || !ctx?.role) {
-    return apiErrors.unauthorized("Unable to resolve access context");
+  const resolved = await resolveVenueAccess(user.id, venueId);
+
+  if (!resolved) {
+    return NextResponse.json({
+      userId: user.id,
+      venueId,
+      role: null,
+      tier: null,
+      isAuthenticated: true,
+    });
   }
 
-  return success({
-    user_id: ctx.user_id,
-    venue_id: ctx.venue_id,
-    role: ctx.role,
-    tier: ctx.tier ?? "starter",
+  const tier = resolved.tier;
+  const tierLimits = TIER_LIMITS[tier];
+
+  return NextResponse.json({
+    userId: resolved.userId,
+    venueId: resolved.venueId,
+    role: resolved.role,
+    tier: resolved.tier,
+    isAuthenticated: true,
+    features: tierLimits
+      ? {
+          aiAssistant: tierLimits.features.aiAssistant,
+          kds: tierLimits.features.kds !== false,
+          inventory: tierLimits.features.inventory,
+          analytics: tierLimits.features.analytics,
+        }
+      : null,
   });
 }

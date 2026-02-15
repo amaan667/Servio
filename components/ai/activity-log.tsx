@@ -4,6 +4,7 @@
 // Shows recent AI assistant actions for transparency
 
 import { useEffect, useState } from "react";
+import { apiClient } from "@/lib/api-client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -26,7 +27,9 @@ export function AIActivityLog({ venueId, limit = 20 }: ActivityLogProps) {
 
   const fetchActivities = async () => {
     try {
-      const response = await fetch(`/api/ai-assistant/activity?venueId=${venueId}&limit=${limit}`);
+      const response = await apiClient.get(
+        `/api/ai-assistant/activity?venueId=${encodeURIComponent(venueId)}&limit=${limit}`
+      );
       const data = await response.json();
 
       if (response.ok) {

@@ -1,5 +1,5 @@
 import TablesClientPage from "./page.client";
-import { requirePageAuth } from "@/lib/auth/page-auth-helper";
+import { getAuthContext } from "@/lib/auth/get-auth-context";
 import { createAdminClient } from "@/lib/supabase";
 import logger from "@/lib/logger";
 
@@ -125,19 +125,19 @@ export default async function TablesPage({ params }: { params: { venueId: string
   const { venueId } = params;
 
   // Server-side auth check
-  const auth = await requirePageAuth(venueId).catch(() => null);
+  const auth = await getAuthContext(venueId);
 
   // Fetch initial tables data on server for SSR
   const initialData = await fetchTablesData(venueId);
 
   // Log all auth information for browser console
   const authInfo = {
-    hasAuth: !!auth,
-    userId: auth?.user?.id,
-    email: auth?.user?.email,
-    tier: auth?.tier ?? "starter",
-    role: auth?.role ?? "viewer",
-    venueId: auth?.venueId ?? venueId,
+    hasAuth: auth.isAuthenticated,
+    userId: auth.userId,
+    email: auth.email,
+    tier: auth.tier ?? "starter",
+    role: auth.role ?? "viewer",
+    venueId: auth.venueId ?? venueId,
     timestamp: new Date().toISOString(),
     page: "Tables",
   };
@@ -151,8 +151,8 @@ export default async function TablesPage({ params }: { params: { venueId: string
       />
       <TablesClientPage
         venueId={venueId}
-        tier={auth?.tier ?? "starter"}
-        role={auth?.role ?? "viewer"}
+        tier={auth.tier ?? "starter"}
+        role={auth.role ?? "viewer"}
         initialTables={initialData?.tables || null}
         initialReservations={initialData?.reservations || null}
         initialStats={initialData?.stats || null}

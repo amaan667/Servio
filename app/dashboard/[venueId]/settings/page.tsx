@@ -1,86 +1,41 @@
 import SettingsClientPage from "./page.client";
-
 import { createAdminClient } from "@/lib/supabase";
-import {
-  requirePageAuth,
-  getUserIdFromHeaders,
-} from "@/lib/auth/page-auth-helper";
-import { resolveVenueAccess } from "@/lib/auth/resolve-access";
+import { getAuthContext } from "@/lib/auth/get-auth-context";
 import { normalizeVenueId } from "@/lib/utils/venueId";
 
 export default async function SettingsPage({ params }: { params: { venueId: string } }) {
   const { venueId } = params;
   const normalizedVenueId = normalizeVenueId(venueId) ?? venueId;
 
-  // ── 1. Try the fast path: middleware set all headers from the RPC ───
-  const auth = await requirePageAuth(venueId).catch(() => null);
+  // ── Single auth resolution — handles desktop AND mobile ────────
+  const auth = await getAuthContext(venueId);
 
-  let userId = auth?.user?.id ?? null;
-  let userEmail = auth?.user?.email ?? undefined;
-  let userRole: string | null = auth?.role ?? null;
-  let userTier: string | null = auth?.tier ?? null;
-
-  // ── 2. If the middleware RPC did not return full context, resolve
-  //       directly from the database (the single source of truth). ────
-  if (!userId) {
-    // Middleware still sets x-user-id even when the RPC fails.
-    userId = await getUserIdFromHeaders();
-  }
-
-  if (!userId) {
-    // Last resort: read from Supabase server auth
-    try {
-      const { createServerSupabaseReadOnly } = await import("@/lib/supabase");
-      const serverSupabase = await createServerSupabaseReadOnly();
-      const {
-        data: { user: serverUser },
-      } = await serverSupabase.auth.getUser();
-      if (serverUser) {
-        userId = serverUser.id;
-        userEmail = serverUser.email ?? undefined;
-      }
-    } catch {
-      // Not authenticated
-    }
-  }
-
-  // Not authenticated at all — let the client handle (redirect to login)
-  if (!userId) {
+  if (!auth.isAuthenticated || !auth.userId) {
+    // Not authenticated — let the client handle (redirect to login)
     return <SettingsClientPage venueId={venueId} />;
   }
 
-  // When the middleware headers were incomplete (no role/tier), resolve
-  // from the DB.  This is NOT a fallback with guessed defaults — it
-  // queries venues, user_venue_roles and organizations directly.
-  if (!userRole || !userTier) {
-    const resolved = await resolveVenueAccess(userId, normalizedVenueId);
-    if (resolved) {
-      userRole = resolved.role;
-      userTier = resolved.tier;
-    }
-  }
-
-  // If we still cannot determine role/tier the user has no access.
-  if (!userRole || !userTier) {
+  if (!auth.role || !auth.tier) {
+    // Authenticated but no venue access
     return <SettingsClientPage venueId={venueId} />;
   }
 
-  // ── 3. Access check — only owner and manager can access settings ───
-  const isOwner = userRole === "owner";
-  const isManager = userRole === "manager";
+  // ── Access check — only owner and manager can access settings ───
+  const isOwner = auth.role === "owner";
+  const isManager = auth.role === "manager";
 
   const authInfo = {
     hasAuth: true,
-    userId,
-    email: userEmail,
-    tier: userTier,
-    role: userRole,
+    userId: auth.userId,
+    email: auth.email,
+    tier: auth.tier,
+    role: auth.role,
     venueId: normalizedVenueId,
     timestamp: new Date().toISOString(),
     page: "Settings",
   };
 
-  // ── 4. Fetch display data for the settings UI ─────────────────────
+  // ── Fetch display data for the settings UI ─────────────────────
   const supabase = createAdminClient();
 
   const [venueResult, allVenuesResult] = await Promise.all([
@@ -88,7 +43,7 @@ export default async function SettingsPage({ params }: { params: { venueId: stri
     supabase
       .from("venues")
       .select("*")
-      .eq("owner_user_id", userId)
+      .eq("owner_user_id", auth.userId)
       .order("created_at", { ascending: true }),
   ]);
 
@@ -116,13 +71,13 @@ export default async function SettingsPage({ params }: { params: { venueId: stri
   }
 
   const initialData = {
-    user: { id: userId, email: userEmail, user_metadata: {} },
+    user: { id: auth.userId, email: auth.email ?? undefined, user_metadata: {} },
     venue: finalVenue,
     venues: allVenuesResult.data || [],
     organization,
     isOwner,
     isManager,
-    userRole,
+    userRole: auth.role,
   };
 
   return (

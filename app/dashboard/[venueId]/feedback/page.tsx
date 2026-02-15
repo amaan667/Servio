@@ -1,5 +1,5 @@
 import FeedbackClientPage from "./page.client";
-import { requirePageAuth } from "@/lib/auth/page-auth-helper";
+import { getAuthContext } from "@/lib/auth/get-auth-context";
 import { createAdminClient } from "@/lib/supabase";
 import { normalizeVenueId } from "@/lib/utils/venueId";
 
@@ -7,7 +7,7 @@ export default async function FeedbackPage({ params }: { params: { venueId: stri
   const { venueId } = params;
 
   // Server-side auth check - NO REDIRECTS - Dashboard always loads
-  const auth = await requirePageAuth(venueId).catch(() => null);
+  const auth = await getAuthContext(venueId);
 
   // Fetch questions server-side for instant load
   let initialQuestions: Array<{
@@ -52,8 +52,8 @@ export default async function FeedbackPage({ params }: { params: { venueId: stri
   return (
     <FeedbackClientPage
       venueId={venueId}
-      tier={auth?.tier ?? "starter"}
-      role={auth?.role ?? "viewer"}
+      tier={auth.tier ?? "starter"}
+      role={auth.role ?? "viewer"}
       initialQuestions={initialQuestions}
     />
   );

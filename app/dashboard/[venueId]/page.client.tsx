@@ -434,7 +434,7 @@ const DashboardClient = React.memo(function DashboardClient({
     return [];
   })();
 
-  // Auth check removed - server already did getAccessContext() RPC via requirePageAuth()
+  // Auth check removed - server already resolved context via getAuthContext()
   // User comes from useAuthRedirect() hook which uses AuthProvider
   // Role/venue from cache or server data - no redundant client-side queries needed
   // Cache user data when available

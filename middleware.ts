@@ -64,13 +64,12 @@ export async function middleware(request: NextRequest) {
     return response;
   }
 
-  // MOBILE FIX: Detect mobile browser and adjust cookie settings
-  const userAgent = request.headers.get("user-agent") || "";
-  const isMobile = /iPhone|iPad|iPod|Android/i.test(userAgent);
-
-  const mobileCookieSettings: CookieOptions = {
+  // Cookie settings — identical for all devices (no mobile-specific overrides).
+  // SameSite=lax is the safe default: it allows cookies on top-level navigations
+  // and same-site requests while blocking cross-site POST requests.
+  const cookieSettings: Partial<CookieOptions> = {
     httpOnly: false,
-    sameSite: isMobile ? "lax" : "strict",
+    sameSite: "lax",
     secure: request.url.startsWith("https://") || process.env.NODE_ENV === "production",
     path: "/",
     maxAge: 60 * 60 * 24 * 7,
@@ -87,7 +86,7 @@ export async function middleware(request: NextRequest) {
           request.cookies.set(name, value);
           response.cookies.set(name, value, {
             ...options,
-            ...mobileCookieSettings,
+            ...cookieSettings,
           });
         });
       },

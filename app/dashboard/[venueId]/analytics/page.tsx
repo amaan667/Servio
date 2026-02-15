@@ -5,7 +5,7 @@
 
 import { createAdminClient } from "@/lib/supabase";
 import AnalyticsClientPage from "./AnalyticsClient";
-import { requirePageAuth } from "@/lib/auth/page-auth-helper";
+import { getAuthContext } from "@/lib/auth/get-auth-context";
 
 export const metadata = {
   title: "Analytics | Servio",
@@ -16,7 +16,7 @@ export default async function AnalyticsPage({ params }: { params: { venueId: str
   const { venueId } = params;
 
   // Server-side auth check - NO REDIRECTS - Dashboard always loads
-  const auth = await requirePageAuth(venueId).catch(() => null);
+  const auth = await getAuthContext(venueId);
 
   // Fetch analytics data on server
   const [ordersData, menuData, revenueData] = await Promise.all([
@@ -31,16 +31,16 @@ export default async function AnalyticsPage({ params }: { params: { venueId: str
   // Calculate period comparison on server
   const periodComparison = calculatePeriodComparison(revenueData);
 
-  const tier = auth?.tier ?? "starter";
+  const tier = auth.tier ?? "starter";
 
   // Log all auth information for browser console
   const authInfo = {
-    hasAuth: !!auth,
-    userId: auth?.user?.id,
-    email: auth?.user?.email,
+    hasAuth: auth.isAuthenticated,
+    userId: auth.userId,
+    email: auth.email,
     tier: tier,
-    role: auth?.role ?? "viewer",
-    venueId: auth?.venueId ?? venueId,
+    role: auth.role ?? "viewer",
+    venueId: auth.venueId ?? venueId,
     timestamp: new Date().toISOString(),
     page: "Analytics",
   };

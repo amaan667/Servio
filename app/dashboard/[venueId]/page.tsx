@@ -4,7 +4,7 @@ import ClientOnlyWrapper from "@/components/ClientOnlyWrapper";
 import { createAdminClient } from "@/lib/supabase";
 import { getDashboardCounts } from "@/lib/dashboard-counts";
 import { todayWindowForTZ } from "@/lib/time";
-import { requirePageAuth } from "@/lib/auth/page-auth-helper";
+import { getAuthContext } from "@/lib/auth/get-auth-context";
 import { fetchMenuItemCount } from "@/lib/counts/unified-counts";
 import type { DashboardCounts, DashboardStats } from "./hooks/useDashboardData";
 import { normalizeVenueId } from "@/lib/utils/venueId";
@@ -25,21 +25,16 @@ export default async function VenuePage({ params }: { params: { venueId: string 
   // NO REDIRECTS - User requested ZERO sign-in redirects
   // Auth check is optional - client will handle auth display
   // Dashboard ALWAYS loads - client handles authentication
-  let auth = null;
-  try {
-    auth = await requirePageAuth(venueId).catch(() => null);
-  } catch (error) {
-    // Error handled silently
-  }
+  const auth = await getAuthContext(venueId);
 
   // Log all auth information for browser console
   const authInfo = {
-    hasAuth: !!auth,
-    userId: auth?.user?.id,
-    email: auth?.user?.email,
-    tier: auth?.tier ?? "starter",
-    role: auth?.role ?? "viewer",
-    venueId: auth?.venueId ?? venueId,
+    hasAuth: auth.isAuthenticated,
+    userId: auth.userId,
+    email: auth.email,
+    tier: auth.tier ?? "starter",
+    role: auth.role ?? "viewer",
+    venueId: auth.venueId ?? venueId,
     timestamp: new Date().toISOString(),
     page: "Dashboard",
   };

@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useRouter } from "next/navigation";
+import { apiClient } from "@/lib/api-client";
 
 interface Message {
   role: "user" | "assistant";
@@ -64,14 +65,7 @@ export function SimpleChatInterface({
     try {
       const fetchStartTime = Date.now();
 
-      const response = await fetch("/api/ai/simple-chat", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        credentials: "include",
-        body: JSON.stringify(requestPayload),
-      });
+      const response = await apiClient.post("/api/ai/simple-chat", requestPayload);
 
       const fetchDuration = Date.now() - fetchStartTime;
 

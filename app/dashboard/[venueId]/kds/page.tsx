@@ -1,16 +1,16 @@
 import KDSClientPage from "./page.client";
 import { createAdminClient } from "@/lib/supabase";
-import { requirePageAuth } from "@/lib/auth/page-auth-helper";
+import { getAuthContext } from "@/lib/auth/get-auth-context";
 import { createKDSTicketsWithAI } from "@/lib/orders/kds-tickets-unified";
 
 export default async function KDSPage({ params }: { params: { venueId: string } }) {
   const { venueId } = params;
 
   // Auth from middleware only (no per-page RPC) - consistent with all other pages
-  const auth = await requirePageAuth(venueId).catch(() => null);
+  const auth = await getAuthContext(venueId);
 
   // Determine KDS tier from tier limits - matches TIER_LIMITS configuration
-  const currentTier = auth?.tier ?? "starter";
+  const currentTier = auth.tier ?? "starter";
   const kdsTier: "advanced" | "enterprise" | false =
     currentTier === "enterprise" ? "enterprise" : currentTier === "pro" ? "advanced" : false;
 
@@ -135,12 +135,12 @@ export default async function KDSPage({ params }: { params: { venueId: string } 
 
   // Log all auth information for browser console
   const authInfo = {
-    hasAuth: !!auth,
-    userId: auth?.user?.id,
-    email: auth?.user?.email,
-    tier: auth?.tier ?? "starter",
-    role: auth?.role ?? "viewer",
-    venueId: auth?.venueId ?? venueId,
+    hasAuth: auth.isAuthenticated,
+    userId: auth.userId,
+    email: auth.email,
+    tier: auth.tier ?? "starter",
+    role: auth.role ?? "viewer",
+    venueId: auth.venueId ?? venueId,
     kdsTier,
     timestamp: new Date().toISOString(),
     page: "KDS",
@@ -157,9 +157,9 @@ export default async function KDSPage({ params }: { params: { venueId: string } 
         venueId={venueId}
         initialTickets={initialTickets}
         initialStations={initialStations}
-        tier={auth?.tier ?? "starter"}
+        tier={auth.tier ?? "starter"}
         kdsTier={kdsTier}
-        role={auth?.role ?? "viewer"}
+        role={auth.role ?? "viewer"}
       />
     </>
   );
