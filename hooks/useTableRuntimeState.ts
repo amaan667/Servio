@@ -80,7 +80,15 @@ export function useTableCounters(venueId: string) {
         p_venue_id: venueId,
       });
       if (error) {
-        throw error;
+        console.error("[TABLE COUNTERS] RPC Error:", error);
+        return {
+          total_tables: 0,
+          available: 0,
+          occupied: 0,
+          reserved_now: 0,
+          reserved_later: 0,
+          unassigned_reservations: 0,
+        } as TableCounters;
       }
 
       // The function returns a single JSON object, not an array
@@ -89,6 +97,7 @@ export function useTableCounters(venueId: string) {
       return result;
     },
     enabled: !!venueId,
+    retry: 1, // Reduce retries to fail faster
   });
 }
 

@@ -304,7 +304,15 @@ export function useTableCounters(venueId: string) {
       const { data, error } = await supabase.rpc("api_table_counters", {
         p_venue_id: venueId,
       });
-      if (error) throw error;
+      if (error) {
+        console.error("[TABLE COUNTERS] RPC Error:", error);
+        return {
+          total_tables: 0,
+          available: 0,
+          occupied: 0,
+          reserved_overlapping_now: 0,
+        } as TableCounters;
+      }
       return data[0] as TableCounters;
     },
     refetchInterval: 15000,
@@ -312,7 +320,7 @@ export function useTableCounters(venueId: string) {
     staleTime: 0, // Always consider data stale to ensure fresh data on navigation
     refetchOnMount: true, // Always refetch when component mounts
     gcTime: 30000,
-    retry: 3,
+    retry: 1, // Reduce retries to fail faster
     retryDelay: 1000,
   });
 }
