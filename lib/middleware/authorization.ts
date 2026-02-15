@@ -141,8 +141,24 @@ export async function verifyVenueAccess(
 
       if (!userRole) return null;
 
-      // Get tier from venue's subscription_tier (the single source of truth in the DB)
-      const tier = (venue.subscription_tier?.toLowerCase()?.trim() || "starter") as string;
+      // Resolve tier: prefer organization's subscription_tier (authoritative, updated
+      // by Stripe webhooks) over venue's subscription_tier (may be stale if sync missed).
+      let tier = (venue.subscription_tier?.toLowerCase()?.trim() || "starter") as string;
+
+      if (venue.organization_id) {
+        const { data: orgData } = await admin
+          .from("organizations")
+          .select("subscription_tier")
+          .eq("id", venue.organization_id)
+          .maybeSingle();
+
+        if (orgData?.subscription_tier) {
+          const orgTier = orgData.subscription_tier.toLowerCase().trim();
+          if (["starter", "pro", "enterprise"].includes(orgTier)) {
+            tier = orgTier;
+          }
+        }
+      }
 
       return {
         venue,

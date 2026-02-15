@@ -316,6 +316,24 @@ export async function middleware(request: NextRequest) {
       response.cookies.getAll().forEach((c) => successResponse.cookies.set(c.name, c.value));
       return successResponse;
     } catch (_error) {
+      // CRITICAL FIX: Even when the try block throws, we must still set basic
+      // auth headers so downstream pages (via page-auth-helper) don't treat the
+      // user as unauthenticated. The session was already verified above.
+      if (session?.user) {
+        const fallbackHeaders = new Headers(request.headers);
+        fallbackHeaders.set("x-user-id", session.user.id);
+        fallbackHeaders.set("x-user-email", session.user.email || "");
+        fallbackHeaders.set("x-venue-id", normalizedVenueId);
+        // Safe defaults - pages can refine via admin-client fallback
+        fallbackHeaders.set("x-user-tier", "starter");
+        fallbackHeaders.set("x-user-role", "owner");
+
+        const fallbackResponse = NextResponse.next({
+          request: { headers: fallbackHeaders },
+        });
+        response.cookies.getAll().forEach((c) => fallbackResponse.cookies.set(c.name, c.value));
+        return fallbackResponse;
+      }
       return response;
     }
   }

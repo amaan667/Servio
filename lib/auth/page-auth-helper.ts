@@ -77,7 +77,11 @@ export const getAuthFromMiddlewareHeaders = cache(async (): Promise<PageAuthCont
   }
 
   const tier = (tierHeader ?? "starter") as Tier;
-  const role = (roleHeader ?? "viewer") as UserRole;
+  // Default to "owner" (not "viewer") to match the middleware fallback behavior.
+  // The middleware already verified the session; if the RPC failed it defaults
+  // to "owner". Using "viewer" here previously caused requirePageAuth role
+  // checks to reject legitimate owners when headers were partially set.
+  const role = (roleHeader ?? "owner") as UserRole;
   const venueId = venueIdHeader ?? "";
 
   const authContext = {

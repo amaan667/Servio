@@ -1,13 +1,13 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
 import { supabaseBrowser } from "@/lib/supabase";
 import { useAuth } from "@/app/auth/AuthProvider";
 import VenueSettingsClient from "./VenueSettingsClient";
 import RoleBasedNavigation from "@/components/RoleBasedNavigation";
 import type { User } from "@supabase/supabase-js";
 import { useAuthRedirect } from "../hooks/useAuthRedirect";
+import { useAccessContext } from "@/lib/access/useAccessContext";
 
 interface Organization {
   id: string;
@@ -29,42 +29,35 @@ interface SettingsPageClientProps {
 }
 
 export default function SettingsPageClient({ venueId, initialData }: SettingsPageClientProps) {
-  const router = useRouter();
   const { user } = useAuthRedirect();
-  const { session } = useAuth(); // Get session from AuthProvider
+  const { session } = useAuth();
 
-  // Track if component has mounted to prevent hydration mismatches
+  // Single source of truth: get_access_context RPC via useAccessContext hook.
+  // This replaces all the duplicate role/tier queries that were here before.
+  const { context: accessContext, loading: accessLoading } = useAccessContext(venueId);
+
   const [mounted, setMounted] = useState(false);
-
-  // Fetch data on client if not provided by server
-  // Initialize with initialData immediately to prevent flash
   const [data, setData] = useState(initialData || null);
-  const [loading, setLoading] = useState(false); // Never block rendering
+  const [loading, setLoading] = useState(false);
 
-  // Set mounted flag after hydration
   useEffect(() => {
     setMounted(true);
   }, []);
 
-  // Fetch data effect - must be before early returns
+  // When initialData is provided by the server, use it directly.
+  // When NOT provided, fetch only the venue/org display data client-side.
+  // Role/tier come from useAccessContext (single source of truth).
   useEffect(() => {
-    // If we have initial data, cache it (overwriting any stale cache)
     if (initialData && typeof window !== "undefined") {
       sessionStorage.setItem(`settings_data_${venueId}`, JSON.stringify(initialData));
       return;
     }
 
-    // Otherwise, fetch data on client (and skip cache since we fixed the query)
     const fetchData = async () => {
       try {
-        // Wait for auth to finish loading
-        if (!mounted) {
-          return;
-        }
+        if (!mounted) return;
 
-        // Use session from AuthProvider (already authenticated)
         const currentUser = session?.user;
-
         if (!currentUser) {
           setLoading(false);
           return;
@@ -72,41 +65,9 @@ export default function SettingsPageClient({ venueId, initialData }: SettingsPag
 
         const supabase = supabaseBrowser();
 
-        // Fetch venues first to get organization_id
-        const { data: venuesForOrg } = await supabase
-          .from("venues")
-          .select("organization_id")
-          .eq("owner_user_id", currentUser.id)
-          .limit(1);
-
-        // Fetch organization
-        let organization = null;
-        if (venuesForOrg && venuesForOrg.length > 0 && venuesForOrg[0]?.organization_id) {
-          const { data: orgData } = await supabase
-            .from("organizations")
-            .select("id, subscription_tier, stripe_customer_id, subscription_status, trial_ends_at")
-            .eq("id", venuesForOrg[0].organization_id)
-            .single();
-
-          if (orgData) {
-            organization = orgData;
-          }
-        }
-
-        // Fetch all required data
-        const [venueResult, userRoleResult, allVenuesResult] = await Promise.all([
-          supabase
-            .from("venues")
-            .select("*")
-            .eq("venue_id", venueId)
-            .eq("owner_user_id", currentUser.id)
-            .maybeSingle(),
-          supabase
-            .from("user_venue_roles")
-            .select("role")
-            .eq("user_id", currentUser.id)
-            .eq("venue_id", venueId)
-            .maybeSingle(),
+        // Fetch the venue and all owned venues (for the settings UI)
+        const [venueResult, allVenuesResult] = await Promise.all([
+          supabase.from("venues").select("*").eq("venue_id", venueId).maybeSingle(),
           supabase
             .from("venues")
             .select("*")
@@ -114,68 +75,74 @@ export default function SettingsPageClient({ venueId, initialData }: SettingsPag
             .order("created_at", { ascending: true }),
         ]);
 
+        // Fetch organization for billing display
+        let organization: Organization | null = null;
         const venue = venueResult.data;
-        const userRole = userRoleResult.data;
-        const allVenues = allVenuesResult.data || [];
-
-        const isOwner = !!venue;
-        const isManager = userRole?.role === "manager";
-
-        let finalVenue = venue;
-        if (!venue && isManager) {
-          const { data: managerVenue } = await supabase
-            .from("venues")
-            .select("*")
-            .eq("venue_id", venueId)
+        if (venue?.organization_id) {
+          const { data: orgData } = await supabase
+            .from("organizations")
+            .select(
+              "id, subscription_tier, stripe_customer_id, subscription_status, trial_ends_at"
+            )
+            .eq("id", venue.organization_id)
             .single();
-          finalVenue = managerVenue;
+          organization = orgData || null;
         }
+
+        // Role comes from useAccessContext — no duplicate role queries
+        const role = accessContext?.role ?? "staff";
+        const isOwner = role === "owner";
+        const isManager = role === "manager";
 
         const fetchedData = {
           user: currentUser,
-          venue: finalVenue,
-          venues: allVenues,
+          venue,
+          venues: allVenuesResult.data || [],
           organization,
           isOwner,
           isManager,
-          userRole: userRole?.role || (isOwner ? "owner" : "staff"),
+          userRole: role,
         };
 
         setData(fetchedData);
         sessionStorage.setItem(`settings_data_${venueId}`, JSON.stringify(fetchedData));
-      } catch (_error) {
+      } catch {
         // Error handled silently
       } finally {
         setLoading(false);
       }
     };
 
-    // Only fetch if mounted and no initial data
     if (mounted && !initialData) {
       fetchData();
     }
-  }, [venueId, initialData, session, mounted]);
+  }, [venueId, initialData, session, mounted, accessContext]);
 
-  // Render immediately - no blocking (mounted check still needed for hydration)
   if (!mounted) {
     return null;
   }
 
-  // Don't render if no user (will redirect)
   if (!user) {
     return null;
   }
 
-  // Render immediately - no blocking
-  // Use optional chaining to handle missing data gracefully
-  const canAccessSettings = data?.userRole === "owner" || data?.userRole === "manager";
+  // Determine access from TWO sources (whichever is available first):
+  // 1. initialData.userRole — server-side resolved from admin DB query
+  // 2. accessContext.role — client-side resolved from get_access_context RPC
+  // Both ultimately come from the database, ensuring consistency.
+  const effectiveRole = data?.userRole ?? accessContext?.role ?? null;
+  const canAccessSettings = effectiveRole === "owner" || effectiveRole === "manager";
+
+  // While both server data and access context are still loading, show a loading state
+  // instead of prematurely showing "Access Restricted"
+  const isStillLoading = !data && (loading || accessLoading);
 
   return (
     <div className="min-h-screen bg-background">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 pb-24 md:pb-8">
         <RoleBasedNavigation
           venueId={venueId}
-          userRole={(data?.userRole || "staff") as "owner" | "manager" | "staff"}
+          userRole={(effectiveRole || "staff") as "owner" | "manager" | "staff"}
           userName={
             (typeof data?.user?.user_metadata?.full_name === "string"
               ? data.user.user_metadata.full_name
@@ -191,16 +158,14 @@ export default function SettingsPageClient({ venueId, initialData }: SettingsPag
         </div>
 
         {canAccessSettings && data?.user && data?.venue ? (
-          <>
-            <VenueSettingsClient
-              user={data.user as User}
-              venue={data.venue as unknown as import("./hooks/useVenueSettings").Venue}
-              venues={(data.venues || []) as unknown as import("./hooks/useVenueSettings").Venue[]}
-              organization={data.organization as Organization | undefined}
-              isOwner={data.isOwner}
-            />
-          </>
-        ) : canAccessSettings ? (
+          <VenueSettingsClient
+            user={data.user as User}
+            venue={data.venue as unknown as import("./hooks/useVenueSettings").Venue}
+            venues={(data.venues || []) as unknown as import("./hooks/useVenueSettings").Venue[]}
+            organization={data.organization as Organization | undefined}
+            isOwner={data.isOwner}
+          />
+        ) : isStillLoading || (canAccessSettings && !data?.venue) ? (
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
             <p className="text-blue-700">Loading settings...</p>
           </div>
