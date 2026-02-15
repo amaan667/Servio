@@ -5,7 +5,6 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { CheckCircle2, AlertTriangle, Save } from "lucide-react";
-import MobileNav from "@/components/MobileNav";
 import BillingSection from "@/components/settings/BillingSection";
 
 // Hooks
@@ -223,16 +222,7 @@ export default function VenueSettingsClient({
         />
       </div>
 
-      {/* Mobile Navigation */}
-      <MobileNav
-        venueId={venue.venue_id}
-        venueName={venue.venue_name}
-        counts={{
-          live_orders: 0,
-          total_orders: 0,
-          notifications: 0,
-        }}
-      />
+      {/* Mobile navigation is provided by GlobalBottomNav in the root layout */}
     </>
   );
 }

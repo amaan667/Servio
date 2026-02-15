@@ -18,7 +18,6 @@ import { useTabCounts } from "@/hooks/use-tab-counts";
 import { OrderCard } from "@/components/orders/OrderCard";
 import { mapOrderToCardData } from "@/lib/orders/mapOrderToCardData";
 import type { LegacyOrder } from "@/types/orders";
-import MobileNav from "@/components/MobileNav";
 import { Input } from "@/components/ui/input";
 import { Search, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -589,15 +588,7 @@ export default function LiveOrdersClient({
         )}
       </main>
 
-      <MobileNav
-        venueId={venueId}
-        venueName={venueName}
-        counts={{
-          live_orders: counts.live,
-          total_orders: counts.earlier,
-          notifications: 0,
-        }}
-      />
+      {/* Mobile navigation is provided by GlobalBottomNav in the root layout */}
     </div>
   );
 }

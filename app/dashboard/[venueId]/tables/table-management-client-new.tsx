@@ -8,8 +8,6 @@ import { AddTableDialog } from "@/components/table-management/AddTableDialog";
 import { ReservationsPanel } from "@/components/table-management/ReservationsPanel";
 import { DailyResetModal } from "@/components/daily-reset/DailyResetModal";
 import { toast } from "@/hooks/use-toast";
-import MobileNav from "@/components/MobileNav";
-
 // Hooks
 import { useTableManagementState } from "./hooks/useTableManagementState";
 
@@ -187,16 +185,7 @@ export function TableManagementClientNew({
         isResetting={state.isResetting}
       />
 
-      {/* Mobile Navigation */}
-      <MobileNav
-        venueId={venueId}
-        venueName=""
-        counts={{
-          live_orders: 0,
-          total_orders: 0,
-          notifications: 0,
-        }}
-      />
+      {/* Mobile navigation is provided by GlobalBottomNav in the root layout */}
     </div>
   );
 }
