@@ -1,18 +1,17 @@
 /**
- * Page auth: middleware only (Supabase). No per-page RPC for dashboard.
- *
- * SINGLE SOURCE OF TRUTH: All dashboard pages use requirePageAuth(venueId)
+ * Page auth helper — reads middleware-injected headers.
  *
  * Architecture:
- * 1. Middleware calls get_access_context RPC ONCE and sets headers:
- *    - x-user-id, x-user-email, x-user-tier, x-user-role, x-venue-id
- * 2. Pages call requirePageAuth(venueId) which:
- *    - Reads headers (no duplicate RPC calls)
- *    - Validates venueId matches headers (security)
- *    - Optionally checks role/feature requirements
+ *   1. Middleware calls get_access_context RPC and, on success, sets:
+ *      x-user-id, x-user-email, x-user-tier, x-user-role, x-venue-id
+ *   2. Pages call requirePageAuth(venueId) which reads those headers.
+ *   3. If the RPC failed the middleware only sets x-user-id.
+ *      In that case getAuthFromMiddlewareHeaders returns null and the
+ *      page MUST fall back to resolveVenueAccess (direct DB query).
  *
- * CRITICAL: No redirects. Returns null on auth failure.
- * All pages should use requirePageAuth(venueId) for consistency.
+ * CRITICAL: No defaults.  If a header is missing we return null so the
+ * caller is forced to verify from the database.  We never fabricate a
+ * role or tier.
  */
 
 import { headers } from "next/headers";
@@ -63,41 +62,55 @@ function buildHasFeatureAccess(tier: Tier): (feature: FeatureKey) => boolean {
   };
 }
 
-/** Read auth from middleware-set headers only. No RPC. */
+/**
+ * Read the FULL auth context from middleware headers.
+ * Returns null when ANY of the required fields (userId, role, tier) is
+ * missing — this forces callers to resolve from the database instead of
+ * using fabricated values.
+ */
 export const getAuthFromMiddlewareHeaders = cache(async (): Promise<PageAuthContext | null> => {
   const h = await headers();
   const userId = h.get("x-user-id");
-  const tierHeader = h.get("x-user-tier");
   const roleHeader = h.get("x-user-role");
+  const tierHeader = h.get("x-user-tier");
   const venueIdHeader = h.get("x-venue-id");
   const emailHeader = h.get("x-user-email");
 
-  if (!userId) {
+  // ALL three must be present — the middleware only sets role+tier when
+  // the RPC returned verified DB data.
+  if (!userId || !roleHeader || !tierHeader) {
     return null;
   }
 
-  const tier = (tierHeader ?? "starter") as Tier;
-  // Default to "owner" (not "viewer") to match the middleware fallback behavior.
-  // The middleware already verified the session; if the RPC failed it defaults
-  // to "owner". Using "viewer" here previously caused requirePageAuth role
-  // checks to reject legitimate owners when headers were partially set.
-  const role = (roleHeader ?? "owner") as UserRole;
-  const venueId = venueIdHeader ?? "";
+  const tier = tierHeader as Tier;
+  if (!["starter", "pro", "enterprise"].includes(tier)) {
+    return null;
+  }
 
-  const authContext = {
+  return {
     user: { id: userId, email: emailHeader ?? null },
-    venueId,
-    role,
+    venueId: venueIdHeader ?? "",
+    role: roleHeader as UserRole,
     tier,
     hasFeatureAccess: buildHasFeatureAccess(tier),
   };
-
-  return authContext;
 });
 
 /**
- * Page auth: headers only + optional requireRole filter. No per-page RPC.
- * Validates venueId matches headers for security.
+ * Read just the user id from middleware headers.
+ * This succeeds even when the RPC failed (middleware always sets x-user-id
+ * for authenticated users).  Use this to identify the user before calling
+ * resolveVenueAccess.
+ */
+export async function getUserIdFromHeaders(): Promise<string | null> {
+  const h = await headers();
+  return h.get("x-user-id");
+}
+
+/**
+ * Require page auth.  Returns the full context when the middleware RPC
+ * succeeded, or null otherwise.  Callers should fall back to
+ * resolveVenueAccess when this returns null.
  */
 export async function requirePageAuth(
   venueId?: string,
@@ -113,7 +126,6 @@ export async function requirePageAuth(
     return null;
   }
 
-  // Use venueId from params if provided, otherwise use header
   const finalVenueId = venueId || auth.venueId;
   if (!finalVenueId && !options.allowNoVenue) {
     return null;
@@ -133,7 +145,6 @@ export async function requirePageAuth(
     return null;
   }
 
-  // Return auth with validated venueId
   return {
     ...auth,
     venueId: finalVenueId || auth.venueId,
@@ -142,7 +153,6 @@ export async function requirePageAuth(
 
 /**
  * @deprecated Use requirePageAuth(venueId) instead for consistency
- * This function is kept for backward compatibility only
  */
 export async function getOptionalPageAuth(): Promise<PageAuthContext | null> {
   return getAuthFromMiddlewareHeaders();

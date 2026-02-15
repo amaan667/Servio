@@ -72,7 +72,7 @@ describe("getAuthFromMiddlewareHeaders", () => {
     expect(typeof result?.hasFeatureAccess).toBe("function");
   });
 
-  it("defaults role to 'owner' when x-user-role header is missing", async () => {
+  it("returns null when x-user-role header is missing (no defaults)", async () => {
     headersMock.mockResolvedValue(
       createHeaders({
         "x-user-id": "user-456",
@@ -83,13 +83,13 @@ describe("getAuthFromMiddlewareHeaders", () => {
       })
     );
 
+    // Must be null — we never fabricate a role.
+    // Callers fall back to resolveVenueAccess (DB query).
     const result = await getAuthFromMiddlewareHeaders();
-    expect(result).not.toBeNull();
-    expect(result?.role).toBe("owner");
-    expect(result?.tier).toBe("enterprise");
+    expect(result).toBeNull();
   });
 
-  it("defaults tier to 'starter' when x-user-tier header is missing", async () => {
+  it("returns null when x-user-tier header is missing (no defaults)", async () => {
     headersMock.mockResolvedValue(
       createHeaders({
         "x-user-id": "user-456",
@@ -99,10 +99,9 @@ describe("getAuthFromMiddlewareHeaders", () => {
       })
     );
 
+    // Must be null — we never fabricate a tier.
     const result = await getAuthFromMiddlewareHeaders();
-    expect(result).not.toBeNull();
-    expect(result?.tier).toBe("starter");
-    expect(result?.role).toBe("manager");
+    expect(result).toBeNull();
   });
 });
 

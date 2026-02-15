@@ -32,40 +32,29 @@ export default function SettingsPageClient({ venueId, initialData }: SettingsPag
   const { user } = useAuthRedirect();
   const { session } = useAuth();
 
-  // Single source of truth: get_access_context RPC via useAccessContext hook.
-  // This replaces all the duplicate role/tier queries that were here before.
+  // get_access_context RPC — the only client-side source for role/tier.
+  // No cache fallbacks, no __PLATFORM_AUTH__ — only the RPC result.
   const { context: accessContext, loading: accessLoading } = useAccessContext(venueId);
 
   const [mounted, setMounted] = useState(false);
   const [data, setData] = useState(initialData || null);
-  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     setMounted(true);
   }, []);
 
-  // When initialData is provided by the server, use it directly.
-  // When NOT provided, fetch only the venue/org display data client-side.
-  // Role/tier come from useAccessContext (single source of truth).
+  // When the server didn't provide initialData (e.g. the user was
+  // identified but the middleware RPC failed), fetch venue display data
+  // on the client.  Role/tier come from useAccessContext only.
   useEffect(() => {
-    if (initialData && typeof window !== "undefined") {
-      sessionStorage.setItem(`settings_data_${venueId}`, JSON.stringify(initialData));
-      return;
-    }
+    if (initialData) return;
+    if (!mounted || !session?.user || !accessContext) return;
 
     const fetchData = async () => {
       try {
-        if (!mounted) return;
-
-        const currentUser = session?.user;
-        if (!currentUser) {
-          setLoading(false);
-          return;
-        }
-
+        const currentUser = session.user;
         const supabase = supabaseBrowser();
 
-        // Fetch the venue and all owned venues (for the settings UI)
         const [venueResult, allVenuesResult] = await Promise.all([
           supabase.from("venues").select("*").eq("venue_id", venueId).maybeSingle(),
           supabase
@@ -75,7 +64,6 @@ export default function SettingsPageClient({ venueId, initialData }: SettingsPag
             .order("created_at", { ascending: true }),
         ]);
 
-        // Fetch organization for billing display
         let organization: Organization | null = null;
         const venue = venueResult.data;
         if (venue?.organization_id) {
@@ -89,53 +77,35 @@ export default function SettingsPageClient({ venueId, initialData }: SettingsPag
           organization = orgData || null;
         }
 
-        // Role comes from useAccessContext — no duplicate role queries
-        const role = accessContext?.role ?? "staff";
-        const isOwner = role === "owner";
-        const isManager = role === "manager";
-
-        const fetchedData = {
+        const role = accessContext.role;
+        setData({
           user: currentUser,
           venue,
           venues: allVenuesResult.data || [],
           organization,
-          isOwner,
-          isManager,
+          isOwner: role === "owner",
+          isManager: role === "manager",
           userRole: role,
-        };
-
-        setData(fetchedData);
-        sessionStorage.setItem(`settings_data_${venueId}`, JSON.stringify(fetchedData));
+        });
       } catch {
-        // Error handled silently
-      } finally {
-        setLoading(false);
+        // Silently handled
       }
     };
 
-    if (mounted && !initialData) {
-      fetchData();
-    }
+    fetchData();
   }, [venueId, initialData, session, mounted, accessContext]);
 
-  if (!mounted) {
+  if (!mounted || !user) {
     return null;
   }
 
-  if (!user) {
-    return null;
-  }
-
-  // Determine access from TWO sources (whichever is available first):
-  // 1. initialData.userRole — server-side resolved from admin DB query
-  // 2. accessContext.role — client-side resolved from get_access_context RPC
-  // Both ultimately come from the database, ensuring consistency.
+  // Role comes from either:
+  //   a) initialData.userRole — server-side, resolved from resolveVenueAccess (DB)
+  //   b) accessContext.role  — client-side, resolved from get_access_context RPC (DB)
+  // Both read from the same database.  No fabricated values.
   const effectiveRole = data?.userRole ?? accessContext?.role ?? null;
   const canAccessSettings = effectiveRole === "owner" || effectiveRole === "manager";
-
-  // While both server data and access context are still loading, show a loading state
-  // instead of prematurely showing "Access Restricted"
-  const isStillLoading = !data && (loading || accessLoading);
+  const isStillLoading = !data && accessLoading;
 
   return (
     <div className="min-h-screen bg-background">
@@ -165,7 +135,7 @@ export default function SettingsPageClient({ venueId, initialData }: SettingsPag
             organization={data.organization as Organization | undefined}
             isOwner={data.isOwner}
           />
-        ) : isStillLoading || (canAccessSettings && !data?.venue) ? (
+        ) : isStillLoading ? (
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
             <p className="text-blue-700">Loading settings...</p>
           </div>

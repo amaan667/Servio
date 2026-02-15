@@ -12,6 +12,19 @@ function shouldRunAuth(pathname: string): boolean {
   return false;
 }
 
+/**
+ * Helper: build a NextResponse that forwards `requestHeaders` and
+ * preserves any cookies already set on `source` (e.g. token refresh).
+ */
+function forwardWithHeaders(
+  requestHeaders: Headers,
+  source: NextResponse
+): NextResponse {
+  const res = NextResponse.next({ request: { headers: requestHeaders } });
+  source.cookies.getAll().forEach((c) => res.cookies.set(c.name, c.value));
+  return res;
+}
+
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
@@ -54,32 +67,24 @@ export async function middleware(request: NextRequest) {
   // MOBILE FIX: Detect mobile browser and adjust cookie settings
   const userAgent = request.headers.get("user-agent") || "";
   const isMobile = /iPhone|iPad|iPod|Android/i.test(userAgent);
-  const isIOS = /iPhone|iPad|iPod/.test(userAgent);
-  
-  // MOBILE FIX: Use more permissive cookie settings for mobile browsers
-  // iOS Safari requires: sameSite=lax, httpOnly=false, secure=true (on HTTPS)
-  // Android Chrome requires: sameSite=lax or none, httpOnly=false
+
   const mobileCookieSettings: CookieOptions = {
-    httpOnly: false, // Required for Supabase to read cookies
-    sameSite: isMobile ? "lax" : "strict", // Lax for mobile, strict for desktop
-    secure: request.url.startsWith("https://") || process.env.NODE_ENV === "production", // HTTPS on production
-    path: "/", // Root path for all subdomains
-    maxAge: 60 * 60 * 24 * 7, // 7 days for mobile persistence
+    httpOnly: false,
+    sameSite: isMobile ? "lax" : "strict",
+    secure: request.url.startsWith("https://") || process.env.NODE_ENV === "production",
+    path: "/",
+    maxAge: 60 * 60 * 24 * 7,
   };
 
   // Create middleware-specific Supabase client
   const supabase = createServerClient(supabaseUrl, supabaseAnonKey, {
     cookies: {
       getAll() {
-        const allCookies = request.cookies.getAll();
-        return allCookies;
+        return request.cookies.getAll();
       },
       setAll(cookiesToSet: Array<{ name: string; value: string; options: CookieOptions }>) {
         cookiesToSet.forEach(({ name, value, options }) => {
-          // Set on request for downstream reads in this request
           request.cookies.set(name, value);
-          
-          // Set on response with mobile-optimized settings
           response.cookies.set(name, value, {
             ...options,
             ...mobileCookieSettings,
@@ -89,13 +94,13 @@ export async function middleware(request: NextRequest) {
     },
   });
 
-  // Get user - use getUser() for secure authentication
+  // ── Authenticate the user ──────────────────────────────────────────
   let {
     data: { user },
     error: authError,
   } = await supabase.auth.getUser();
 
-  // Check for Authorization header (client may send Bearer token from localStorage)
+  // Check for Authorization header (client may send Bearer token)
   const authHeader = request.headers.get("Authorization");
   let userFromAuthHeader: { id: string; email?: string } | null = null;
 
@@ -107,11 +112,10 @@ export async function middleware(request: NextRequest) {
         userFromAuthHeader = userData.user;
       }
     } catch {
-      // Token verification failed, fall back to cookie-based auth
+      // Token verification failed
     }
   }
 
-  // If cookie-based auth failed but Authorization header had valid token, use that
   if ((!user || authError) && userFromAuthHeader) {
     user = userFromAuthHeader as typeof user;
     authError = null;
@@ -129,15 +133,14 @@ export async function middleware(request: NextRequest) {
         user = refreshedSession.user;
         authError = null;
       }
-    } catch (_refreshErr) {
-      // Refresh failed, continue with original error
+    } catch {
+      // Refresh failed
     }
   }
 
   const session = user ? { user } : null;
 
-  // For API routes, inject user info AND tier/role into headers if session exists
-  // This is the same approach used for dashboard routes, ensuring consistent auth context
+  // ── API routes ─────────────────────────────────────────────────────
   if (pathname.startsWith("/api/")) {
     const requestHeaders = new Headers(request.headers);
     if (pathname.startsWith("/api/v1/")) {
@@ -147,8 +150,9 @@ export async function middleware(request: NextRequest) {
       requestHeaders.set("x-user-id", session.user.id);
       requestHeaders.set("x-user-email", session.user.email || "");
 
-      // Try to extract venueId from query params so we can set tier/role headers
-      // (same RPC logic as dashboard routes for consistency)
+      // Try to resolve tier/role from RPC when venueId is in the query string.
+      // If the RPC fails we do NOT fabricate values — downstream handlers
+      // (withUnifiedAuth / createUnifiedHandler) will resolve from the DB.
       const url = new URL(request.url);
       const queryVenueId = url.searchParams.get("venueId") || url.searchParams.get("venue_id");
       if (queryVenueId) {
@@ -161,40 +165,30 @@ export async function middleware(request: NextRequest) {
           });
           if (!apiRpcErr && apiCtx) {
             const apiRpc = apiCtx as { user_id?: string; role?: string; tier?: string };
-            if (apiRpc.user_id && apiRpc.role) {
-              const apiTier = apiRpc.tier?.toLowerCase().trim() || "starter";
-              requestHeaders.set("x-user-tier", apiTier);
+            if (apiRpc.user_id && apiRpc.role && apiRpc.tier) {
+              requestHeaders.set("x-user-tier", apiRpc.tier.toLowerCase().trim());
               requestHeaders.set("x-user-role", apiRpc.role);
               requestHeaders.set("x-venue-id", normalizedApiVenueId);
             }
           }
         } catch {
-          // RPC failed for API route - tier/role will be resolved downstream by withUnifiedAuth
+          // RPC failed — leave headers unset; downstream will resolve from DB
         }
       }
 
-      const newResponse = NextResponse.next({
-        request: { headers: requestHeaders },
-      });
-      // Copy cookies from original response (set by Supabase during token refresh)
-      response.cookies.getAll().forEach((cookie) => {
-        newResponse.cookies.set(cookie.name, cookie.value);
-      });
-      return newResponse;
+      return forwardWithHeaders(requestHeaders, response);
     }
 
-    // No session - still set x-api-version if v1 path
+    // No session
     if (pathname.startsWith("/api/v1/")) {
       const requestHeaders = new Headers(request.headers);
       requestHeaders.set("x-api-version", "v1");
-      return NextResponse.next({
-        request: { headers: requestHeaders },
-      });
+      return NextResponse.next({ request: { headers: requestHeaders } });
     }
     return response;
   }
 
-  // Dashboard: auth/tier/role from middleware only (get_access_context RPC)
+  // ── Dashboard routes ───────────────────────────────────────────────
   if (pathname.startsWith("/dashboard")) {
     if (!session) {
       return response;
@@ -208,134 +202,42 @@ export async function middleware(request: NextRequest) {
       ? venueSegment
       : `venue-${venueSegment}`;
 
+    // Always build a fresh header set with the authenticated user id.
+    // Role and tier are ONLY set when the RPC returns real DB data.
+    const requestHeaders = new Headers(request.headers);
+    requestHeaders.set("x-user-id", session.user.id);
+    requestHeaders.set("x-user-email", session.user.email || "");
+    requestHeaders.set("x-venue-id", normalizedVenueId);
+
     try {
-      // Verify we have an authenticated session before calling RPC
-      const {
-        data: { user: verifyUser },
-        error: verifyError,
-      } = await supabase.auth.getUser();
-
-      if (!verifyUser) {
-        return response;
-      }
-
-      // Call RPC with proper error handling
-      let data: {
-        user_id?: string;
-        venue_id?: string | null;
-        role?: string;
-        tier?: string;
-      } | null = null;
-      let rpcErr: { message: string; code?: string; details?: unknown; hint?: unknown } | null =
-        null;
-
-      try {
-        const result = await supabase.rpc("get_access_context", {
-          p_venue_id: normalizedVenueId,
-        });
-        data = result.data;
-        rpcErr = result.error;
-      } catch (catchErr: unknown) {
-        rpcErr = { message: "RPC call failed", code: "RPC_ERROR" };
-        data = null;
-      }
-
-      // Always set basic user headers (user-id, email) even if RPC fails
-      // MOBILE FIX: Ensure headers are set even on mobile browsers
-      const requestHeaders = new Headers(request.headers);
-      requestHeaders.set("x-user-id", verifyUser.id);
-      requestHeaders.set("x-user-email", session.user.email || "");
-
-      if (rpcErr) {
-        // RPC failed - set default tier/role for mobile robustness
-        requestHeaders.set("x-venue-id", normalizedVenueId);
-        requestHeaders.set("x-user-tier", "starter");
-        requestHeaders.set("x-user-role", "owner");
-        
-        const errResponse = NextResponse.next({
-          request: { headers: requestHeaders },
-        });
-        response.cookies.getAll().forEach((c) => errResponse.cookies.set(c.name, c.value));
-        return errResponse;
-      }
-
-      if (!data) {
-        // RPC returned null - set default tier/role for mobile
-        requestHeaders.set("x-venue-id", normalizedVenueId);
-        requestHeaders.set("x-user-tier", "starter");
-        requestHeaders.set("x-user-role", "owner");
-        
-        const noDataResponse = NextResponse.next({
-          request: { headers: requestHeaders },
-        });
-        response.cookies.getAll().forEach((c) => noDataResponse.cookies.set(c.name, c.value));
-        return noDataResponse;
-      }
-
-      // Validate RPC response structure
-      const ctx = data as typeof data;
-      if (!ctx?.user_id || !ctx?.role) {
-        // RPC returned invalid data - set defaults for mobile
-        requestHeaders.set("x-venue-id", normalizedVenueId);
-        requestHeaders.set("x-user-tier", "starter");
-        requestHeaders.set("x-user-role", "owner");
-        
-        const invalidResponse = NextResponse.next({
-          request: { headers: requestHeaders },
-        });
-        response.cookies.getAll().forEach((c) => invalidResponse.cookies.set(c.name, c.value));
-        return invalidResponse;
-      }
-
-      // Validate tier is one of valid values
-      const tier = ctx?.tier?.toLowerCase().trim() || "starter";
-      if (!["starter", "pro", "enterprise"].includes(tier)) {
-        // Invalid tier - set default for mobile
-        requestHeaders.set("x-venue-id", normalizedVenueId);
-        requestHeaders.set("x-user-tier", "starter");
-        requestHeaders.set("x-user-role", ctx?.role || "owner");
-        
-        const tierResponse = NextResponse.next({
-          request: { headers: requestHeaders },
-        });
-        response.cookies.getAll().forEach((c) => tierResponse.cookies.set(c.name, c.value));
-        return tierResponse;
-      }
-
-      // RPC succeeded (or retry with token) - set headers with actual tier/role from database
-      requestHeaders.set("x-user-id", ctx.user_id);
-      requestHeaders.set("x-user-email", session.user.email || "");
-      requestHeaders.set("x-user-tier", tier);
-      requestHeaders.set("x-user-role", ctx.role);
-      requestHeaders.set("x-venue-id", ctx.venue_id ?? normalizedVenueId);
-
-      const successResponse = NextResponse.next({
-        request: { headers: requestHeaders },
+      const { data, error: rpcErr } = await supabase.rpc("get_access_context", {
+        p_venue_id: normalizedVenueId,
       });
-      // Preserve any cookies set during auth (e.g., token refresh)
-      response.cookies.getAll().forEach((c) => successResponse.cookies.set(c.name, c.value));
-      return successResponse;
-    } catch (_error) {
-      // CRITICAL FIX: Even when the try block throws, we must still set basic
-      // auth headers so downstream pages (via page-auth-helper) don't treat the
-      // user as unauthenticated. The session was already verified above.
-      if (session?.user) {
-        const fallbackHeaders = new Headers(request.headers);
-        fallbackHeaders.set("x-user-id", session.user.id);
-        fallbackHeaders.set("x-user-email", session.user.email || "");
-        fallbackHeaders.set("x-venue-id", normalizedVenueId);
-        // Safe defaults - pages can refine via admin-client fallback
-        fallbackHeaders.set("x-user-tier", "starter");
-        fallbackHeaders.set("x-user-role", "owner");
 
-        const fallbackResponse = NextResponse.next({
-          request: { headers: fallbackHeaders },
-        });
-        response.cookies.getAll().forEach((c) => fallbackResponse.cookies.set(c.name, c.value));
-        return fallbackResponse;
+      if (!rpcErr && data) {
+        const ctx = data as { user_id?: string; role?: string; tier?: string; venue_id?: string | null };
+
+        if (ctx.user_id && ctx.role && ctx.tier) {
+          const tier = ctx.tier.toLowerCase().trim();
+
+          if (["starter", "pro", "enterprise"].includes(tier)) {
+            requestHeaders.set("x-user-tier", tier);
+            requestHeaders.set("x-user-role", ctx.role);
+            if (ctx.venue_id) {
+              requestHeaders.set("x-venue-id", ctx.venue_id);
+            }
+          }
+          // If tier value is unrecognised we leave x-user-tier unset
+          // so the page falls through to resolveVenueAccess (DB query).
+        }
       }
-      return response;
+      // If RPC failed or returned incomplete data we leave x-user-tier
+      // and x-user-role unset. The page will call resolveVenueAccess.
+    } catch {
+      // RPC threw — headers stay without role/tier.
     }
+
+    return forwardWithHeaders(requestHeaders, response);
   }
 
   return response;

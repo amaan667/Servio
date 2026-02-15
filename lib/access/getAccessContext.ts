@@ -85,17 +85,11 @@ export const getAccessContext = cache(
         ...context,
         tier,
       };
-    } catch (error) {
-      // Return default context when RPC fails so pages still load
-      const normalizedVenueId = normalizeVenueId(venueId);
-      return {
-        user_id: user?.id || "",
-        venue_id: normalizedVenueId || null,
-        role: "owner",
-        tier: "starter" as Tier,
-        venue_ids: normalizedVenueId ? [normalizedVenueId] : [],
-        permissions: {},
-      };
+    } catch {
+      // RPC failed — return null.  Callers must handle this by falling
+      // back to resolveVenueAccess (direct DB query).  We never
+      // fabricate role or tier values.
+      return null;
     }
   }
 );

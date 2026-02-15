@@ -8,10 +8,10 @@ import { NextRequest, NextResponse } from "next/server";
 import {
   createSupabaseClient,
   createServerSupabaseWithToken,
-  createAdminClient,
 } from "@/lib/supabase";
 import { getAuthenticatedUser as getAuthUser } from "@/lib/supabase";
 import { normalizeVenueId } from "@/lib/utils/venueId";
+import { resolveVenueAccess } from "@/lib/auth/resolve-access";
 
 export interface Venue {
   venue_id: string;
@@ -106,13 +106,16 @@ export async function verifyVenueAccess(
       }
     }
 
-    // 3. Both cookie and Bearer token failed. Fall back to admin client.
-    //    The user's identity is already verified by middleware (x-user-id header),
-    //    so we can safely query the database directly to get venue access + tier.
+    // 3. Both cookie and Bearer token RPC calls failed.
+    //    Use resolveVenueAccess — the single canonical DB-read function
+    //    that queries venues, user_venue_roles and organizations directly.
     try {
-      const admin = createAdminClient();
+      const resolved = await resolveVenueAccess(userId, normalizedVenueId);
+      if (!resolved) return null;
 
-      // Get venue data
+      // We also need the full venue row for the VenueAccess return type.
+      const { createAdminClient } = await import("@/lib/supabase");
+      const admin = createAdminClient();
       const { data: venue, error: venueErr } = await admin
         .from("venues")
         .select("*")
@@ -121,54 +124,14 @@ export async function verifyVenueAccess(
 
       if (venueErr || !venue) return null;
 
-      // Check if user is the venue owner
-      let userRole: string | null = null;
-      if (venue.owner_user_id === userId) {
-        userRole = "owner";
-      } else {
-        // Check user_venue_roles for staff access
-        const { data: roleData } = await admin
-          .from("user_venue_roles")
-          .select("role")
-          .eq("venue_id", normalizedVenueId)
-          .eq("user_id", userId)
-          .maybeSingle();
-
-        if (roleData?.role) {
-          userRole = roleData.role;
-        }
-      }
-
-      if (!userRole) return null;
-
-      // Resolve tier: prefer organization's subscription_tier (authoritative, updated
-      // by Stripe webhooks) over venue's subscription_tier (may be stale if sync missed).
-      let tier = (venue.subscription_tier?.toLowerCase()?.trim() || "starter") as string;
-
-      if (venue.organization_id) {
-        const { data: orgData } = await admin
-          .from("organizations")
-          .select("subscription_tier")
-          .eq("id", venue.organization_id)
-          .maybeSingle();
-
-        if (orgData?.subscription_tier) {
-          const orgTier = orgData.subscription_tier.toLowerCase().trim();
-          if (["starter", "pro", "enterprise"].includes(orgTier)) {
-            tier = orgTier;
-          }
-        }
-      }
-
       return {
         venue,
         user: { id: userId },
-        role: userRole,
-        tier,
+        role: resolved.role,
+        tier: resolved.tier,
         venue_ids: [],
       };
     } catch {
-      // Admin fallback also failed
       return null;
     }
   } catch {
