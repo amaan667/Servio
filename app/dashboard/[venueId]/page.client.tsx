@@ -377,37 +377,43 @@ const DashboardClient = React.memo(function DashboardClient({
   }, [handleRefresh]);
 
   // Auto-refresh when user navigates back to dashboard
-  // Always refresh on focus to ensure counts are up-to-date
+  // Debounce so that rapid focus/visibility events don't fire multiple requests
   useEffect(() => {
     // Only run on client side to prevent SSR errors
     if (typeof window === "undefined" || typeof document === "undefined") return;
 
-    const handleFocus = () => {
-      // Always refresh when page gains focus to ensure counts are accurate
-      handleRefresh();
+    let debounceTimer: ReturnType<typeof setTimeout> | null = null;
+
+    const debouncedRefresh = () => {
+      if (debounceTimer) clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(() => {
+        handleRefresh();
+      }, 500);
     };
 
     const handleVisibilityChange = () => {
-      // Refresh when page becomes visible
+      // Only refresh when page becomes visible again
       if (!document.hidden) {
-        handleRefresh();
+        debouncedRefresh();
       }
     };
 
-    window.addEventListener("focus", handleFocus);
+    // Use visibilitychange only – it covers both tab switches and mobile
+    // app-to-foreground transitions without the duplicate firing that
+    // 'focus' causes alongside visibilitychange.
     document.addEventListener("visibilitychange", handleVisibilityChange);
 
     return () => {
-      window.removeEventListener("focus", handleFocus);
+      if (debounceTimer) clearTimeout(debounceTimer);
       document.removeEventListener("visibilitychange", handleVisibilityChange);
     };
   }, [venueId, handleRefresh]);
 
-  // Periodic refresh as fallback (every 30 seconds)
+  // Periodic refresh as fallback (every 60 seconds)
   useEffect(() => {
     const interval = setInterval(() => {
       handleRefresh();
-    }, 30000); // Refresh every 30 seconds
+    }, 60000);
 
     return () => clearInterval(interval);
   }, [handleRefresh]);
