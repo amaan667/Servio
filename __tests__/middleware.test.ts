@@ -19,10 +19,15 @@ type SupabaseUser = { id: string; email?: string | null };
 const getUserMock =
   vi.fn<() => Promise<{ data: { user: SupabaseUser | null }; error: unknown | null }>>();
 
+const refreshSessionMock = vi.fn<
+  () => Promise<{ data: { session: null }; error: { message: string } | null }>
+>();
+
 vi.mock("@supabase/ssr", () => ({
   createServerClient: vi.fn(() => ({
     auth: {
       getUser: getUserMock,
+      refreshSession: refreshSessionMock,
     },
   })),
 }));
@@ -66,16 +71,21 @@ describe("middleware (pilot hardening)", () => {
     expect(res.status).toBe(503);
   });
 
-  it("returns 401 for protected API routes when user is unauthenticated", async () => {
+  it("passes through without x-user-* headers when user is unauthenticated", async () => {
     process.env.NEXT_PUBLIC_SUPABASE_URL = "https://test.supabase.co";
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY = "test-anon-key";
 
     getUserMock.mockResolvedValueOnce({ data: { user: null }, error: null });
+    refreshSessionMock.mockResolvedValueOnce({
+      data: { session: null },
+      error: { message: "refresh_token_not_found" },
+    });
 
     const req = makeRequest("/api/staff/list") as unknown as Parameters<typeof middleware>[0];
     const res = await middleware(req);
 
-    expect(res.status).toBe(401);
+    expect(res.status).toBe(200);
+    expect(res.headers.get("x-middleware-request-x-user-id")).toBeNull();
   });
 
   it("injects x-user-* headers for authenticated protected API routes", async () => {

@@ -1,9 +1,10 @@
 "use client";
 
-import { createContext, useContext, useEffect, useMemo, useState } from "react";
+import { createContext, useContext, useCallback, useEffect, useMemo, useState } from "react";
 import type { Session, User } from "@supabase/supabase-js";
 import { supabaseBrowser } from "@/lib/supabase";
 import { safeGetItem, safeSetItem, safeRemoveItem } from "@/app/order/utils/safeStorage";
+import { useMobileSessionRefresh } from "@/hooks/useMobileSessionRefresh";
 
 interface ExtendedSession extends Session {
   primaryVenue?: {
@@ -348,6 +349,33 @@ export default function AuthProvider({
       };
     }
   }, [initialSession]);
+
+  const handleSessionRefreshed = useCallback(
+    (refreshedSession: Session) => {
+      setSession(refreshedSession);
+      setUser(refreshedSession.user);
+      if (typeof window !== "undefined") {
+        safeSetItem(localStorage, "sb-auth-session", JSON.stringify(refreshedSession));
+      }
+    },
+    []
+  );
+
+  const handleSessionExpired = useCallback(() => {
+    setSession(null);
+    setUser(null);
+    setPrimaryVenueId(null);
+    setUserRole(null);
+    if (typeof window !== "undefined") {
+      safeRemoveItem(localStorage, "sb-auth-session");
+    }
+  }, []);
+
+  useMobileSessionRefresh({
+    session,
+    onSessionRefreshed: handleSessionRefreshed,
+    onSessionExpired: handleSessionExpired,
+  });
 
   const signOut = async () => {
     // Store user ID before clearing session (needed for cleanup)

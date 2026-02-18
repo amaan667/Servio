@@ -15,13 +15,31 @@ function shouldRunAuth(pathname: string): boolean {
 /**
  * Helper: build a NextResponse that forwards `requestHeaders` and
  * preserves any cookies already set on `source` (e.g. token refresh).
+ *
+ * IMPORTANT: We copy the full cookie object (name, value, path, maxAge,
+ * sameSite, etc.) — not just name+value. Dropping the options turned
+ * refreshed auth cookies into session-only cookies that mobile browsers
+ * evict aggressively, causing "not authenticated" errors after the tab
+ * had been backgrounded.
  */
 function forwardWithHeaders(
   requestHeaders: Headers,
   source: NextResponse
 ): NextResponse {
   const res = NextResponse.next({ request: { headers: requestHeaders } });
-  source.cookies.getAll().forEach((c) => res.cookies.set(c.name, c.value));
+  source.cookies.getAll().forEach((c) => {
+    res.cookies.set({
+      name: c.name,
+      value: c.value,
+      path: c.path,
+      domain: c.domain,
+      maxAge: c.maxAge,
+      expires: c.expires,
+      httpOnly: c.httpOnly,
+      secure: c.secure,
+      sameSite: c.sameSite,
+    });
+  });
   return res;
 }
 
@@ -120,8 +138,11 @@ export async function middleware(request: NextRequest) {
     authError = null;
   }
 
-  // If getUser() fails, try to refresh the session
-  if (authError && !user) {
+  // If getUser() fails (or returned null), try to refresh the session.
+  // This is critical on mobile browsers where the access token expires
+  // while the tab is backgrounded — the refresh token in the cookie may
+  // still be valid even though the access token is stale.
+  if (!user) {
     try {
       const {
         data: { session: refreshedSession },
@@ -133,7 +154,7 @@ export async function middleware(request: NextRequest) {
         authError = null;
       }
     } catch {
-      // Refresh failed
+      // Refresh failed — user stays null, handled downstream.
     }
   }
 
