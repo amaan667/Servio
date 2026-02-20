@@ -4,10 +4,11 @@ import { v4 as uuidv4 } from "uuid";
 import { createServerSupabase } from "@/lib/supabase";
 
 import { getCorrelationIdFromRequest } from "@/lib/middleware/correlation-id";
-import { generateIdempotencyKey, withIdempotency, checkIdempotency } from "@/lib/db/idempotency";
+import { generateIdempotencyKey, withIdempotency } from "@/lib/db/idempotency";
 import { verifyVenueExists } from "@/lib/middleware/authorization";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import { deriveQrTypeFromOrder, normalizeQrType } from "@/lib/orders/qr-payment-validation";
+import { logger } from "@/lib/monitoring/structured-logger";
 import crypto from "crypto";
 import type StripeNamespace from "stripe";
 
@@ -55,6 +56,9 @@ export async function POST(req: NextRequest) {
 
     // Handle demo mode
     if (paymentIntentId.startsWith("demo-")) {
+      if (process.env.ENABLE_PUBLIC_DEMO_ORDERS !== "true") {
+        return NextResponse.json({ ok: false, message: "Not found" }, { status: 404 });
+      }
       return await createDemoOrder(cartId);
     }
 
@@ -70,13 +74,6 @@ export async function POST(req: NextRequest) {
       .createHash("sha256")
       .update(JSON.stringify({ paymentIntentId, cartId }))
       .digest("hex");
-
-    const existing = await checkIdempotency(idempotencyKey);
-    if (existing.exists) {
-      return NextResponse.json(existing.response.response_data, {
-        status: existing.response.status_code,
-      });
-    }
 
     // Retrieve payment intent from Stripe
     const { stripe } = await import("@/lib/stripe-client");
@@ -98,9 +95,9 @@ export async function POST(req: NextRequest) {
     const { data: existingOrder } = await supabase
       .from("orders")
       .select(
-        "id, venue_id, table_number, customer_name, customer_phone, customer_email, total_amount, order_status, payment_status, payment_intent_id, created_at, updated_at, items"
+        "id, venue_id, table_number, customer_name, customer_phone, customer_email, total_amount, order_status, payment_status, stripe_payment_intent_id, created_at, updated_at, items"
       )
-      .eq("payment_intent_id", paymentIntentId)
+      .eq("stripe_payment_intent_id", paymentIntentId)
       .maybeSingle();
 
     if (existingOrder) {
@@ -112,8 +109,12 @@ export async function POST(req: NextRequest) {
           { ok: true, order: existingOrder, message: "Order already exists" },
           200,
           3600
-        ).catch(() => {
-          // Non-critical
+        ).catch((error) => {
+          logger.warn("[orders/createFromPaidIntent] failed to store idempotency cache", {
+            correlationId,
+            paymentIntentId,
+            error: error instanceof Error ? error.message : String(error),
+          });
         });
       });
 
@@ -180,7 +181,7 @@ export async function POST(req: NextRequest) {
       fulfillment_status: "PREPARING",
       qr_type: derivedQrType,
       payment_status: "PAID",
-      payment_intent_id: paymentIntentId,
+      stripe_payment_intent_id: paymentIntentId,
       payment_method: "PAY_NOW", // Standardized payment method for Stripe payments
       payment_mode: "online", // Required for payment_method consistency constraint
       table_identifier: table_number ? `Table ${table_number}` : null,
@@ -248,8 +249,13 @@ export async function POST(req: NextRequest) {
             })
             .eq("id", order.id)
             .eq("venue_id", venue_id);
-        } catch {
-          // Best-effort; do not block order creation
+        } catch (error) {
+          logger.warn("[orders/createFromPaidIntent] post-create order metadata update failed", {
+            correlationId,
+            orderId: order.id,
+            venueId: venue_id,
+            error: error instanceof Error ? error.message : String(error),
+          });
         }
 
         // Publish realtime event for live orders
@@ -269,7 +275,12 @@ export async function POST(req: NextRequest) {
             },
           });
         } catch (realtimeError) {
-          // Don't fail the order creation if realtime fails
+          logger.warn("[orders/createFromPaidIntent] realtime publish failed", {
+            correlationId,
+            orderId: order.id,
+            venueId: venue_id,
+            error: realtimeError instanceof Error ? realtimeError.message : String(realtimeError),
+          });
         }
 
         return {
@@ -289,6 +300,11 @@ export async function POST(req: NextRequest) {
     return NextResponse.json(result.data, { status: result.statusCode });
   } catch (_error) {
     const correlationId = getCorrelationIdFromRequest(req);
+
+    logger.error("[orders/createFromPaidIntent] request failed", {
+      correlationId,
+      error: _error instanceof Error ? _error.message : String(_error),
+    });
 
     if (_error instanceof Stripe.errors.StripeError) {
       return NextResponse.json(
@@ -328,7 +344,7 @@ async function createDemoOrder(cartId: string) {
       fulfillment_status: "PREPARING",
       qr_type: "TABLE_FULL_SERVICE",
       payment_status: "PAID",
-      payment_intent_id: `demo-${cartId}`,
+      stripe_payment_intent_id: `demo-${cartId}`,
       payment_method: "PAY_NOW", // Demo orders use PAY_NOW method
       payment_mode: "online", // Required for payment_method consistency constraint
       table_identifier: "Table 1",
@@ -383,7 +399,10 @@ async function createDemoOrder(cartId: string) {
         },
       });
     } catch (realtimeError) {
-      // Don't fail the order creation if realtime fails
+      logger.warn("[orders/createFromPaidIntent] demo realtime publish failed", {
+        cartId,
+        error: realtimeError instanceof Error ? realtimeError.message : String(realtimeError),
+      });
     }
 
     return NextResponse.json({

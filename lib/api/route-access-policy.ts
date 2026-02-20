@@ -1,0 +1,392 @@
+/**
+ * Central API access inventory and policy enforcement.
+ * Keep this list in sync with route handlers under app/api/. Unknown routes are denied by default.
+ */
+
+export type ApiAccessClass = "public" | "authenticated" | "venue-role-scoped" | "system";
+export type HttpMethod = "GET" | "POST" | "PUT" | "PATCH" | "DELETE" | "OPTIONS" | "HEAD";
+
+export interface ApiRouteOverride {
+  pattern: string;
+  access: ApiAccessClass;
+  methods?: readonly HttpMethod[];
+}
+
+export const API_ROUTE_INVENTORY = [
+  "/api/ai/job-status",
+  "/api/ai/simple-chat",
+  "/api/analytics/customers",
+  "/api/analytics/dashboard",
+  "/api/analytics/orders",
+  "/api/analytics/revenue",
+  "/api/analytics/vitals",
+  "/api/auth/access-context",
+  "/api/auth/check-cookies",
+  "/api/auth/forgot-password",
+  "/api/auth/health",
+  "/api/auth/refresh",
+  "/api/auth/self-test",
+  "/api/auth/send-verification",
+  "/api/auth/set-session",
+  "/api/auth/sign-in-password",
+  "/api/auth/signout",
+  "/api/auth/sync-session",
+  "/api/auth/test-oauth",
+  "/api/auth/verify-reset-code",
+  "/api/bulk/export",
+  "/api/bulk/inventory",
+  "/api/bulk/menu-items",
+  "/api/bulk/orders",
+  "/api/cart/store",
+  "/api/catalog/clear",
+  "/api/catalog/replace",
+  "/api/catalog/reprocess-with-url",
+  "/api/checkout",
+  "/api/checkout/verify",
+  "/api/cleanup/stale-orders",
+  "/api/cron/daily-reset",
+  "/api/cron/demo-reset",
+  "/api/cron/health-monitor",
+  "/api/cron/stripe-reconcile",
+  "/api/daily-reset",
+  "/api/daily-reset/check-and-reset",
+  "/api/daily-reset/manual",
+  "/api/dashboard/counts",
+  "/api/dashboard/orders",
+  "/api/dashboard/orders/[id]",
+  "/api/dashboard/orders/one",
+  "/api/delete-account",
+  "/api/docs",
+  "/api/docs/openapi",
+  "/api/env",
+  "/api/errors",
+  "/api/extract-menu",
+  "/api/features/check",
+  "/api/feedback",
+  "/api/feedback-responses",
+  "/api/feedback/list",
+  "/api/feedback/questions",
+  "/api/feedback/questions/public",
+  "/api/graphql",
+  "/api/health",
+  "/api/inventory/export/csv",
+  "/api/inventory/export/movements",
+  "/api/inventory/import/csv",
+  "/api/inventory/ingredients",
+  "/api/inventory/ingredients/[id]",
+  "/api/inventory/low-stock",
+  "/api/inventory/recipes/[menu_item_id]",
+  "/api/inventory/recipes/[menu_item_id]/[ingredient_id]",
+  "/api/inventory/seed",
+  "/api/inventory/stock/adjust",
+  "/api/inventory/stock/deduct",
+  "/api/inventory/stock/movements",
+  "/api/inventory/stock/stocktake",
+  "/api/kds/backfill",
+  "/api/kds/backfill-all",
+  "/api/kds/stations",
+  "/api/kds/status",
+  "/api/kds/tickets",
+  "/api/kds/tickets/bulk-update",
+  "/api/kds/tickets/check-bumped",
+  "/api/live-orders",
+  "/api/log-dashboard",
+  "/api/log-order-access",
+  "/api/log-payment-flow",
+  "/api/log-qr-scan",
+  "/api/menu-builder-redirect",
+  "/api/menu-items/[itemId]/modifiers",
+  "/api/menu-items/upload-image",
+  "/api/menu/[venueId]",
+  "/api/menu/categories",
+  "/api/menu/categories/reset",
+  "/api/menu/clear",
+  "/api/menu/corrections",
+  "/api/menu/hybrid-merge",
+  "/api/menu/image-proxy",
+  "/api/menu/update-category",
+  "/api/menu/upload",
+  "/api/menu/uploads/[venueId]/category-order",
+  "/api/onboarding/progress",
+  "/api/orders",
+  "/api/orders/[orderId]",
+  "/api/orders/[orderId]/bump",
+  "/api/orders/[orderId]/collect-payment",
+  "/api/orders/[orderId]/refund",
+  "/api/orders/[orderId]/update-payment-mode",
+  "/api/orders/bulk-complete",
+  "/api/orders/by-session",
+  "/api/orders/by-session/[sessionId]",
+  "/api/orders/check-active",
+  "/api/orders/close-table-session",
+  "/api/orders/complete",
+  "/api/orders/create-demo",
+  "/api/orders/create-from-checkout-session",
+  "/api/orders/create-split-orders",
+  "/api/orders/createFromPaidIntent",
+  "/api/orders/delete",
+  "/api/orders/mark-paid",
+  "/api/orders/notify-ready",
+  "/api/orders/pay-multiple",
+  "/api/orders/payment",
+  "/api/orders/recent-paid",
+  "/api/orders/search",
+  "/api/orders/serve",
+  "/api/orders/session/[sessionId]/open",
+  "/api/orders/table/[tableNumber]/unpaid",
+  "/api/orders/table/[tableNumber]/unpaid-for-payment",
+  "/api/orders/unpaid-pay-later",
+  "/api/orders/update-payment-status",
+  "/api/orders/update-session",
+  "/api/orders/update-status",
+  "/api/orders/verify",
+  "/api/organization/ensure",
+  "/api/pay/demo",
+  "/api/pay/later",
+  "/api/pay/stripe",
+  "/api/pay/till",
+  "/api/payments/create-intent",
+  "/api/performance",
+  "/api/pilot-feedback",
+  "/api/ping",
+  "/api/pos/bill-splits",
+  "/api/pos/counter-sessions",
+  "/api/pos/orders",
+  "/api/pos/orders/status",
+  "/api/pos/payments",
+  "/api/pos/table-sessions",
+  "/api/pos/table-transfer",
+  "/api/ready",
+  "/api/realtime/subscribe",
+  "/api/receipts/pdf/[orderId]",
+  "/api/receipts/send-email",
+  "/api/receipts/send-sms",
+  "/api/reservations",
+  "/api/reservations/[reservationId]/assign",
+  "/api/reservations/[reservationId]/cancel",
+  "/api/reservations/[reservationId]/modify",
+  "/api/reservations/[reservationId]/no-show",
+  "/api/reservations/auto-complete",
+  "/api/reservations/by-table/[tableId]",
+  "/api/reservations/check-completion",
+  "/api/reservations/checkin",
+  "/api/reservations/create",
+  "/api/reservations/unassigned",
+  "/api/reviews/add",
+  "/api/reviews/list",
+  "/api/scrape-menu",
+  "/api/sentry-example-api",
+  "/api/setup-kds",
+  "/api/setup/stripe-products",
+  "/api/signup/complete-onboarding",
+  "/api/signup/with-subscription",
+  "/api/sli",
+  "/api/staff/add",
+  "/api/staff/check",
+  "/api/staff/clear",
+  "/api/staff/create-invitation-function",
+  "/api/staff/delete",
+  "/api/staff/init",
+  "/api/staff/invitations",
+  "/api/staff/invitations/[token]",
+  "/api/staff/invitations/cancel",
+  "/api/staff/list",
+  "/api/staff/setup-invitations",
+  "/api/staff/shifts/add",
+  "/api/staff/shifts/delete",
+  "/api/staff/shifts/list",
+  "/api/staff/shifts/update",
+  "/api/staff/toggle",
+  "/api/status",
+  "/api/stripe/check-current-subscription",
+  "/api/stripe/checkout-session",
+  "/api/stripe/create-checkout-session",
+  "/api/stripe/create-customer-checkout",
+  "/api/stripe/create-portal-session",
+  "/api/stripe/create-table-checkout",
+  "/api/stripe/downgrade-plan",
+  "/api/stripe/reconcile",
+  "/api/stripe/webhook",
+  "/api/stripe/webhooks",
+  "/api/subscription/refresh-status",
+  "/api/subscription/sync-from-stripe",
+  "/api/support/submit",
+  "/api/table-sessions",
+  "/api/table-sessions/[id]",
+  "/api/table-sessions/actions",
+  "/api/table-sessions/enhanced-merge",
+  "/api/table/group-session",
+  "/api/table/group-sessions",
+  "/api/tables",
+  "/api/tables/[tableId]",
+  "/api/tables/[tableId]/close",
+  "/api/tables/[tableId]/reissue-qr",
+  "/api/tables/[tableId]/seat",
+  "/api/tables/auto-create",
+  "/api/tables/cleanup-duplicates",
+  "/api/tables/clear",
+  "/api/tables/clear-all",
+  "/api/tables/clear-completed",
+  "/api/tables/force-clear-all",
+  "/api/tables/remove",
+  "/api/test-log",
+  "/api/test-rpc",
+  "/api/tickets/print",
+  "/api/tier-check",
+  "/api/user/profile",
+  "/api/venue/[venueId]/payment-settings",
+  "/api/venue/[venueId]/tier",
+  "/api/venues/[venueId]/qr-hidden",
+  "/api/venues/update-reset-time",
+  "/api/venues/upsert",
+  "/api/verify-env",
+  "/api/vitals",
+] as const;
+
+export type ApiRoutePattern = (typeof API_ROUTE_INVENTORY)[number];
+
+const VENUE_SCOPED_PREFIXES = [
+  "/api/analytics/",
+  "/api/dashboard/",
+  "/api/inventory/",
+  "/api/kds/",
+  "/api/menu/",
+  "/api/orders/",
+  "/api/pos/",
+  "/api/reservations/",
+  "/api/staff/",
+  "/api/table/",
+  "/api/table-sessions",
+  "/api/tables",
+  "/api/venue/",
+  "/api/venues/",
+] as const;
+
+const API_ROUTE_OVERRIDES: readonly ApiRouteOverride[] = [
+  // Public health & docs
+  { pattern: "/api/health", access: "public" },
+  { pattern: "/api/ping", access: "public" },
+  { pattern: "/api/ready", access: "public" },
+  { pattern: "/api/status", access: "public" },
+  { pattern: "/api/vitals", access: "public" },
+  { pattern: "/api/docs", access: "public" },
+  { pattern: "/api/docs/openapi", access: "public" },
+  // Public auth/session bootstrap
+  { pattern: "/api/auth/forgot-password", access: "public" },
+  { pattern: "/api/auth/health", access: "public" },
+  { pattern: "/api/auth/refresh", access: "public" },
+  { pattern: "/api/auth/set-session", access: "public" },
+  { pattern: "/api/auth/sign-in-password", access: "public" },
+  { pattern: "/api/auth/signout", access: "public" },
+  { pattern: "/api/auth/sync-session", access: "public" },
+  { pattern: "/api/auth/verify-reset-code", access: "public" },
+  // Public customer ordering & checkout
+  { pattern: "/api/checkout", access: "public", methods: ["POST"] },
+  { pattern: "/api/checkout/verify", access: "public", methods: ["GET"] },
+  { pattern: "/api/orders", access: "public", methods: ["POST"] },
+  { pattern: "/api/orders/[orderId]", access: "public", methods: ["GET"] },
+  { pattern: "/api/orders/by-session", access: "public", methods: ["GET"] },
+  { pattern: "/api/orders/by-session/[sessionId]", access: "public", methods: ["GET"] },
+  { pattern: "/api/orders/check-active", access: "public", methods: ["GET"] },
+  { pattern: "/api/orders/create-demo", access: "public", methods: ["POST"] },
+  { pattern: "/api/orders/create-from-checkout-session", access: "public", methods: ["POST"] },
+  { pattern: "/api/orders/createFromPaidIntent", access: "public", methods: ["POST"] },
+  { pattern: "/api/orders/session/[sessionId]/open", access: "public", methods: ["GET"] },
+  { pattern: "/api/orders/table/[tableNumber]/unpaid", access: "public", methods: ["GET"] },
+  {
+    pattern: "/api/orders/table/[tableNumber]/unpaid-for-payment",
+    access: "public",
+    methods: ["GET"],
+  },
+  { pattern: "/api/orders/verify", access: "public", methods: ["GET"] },
+  { pattern: "/api/pay/demo", access: "public", methods: ["POST"] },
+  { pattern: "/api/pay/later", access: "public", methods: ["POST"] },
+  { pattern: "/api/pay/till", access: "public", methods: ["POST"] },
+  { pattern: "/api/stripe/create-checkout-session", access: "public", methods: ["POST"] },
+  { pattern: "/api/stripe/create-customer-checkout", access: "public", methods: ["POST"] },
+  { pattern: "/api/stripe/create-table-checkout", access: "public", methods: ["POST"] },
+  { pattern: "/api/stripe/checkout-session", access: "public", methods: ["GET"] },
+  { pattern: "/api/signup/with-subscription", access: "public", methods: ["POST"] },
+  { pattern: "/api/menu/[venueId]", access: "public", methods: ["GET"] },
+  { pattern: "/api/menu/image-proxy", access: "public", methods: ["GET"] },
+  { pattern: "/api/menu-builder-redirect", access: "public", methods: ["GET"] },
+  { pattern: "/api/venue/[venueId]/payment-settings", access: "public", methods: ["GET"] },
+  { pattern: "/api/log-order-access", access: "public", methods: ["POST"] },
+  { pattern: "/api/log-payment-flow", access: "public", methods: ["POST"] },
+  { pattern: "/api/log-qr-scan", access: "public", methods: ["POST"] },
+  { pattern: "/api/stripe/webhook", access: "public", methods: ["POST"] },
+  { pattern: "/api/stripe/webhooks", access: "public", methods: ["POST"] },
+  { pattern: "/api/sli", access: "public", methods: ["GET"] },
+  { pattern: "/api/feedback/questions/public", access: "public", methods: ["GET"] },
+  { pattern: "/api/reviews/add", access: "public", methods: ["POST"] },
+  { pattern: "/api/pilot-feedback", access: "public", methods: ["POST"] },
+  { pattern: "/api/errors", access: "public" },
+  // Internal/system routes
+  { pattern: "/api/cron/daily-reset", access: "system" },
+  { pattern: "/api/cron/demo-reset", access: "system" },
+  { pattern: "/api/cron/health-monitor", access: "system" },
+  { pattern: "/api/cron/stripe-reconcile", access: "system" },
+  { pattern: "/api/env", access: "system" },
+  { pattern: "/api/verify-env", access: "system" },
+  { pattern: "/api/auth/check-cookies", access: "system" },
+  { pattern: "/api/auth/self-test", access: "system" },
+  { pattern: "/api/auth/test-oauth", access: "system" },
+  { pattern: "/api/test-log", access: "system" },
+  { pattern: "/api/test-rpc", access: "system" },
+  { pattern: "/api/setup/stripe-products", access: "system" },
+  { pattern: "/api/orders/recent-paid", access: "system" },
+];
+
+const compiledRouteRegex = new Map<string, RegExp>();
+const sortedRoutePatterns = [...API_ROUTE_INVENTORY].sort((a, b) => b.length - a.length);
+
+function routePatternToRegex(pattern: string): RegExp {
+  const cached = compiledRouteRegex.get(pattern);
+  if (cached) return cached;
+
+  const escaped = pattern
+    .replace(/[-/\\^$*+?.()|[\]{}]/g, "\\$&")
+    .replace(/\\\[[^\\\]]+\\\]/g, "[^/]+");
+  const regex = new RegExp(`^${escaped}$`);
+  compiledRouteRegex.set(pattern, regex);
+  return regex;
+}
+
+function inferDefaultAccess(pattern: string): ApiAccessClass {
+  if (VENUE_SCOPED_PREFIXES.some((prefix) => pattern.startsWith(prefix))) {
+    return "venue-role-scoped";
+  }
+  return "authenticated";
+}
+
+export function resolveApiRouteAccess(pathname: string, method: string): {
+  knownRoute: boolean;
+  matchedPattern: string | null;
+  access: ApiAccessClass;
+} {
+  const upperMethod = method.toUpperCase() as HttpMethod;
+
+  const matchedPattern =
+    sortedRoutePatterns.find((pattern) => routePatternToRegex(pattern).test(pathname)) ?? null;
+
+  if (!matchedPattern) {
+    return {
+      knownRoute: false,
+      matchedPattern: null,
+      access: "authenticated",
+    };
+  }
+
+  let access = inferDefaultAccess(matchedPattern);
+  for (const override of API_ROUTE_OVERRIDES) {
+    if (!routePatternToRegex(override.pattern).test(pathname)) continue;
+    if (override.methods && !override.methods.includes(upperMethod)) continue;
+    access = override.access;
+  }
+
+  return {
+    knownRoute: true,
+    matchedPattern,
+    access,
+  };
+}

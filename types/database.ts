@@ -125,27 +125,48 @@ export interface OrderRow {
   id: string;
   venue_id: string;
   table_id: string | null;
+  table_number: number | null;
   counter_id: string | null;
-  order_number: string;
-  status: "pending" | "in_prep" | "ready" | "served" | "completed" | "cancelled";
-  order_type: "dine_in" | "takeaway" | "delivery";
-  items: OrderItem[];
-  subtotal: number;
-  tax: number;
+  counter_label: string | null;
+  order_number: string | null;
+  order_status:
+    | "PLACED"
+    | "ACCEPTED"
+    | "IN_PREP"
+    | "READY"
+    | "SERVING"
+    | "SERVED"
+    | "COMPLETED"
+    | "CANCELLED"
+    | "REFUNDED";
+  fulfillment_status: string | null;
+  source: "qr" | "counter" | "pos" | null;
+  fulfillment_type: "table" | "counter" | "delivery" | "pickup" | null;
+  items: OrderItem[] | Record<string, unknown>[] | null;
+  subtotal: number | null;
+  tax: number | null;
   tip: number | null;
-  total: number;
-  payment_status: "unpaid" | "paid" | "refunded" | "partial";
-  payment_method: "card" | "cash" | "other" | null;
+  total: number | null;
+  total_amount: number;
+  payment_status: "UNPAID" | "IN_PROGRESS" | "PAID" | "REFUNDED" | "FAILED";
+  payment_method: "PAY_NOW" | "PAY_LATER" | "PAY_AT_TILL" | "TILL" | "card" | "cash" | "other" | null;
+  payment_mode: "online" | "deferred" | "till" | null;
   customer_name: string | null;
   customer_phone: string | null;
   customer_email: string | null;
+  table_identifier: string | null;
+  qr_type: string | null;
   special_instructions: string | null;
+  notes: string | null;
+  requires_collection: boolean | null;
   created_at: string;
   updated_at: string;
   completed_at: string | null;
+  served_at: string | null;
   preparation_time: number | null;
   assigned_to: string | null;
   stripe_payment_intent_id: string | null;
+  stripe_session_id: string | null;
 }
 
 export interface OrderItem {

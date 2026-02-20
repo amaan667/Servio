@@ -62,6 +62,7 @@ export const POST = createUnifiedHandler(
       .update({
         payment_status: "PAID",
         payment_method: "stripe",
+        ...(payment_intent_id ? { stripe_payment_intent_id: payment_intent_id } : {}),
         updated_at: new Date().toISOString(),
       })
       .eq("id", order_id)
@@ -80,7 +81,7 @@ export const POST = createUnifiedHandler(
         payment_status: "PAID",
         payment_method: "stripe",
         total_amount: order.total_amount,
-        payment_intent_id: payment_intent_id,
+        stripe_payment_intent_id: payment_intent_id,
       },
     };
   },

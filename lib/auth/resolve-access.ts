@@ -16,6 +16,7 @@
 
 import { createAdminClient } from "@/lib/supabase";
 import { normalizeVenueId } from "@/lib/utils/venueId";
+import { logger } from "@/lib/monitoring/structured-logger";
 
 export interface ResolvedAccess {
   userId: string;
@@ -81,9 +82,9 @@ export async function resolveVenueAccess(
       : null;
   }
 
-  // Validate
+  // Validate strictly. If tier data is missing/invalid we fail closed.
   if (!tier || !["starter", "pro", "enterprise"].includes(tier)) {
-    tier = "starter";
+    return null;
   }
 
   // ── 4. Self-heal: sync venue tier if it drifted from org ───────────
@@ -93,13 +94,20 @@ export async function resolveVenueAccess(
 
   if (venue.organization_id && tier !== venueTier) {
     // Fire-and-forget — never block the caller
-    supabase
-      .from("venues")
-      .update({ subscription_tier: tier, updated_at: new Date().toISOString() })
-      .eq("venue_id", normalized)
-      .then(() => {
-        /* intentionally empty */
-      });
+    void (async () => {
+      const { error: syncError } = await supabase
+        .from("venues")
+        .update({ subscription_tier: tier, updated_at: new Date().toISOString() })
+        .eq("venue_id", normalized);
+
+      if (syncError) {
+        logger.warn("[resolveVenueAccess] tier sync failed", {
+          venueId: normalized,
+          organizationId: venue.organization_id,
+          error: syncError.message,
+        });
+      }
+    })();
   }
 
   return {

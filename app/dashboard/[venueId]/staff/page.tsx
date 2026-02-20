@@ -1,6 +1,6 @@
 import StaffClientPage from "./page.client";
 import { createAdminClient } from "@/lib/supabase";
-import { getAuthContext } from "@/lib/auth/get-auth-context";
+import { requireDashboardAccess } from "@/lib/auth/get-auth-context";
 import { logger } from "@/lib/monitoring/structured-logger";
 import type { StaffRow } from "./hooks/useStaffManagement";
 
@@ -59,14 +59,14 @@ export default async function StaffPage({ params }: { params: { venueId: string 
   const { venueId } = params;
 
   // Server-side auth check - staff management requires owner or manager
-  const auth = await getAuthContext(venueId);
+  const auth = await requireDashboardAccess(venueId);
 
   // Fetch initial staff data on server
   let initialStaff: StaffRow[] | undefined;
   let initialStats: StaffStats | undefined;
 
   try {
-    const staffData = await fetchStaffData(venueId);
+    const staffData = await fetchStaffData(auth.venueId);
     if (staffData) {
       initialStaff = staffData.staff;
       initialStats = staffData.stats;
@@ -78,8 +78,8 @@ export default async function StaffPage({ params }: { params: { venueId: string 
   return (
     <StaffClientPage
       venueId={venueId}
-      tier={auth.tier ?? "starter"}
-      role={auth.role ?? "viewer"}
+      tier={auth.tier}
+      role={auth.role}
       initialStaff={initialStaff}
       initialStats={initialStats}
     />

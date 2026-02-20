@@ -4,6 +4,7 @@ import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import { NextRequest } from "next/server";
 import { isDevelopment } from "@/lib/env";
 import { success, apiErrors } from "@/lib/api/standard-response";
+import { logger } from "@/lib/monitoring/structured-logger";
 import {
   deriveQrTypeFromOrder,
   validatePaymentMethodForQrType,
@@ -21,7 +22,7 @@ export async function POST(req: NextRequest) {
 
     const body = await req.json();
 
-    const { order_id, venue_id } = body;
+    const { order_id, venue_id, sessionId } = body;
 
     if (!order_id) {
       return apiErrors.badRequest("Order ID is required");
@@ -31,13 +32,17 @@ export async function POST(req: NextRequest) {
       return apiErrors.badRequest("Venue ID is required");
     }
 
+    if (!sessionId) {
+      return apiErrors.badRequest("sessionId is required");
+    }
+
     // Create Supabase admin client (bypasses RLS - order was created with admin client)
     const supabase = createAdminClient();
 
     // Verify order belongs to venue (security check)
     const { data: orderCheck, error: checkError } = await supabase
       .from("orders")
-      .select("venue_id, qr_type, fulfillment_type, source, requires_collection")
+      .select("venue_id, session_id, qr_type, fulfillment_type, source, requires_collection")
       .eq("id", order_id)
       .eq("venue_id", venue_id) // Security: ensure order belongs to venue
       .single();
@@ -62,6 +67,10 @@ export async function POST(req: NextRequest) {
 
     if (checkError || !orderCheck) {
       return apiErrors.notFound("Order not found or access denied");
+    }
+
+    if (!orderCheck.session_id || orderCheck.session_id !== sessionId) {
+      return apiErrors.forbidden("Order session mismatch");
     }
 
     // Step 3: Attempt to update order
@@ -94,6 +103,9 @@ export async function POST(req: NextRequest) {
       total_amount: order.total_amount,
     });
   } catch (_error) {
+    logger.error("[pay/till] request failed", {
+      error: _error instanceof Error ? _error.message : String(_error),
+    });
     const errorMessage = _error instanceof Error ? _error.message : "An unexpected error occurred";
     const errorStack = _error instanceof Error ? _error.stack : undefined;
 

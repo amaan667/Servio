@@ -99,11 +99,12 @@ export function useShiftManagement(venueId: string, _staff: unknown[]) {
     updates: { start_time?: string; end_time?: string; area?: string }
   ) => {
     try {
+      const normalized = normalizeVenueId(venueId);
       const res = await fetch("/api/staff/shifts/update", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify({ id: shiftId, ...updates }),
+        body: JSON.stringify({ id: shiftId, venue_id: normalized, ...updates }),
       });
 
       const json = await res.json();
@@ -121,11 +122,12 @@ export function useShiftManagement(venueId: string, _staff: unknown[]) {
 
   const deleteShift = async (shiftId: string) => {
     try {
+      const normalized = normalizeVenueId(venueId);
       const res = await fetch("/api/staff/shifts/delete", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify({ id: shiftId }),
+        body: JSON.stringify({ id: shiftId, venue_id: normalized }),
       });
 
       const json = await res.json();

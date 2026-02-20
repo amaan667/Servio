@@ -1,29 +1,29 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase";
-
+import { createUnifiedHandler } from "@/lib/api/unified-handler";
+import { verifyVenueAccess } from "@/lib/auth/unified-auth";
 import { apiErrors } from "@/lib/api/standard-response";
+import { z } from "zod";
 import {
   deriveQrTypeFromOrder,
   normalizePaymentStatus,
   validateOrderStatusTransition,
 } from "@/lib/orders/qr-payment-validation";
 
-export async function PATCH(req: NextRequest) {
-  try {
-    const body = await req.json();
-    const { order_id, order_status, payment_status } = body;
+const updatePosOrderStatusSchema = z.object({
+  order_id: z.string().min(1, "order_id is required"),
+  order_status: z.string().min(1, "order_status is required"),
+  payment_status: z.string().optional(),
+});
 
-    if (!order_id || !order_status) {
-      return NextResponse.json(
-        { error: "order_id and order_status are required" },
-        { status: 400 }
-      );
-    }
+export const PATCH = createUnifiedHandler(
+  async (req: NextRequest, context) => {
+    const { order_id, order_status, payment_status } = context.body as z.infer<
+      typeof updatePosOrderStatusSchema
+    >;
 
-    // Use admin client - no auth needed
     const supabase = createAdminClient();
 
-    // Get the order
     const { data: order, error: orderError } = await supabase
       .from("orders")
       .select(
@@ -34,6 +34,11 @@ export async function PATCH(req: NextRequest) {
 
     if (orderError || !order) {
       return apiErrors.notFound("Order not found");
+    }
+
+    const access = await verifyVenueAccess(order.venue_id, context.user.id, req);
+    if (!access) {
+      return apiErrors.forbidden("Access denied to this venue");
     }
 
     const qrType = deriveQrTypeFromOrder(order);
@@ -55,7 +60,6 @@ export async function PATCH(req: NextRequest) {
       );
     }
 
-    // Update order status
     const updateData: Record<string, string> = { order_status };
     if (payment_status) {
       updateData.payment_status = payment_status;
@@ -65,6 +69,7 @@ export async function PATCH(req: NextRequest) {
       .from("orders")
       .update(updateData)
       .eq("id", order_id)
+      .eq("venue_id", order.venue_id)
       .select()
       .single();
 
@@ -72,8 +77,11 @@ export async function PATCH(req: NextRequest) {
       return apiErrors.internal("Internal server error");
     }
 
-    return NextResponse.json({ order: updatedOrder });
-  } catch (_error) {
-    return apiErrors.internal("Internal server error");
+    return { order: updatedOrder };
+  },
+  {
+    schema: updatePosOrderStatusSchema,
+    requireAuth: true,
+    requireVenueAccess: false,
   }
-}
+);

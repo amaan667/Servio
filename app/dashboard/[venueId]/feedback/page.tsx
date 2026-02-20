@@ -1,13 +1,13 @@
 import FeedbackClientPage from "./page.client";
-import { getAuthContext } from "@/lib/auth/get-auth-context";
+import { requireDashboardAccess } from "@/lib/auth/get-auth-context";
 import { createAdminClient } from "@/lib/supabase";
 import { normalizeVenueId } from "@/lib/utils/venueId";
 
 export default async function FeedbackPage({ params }: { params: { venueId: string } }) {
   const { venueId } = params;
 
-  // Server-side auth check - NO REDIRECTS - Dashboard always loads
-  const auth = await getAuthContext(venueId);
+  // Enforce server-side auth and venue authorization before feedback queries.
+  const auth = await requireDashboardAccess(venueId);
 
   // Fetch questions server-side for instant load
   let initialQuestions: Array<{
@@ -52,8 +52,8 @@ export default async function FeedbackPage({ params }: { params: { venueId: stri
   return (
     <FeedbackClientPage
       venueId={venueId}
-      tier={auth.tier ?? "starter"}
-      role={auth.role ?? "viewer"}
+      tier={auth.tier}
+      role={auth.role}
       initialQuestions={initialQuestions}
     />
   );

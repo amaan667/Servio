@@ -1,5 +1,5 @@
 import LiveOrdersClientPage from "./page.client";
-import { getAuthContext } from "@/lib/auth/get-auth-context";
+import { requireDashboardAccess } from "@/lib/auth/get-auth-context";
 import { createAdminClient } from "@/lib/supabase";
 import { todayWindowForLocal } from "@/lib/dates";
 import { logger } from "@/lib/logger";
@@ -81,14 +81,14 @@ export default async function LiveOrdersPage({ params }: { params: { venueId: st
   const { venueId } = params;
 
   // Server-side auth check
-  const auth = await getAuthContext(venueId);
+  const auth = await requireDashboardAccess(venueId);
 
   // Fetch initial live orders on server for instant load (no flicker)
   let initialOrders: Order[] = [];
   let initialStats: LiveOrderStats | undefined;
 
   try {
-    initialOrders = await fetchLiveOrders(venueId);
+    initialOrders = await fetchLiveOrders(auth.venueId);
     
     if (initialOrders.length > 0) {
       initialStats = calculateLiveOrderStats(initialOrders);
@@ -112,9 +112,9 @@ export default async function LiveOrdersPage({ params }: { params: { venueId: st
     hasAuth: auth.isAuthenticated,
     userId: auth.userId,
     email: auth.email,
-    tier: auth.tier ?? "starter",
-    role: auth.role ?? "viewer",
-    venueId: auth.venueId ?? venueId,
+    tier: auth.tier,
+    role: auth.role,
+    venueId: auth.venueId,
     timestamp: new Date().toISOString(),
     page: "LiveOrders",
   };

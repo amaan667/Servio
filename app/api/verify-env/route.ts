@@ -5,8 +5,25 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { createServerSupabase } from "@/lib/supabase";
+import { logger } from "@/lib/monitoring/structured-logger";
 
 export async function GET(_request: NextRequest) {
+  if (process.env.NODE_ENV === "production") {
+    return NextResponse.json({ error: "Not found" }, { status: 404 });
+  }
+
+  const internalSecret = process.env.INTERNAL_API_SECRET || process.env.CRON_SECRET;
+  if (!internalSecret) {
+    return NextResponse.json(
+      { error: "INTERNAL_API_SECRET (or CRON_SECRET) is not configured" },
+      { status: 503 }
+    );
+  }
+
+  if (_request.headers.get("authorization") !== `Bearer ${internalSecret}`) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   try {
     const checks = {
       // Environment variables
@@ -34,7 +51,9 @@ export async function GET(_request: NextRequest) {
       const { data, error } = await supabase.from("venues").select("count").limit(1);
       checks.database = !error;
     } catch (error) {
-      /* Error handled silently */
+      logger.error("[verify-env] database check failed", {
+        error: error instanceof Error ? error.message : String(error),
+      });
     }
 
     // Test entitlements RPC
@@ -48,7 +67,9 @@ export async function GET(_request: NextRequest) {
       checks.entitlementsRpc =
         !!error && (error.message?.includes("forbidden") || error.message?.includes("not found"));
     } catch (error) {
-      /* Error handled silently */
+      logger.error("[verify-env] entitlements RPC check failed", {
+        error: error instanceof Error ? error.message : String(error),
+      });
     }
 
     // Test downgrade validation function
@@ -60,7 +81,9 @@ export async function GET(_request: NextRequest) {
       });
       checks.downgradeValidation = !error && typeof data === "boolean";
     } catch (error) {
-      /* Error handled silently */
+      logger.error("[verify-env] validate_tier_downgrade RPC check failed", {
+        error: error instanceof Error ? error.message : String(error),
+      });
     }
 
     // Check if order state machine is importable
@@ -68,7 +91,9 @@ export async function GET(_request: NextRequest) {
       await import("@/lib/orders/state-machine");
       checks.orderStateMachine = true;
     } catch (error) {
-      /* Error handled silently */
+      logger.error("[verify-env] state machine import failed", {
+        error: error instanceof Error ? error.message : String(error),
+      });
     }
 
     // Determine overall health

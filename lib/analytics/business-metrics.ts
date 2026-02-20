@@ -281,14 +281,14 @@ export class BusinessMetricsService {
   ) {
     const { data: orders } = await supabase
       .from("orders")
-      .select("created_at, updated_at, status")
+      .select("created_at, updated_at, order_status")
       .eq("venue_id", venueId)
       .gte("created_at", dateRange.start.toISOString())
       .lte("created_at", dateRange.end.toISOString());
 
     // Calculate average order time
     const completedOrders =
-      orders?.filter((order: { status: string }) => order.status === "served") || [];
+      orders?.filter((order: { order_status: string }) => order.order_status === "SERVED") || [];
     const averageOrderTime =
       completedOrders.length > 0
         ? completedOrders.reduce(
@@ -481,14 +481,14 @@ export class BusinessMetricsService {
           .from("orders")
           .select("id")
           .eq("venue_id", venueId)
-          .in("status", ["confirmed", "preparing", "ready"])
+          .in("order_status", ["PLACED", "ACCEPTED", "IN_PREP", "READY", "SERVING"])
           .gte("created_at", today.toISOString()),
 
         supabase
           .from("orders")
           .select("id")
           .eq("venue_id", venueId)
-          .eq("status", "pending")
+          .eq("order_status", "PLACED")
           .gte("created_at", today.toISOString()),
 
         supabase

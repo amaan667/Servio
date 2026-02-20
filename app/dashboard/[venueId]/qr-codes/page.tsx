@@ -1,5 +1,5 @@
 import dynamic from "next/dynamic";
-import { getAuthContext } from "@/lib/auth/get-auth-context";
+import { requireDashboardAccess } from "@/lib/auth/get-auth-context";
 import { createServerSupabaseReadOnly } from "@/lib/supabase";
 import { logger } from "@/lib/logger";
 
@@ -123,19 +123,19 @@ export default async function QRCodePage({ params }: { params: { venueId: string
   const { venueId } = params;
 
   // Server-side auth check
-  const auth = await getAuthContext(venueId);
+  const auth = await requireDashboardAccess(venueId);
 
   // Fetch QR code data server-side
-  const qrData = await fetchQRCodeData(venueId);
+  const qrData = await fetchQRCodeData(auth.venueId);
 
   // Log all auth information for browser console
   const authInfo = {
     hasAuth: auth.isAuthenticated,
     userId: auth.userId,
     email: auth.email,
-    tier: auth.tier ?? "starter",
-    role: auth.role ?? "viewer",
-    venueId: auth.venueId ?? venueId,
+    tier: auth.tier,
+    role: auth.role,
+    venueId: auth.venueId,
     timestamp: new Date().toISOString(),
     page: "QR Codes",
   };
@@ -149,8 +149,8 @@ export default async function QRCodePage({ params }: { params: { venueId: string
       />
       <QRCodeClientPage
         venueId={venueId}
-        tier={auth.tier ?? "starter"}
-        role={auth.role ?? "viewer"}
+        tier={auth.tier}
+        role={auth.role}
         venueName={qrData.venueName}
         stats={qrData.stats}
         initialTables={qrData.tables}

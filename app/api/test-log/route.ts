@@ -1,9 +1,23 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
+import { apiErrors } from "@/lib/api/standard-response";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
-export async function GET() {
+export async function GET(req: NextRequest) {
+  if (process.env.NODE_ENV === "production") {
+    return apiErrors.notFound("Not found");
+  }
+
+  const internalSecret = process.env.INTERNAL_API_SECRET || process.env.CRON_SECRET;
+  if (!internalSecret) {
+    return apiErrors.internal("INTERNAL_API_SECRET (or CRON_SECRET) is not configured");
+  }
+
+  if (req.headers.get("authorization") !== `Bearer ${internalSecret}`) {
+    return apiErrors.unauthorized("Unauthorized");
+  }
+
   // Test all logging methods
 
   if (typeof process !== "undefined" && process.stdout) {

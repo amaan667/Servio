@@ -33,7 +33,7 @@ import {
   isOwner,
 } from "@/lib/auth/unified-auth";
 import { rateLimit, RATE_LIMITS, getClientIdentifier, type RateLimitConfig } from "@/lib/rate-limit";
-import { checkIdempotency, storeIdempotency } from "@/lib/db/idempotency";
+import { claimIdempotencyKey, storeIdempotency } from "@/lib/db/idempotency";
 import { performanceTracker } from "@/lib/monitoring/performance-tracker";
 import { logger } from "@/lib/monitoring/structured-logger";
 import { startTransaction } from "@/lib/monitoring/apm";
@@ -384,15 +384,40 @@ export function createUnifiedHandler<TBody = unknown, TResponse = unknown>(
 
       // 8. Idempotency
       const idempotencyKey = req.headers.get("x-idempotency-key");
+      let idempotencyRequestHash = "";
       if (idempotencyKey) {
-        const existing = await checkIdempotency(idempotencyKey);
-        if (existing.exists) {
+        idempotencyRequestHash = JSON.stringify({
+          method: req.method,
+          path: req.nextUrl.pathname,
+          body,
+        });
+
+        const claim = await claimIdempotencyKey(idempotencyKey, idempotencyRequestHash);
+        if (claim.status === "cached") {
           perf.end();
-          return success(existing.response.response_data as TResponse, {
+          return success(claim.response.response_data as TResponse, {
             timestamp: new Date().toISOString(),
             requestId,
             duration: Date.now() - startTime,
           });
+        }
+
+        if (claim.status === "hash_mismatch") {
+          perf.end();
+          return apiErrors.conflict(
+            "Idempotency key has already been used with a different request payload",
+            undefined,
+            requestId
+          ) as unknown as NextResponse<ApiResponse<TResponse>>;
+        }
+
+        if (claim.status === "in_progress") {
+          perf.end();
+          return apiErrors.conflict(
+            "A request with this idempotency key is already in progress",
+            undefined,
+            requestId
+          ) as unknown as NextResponse<ApiResponse<TResponse>>;
         }
       } else if (options.enforceIdempotency) {
         perf.end();
@@ -419,7 +444,7 @@ export function createUnifiedHandler<TBody = unknown, TResponse = unknown>(
 
       // 10. Store Idempotency
       if (idempotencyKey) {
-        await storeIdempotency(idempotencyKey, "", responseData, 200);
+        await storeIdempotency(idempotencyKey, idempotencyRequestHash, responseData, 200);
       }
 
       const duration = Date.now() - startTime;

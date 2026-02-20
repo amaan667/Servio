@@ -9,6 +9,16 @@ import { env, isDevelopment } from "@/lib/env";
 export const runtime = "nodejs";
 
 export async function POST(req: NextRequest) {
+  if (process.env.ENABLE_PUBLIC_DEMO_ORDERS !== "true") {
+    return NextResponse.json(
+      {
+        success: false,
+        error: "Not found",
+      },
+      { status: 404 }
+    );
+  }
+
   try {
     // CRITICAL: Rate limiting
     const rateLimitResult = await rateLimit(req, RATE_LIMITS.GENERAL);

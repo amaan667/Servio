@@ -285,7 +285,7 @@ export class AnalyticsService {
 
     const { data: orders, error } = await supabase
       .from("orders")
-      .select("total_amount, created_at, status, order_type, updated_at")
+      .select("total_amount, created_at, order_status, order_type, updated_at")
       .eq("venue_id", venueId)
       .gte("created_at", start.toISOString())
       .lte("created_at", end.toISOString());
@@ -295,17 +295,17 @@ export class AnalyticsService {
     // Basic metrics
     const totalOrders = orders?.length || 0;
     const completedOrders = orders?.filter(o => 
-      ["served", "completed"].includes(o.status)
+      ["SERVED", "COMPLETED"].includes(o.order_status)
     ).length || 0;
     const cancelledOrders = orders?.filter(o => 
-      o.status === "cancelled"
+      o.order_status === "CANCELLED"
     ).length || 0;
     const totalRevenue = orders?.reduce((sum, o) => sum + (o.total_amount || 0), 0) || 0;
     const averageOrderValue = totalOrders > 0 ? totalRevenue / totalOrders : 0;
 
     // Average order time
     const completedWithTime = orders?.filter(o => 
-      o.updated_at && o.created_at && ["served", "completed"].includes(o.status)
+      o.updated_at && o.created_at && ["SERVED", "COMPLETED"].includes(o.order_status)
     ) || [];
     const averageOrderTime = completedWithTime.length > 0
       ? completedWithTime.reduce((sum, o) => {
@@ -359,7 +359,7 @@ export class AnalyticsService {
     // Order status breakdown
     const statusMap = new Map<string, number>();
     orders?.forEach((order) => {
-      statusMap.set(order.status, (statusMap.get(order.status) || 0) + 1);
+      statusMap.set(order.order_status, (statusMap.get(order.order_status) || 0) + 1);
     });
 
     const orderStatusBreakdown = Array.from(statusMap.entries()).map(([status, count]) => ({
@@ -692,7 +692,7 @@ export class AnalyticsService {
     // Get orders for period
     const { data: orders, error: ordersError } = await supabase
       .from("orders")
-      .select("assigned_to, total_amount, created_at, updated_at, status")
+      .select("assigned_to, total_amount, created_at, updated_at, order_status")
       .eq("venue_id", venueId)
       .gte("created_at", start.toISOString())
       .lte("created_at", end.toISOString());
@@ -729,7 +729,7 @@ export class AnalyticsService {
         existing.orders += 1;
         existing.revenue += order.total_amount || 0;
         
-        if (["served", "completed"].includes(order.status)) {
+        if (["SERVED", "COMPLETED"].includes(order.order_status)) {
           existing.orderCount += 1;
           const time = new Date(order.updated_at).getTime() - new Date(order.created_at).getTime();
           existing.totalTime += time;
@@ -793,14 +793,14 @@ export class AnalyticsService {
         .from("orders")
         .select("id, total_amount")
         .eq("venue_id", venueId)
-        .in("status", ["confirmed", "preparing", "ready"])
+        .in("order_status", ["PLACED", "ACCEPTED", "IN_PREP", "READY", "SERVING"])
         .gte("created_at", today.toISOString()),
       
       supabase
         .from("orders")
         .select("id")
         .eq("venue_id", venueId)
-        .eq("status", "pending")
+        .eq("order_status", "PLACED")
         .gte("created_at", today.toISOString()),
       
       supabase

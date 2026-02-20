@@ -1,20 +1,25 @@
-import { createAdminClient } from "@/lib/supabase";
-import { success, apiErrors } from "@/lib/api/standard-response";
+import { createServerSupabase } from "@/lib/supabase";
+import { createUnifiedHandler } from "@/lib/api/unified-handler";
+import { apiErrors } from "@/lib/api/standard-response";
+import { z } from "zod";
 
 export const runtime = "nodejs";
 
-export async function POST(req: Request) {
-  try {
-    const { orderId, venue_id } = await req.json().catch(() => ({
-      /* Empty */
-    }));
+const deleteOrderSchema = z.object({
+  orderId: z.string().min(1, "orderId is required"),
+  venue_id: z.string().min(1, "venue_id is required"),
+});
+
+export const POST = createUnifiedHandler(
+  async (_req, context) => {
+    const { orderId, venue_id } = context.body as z.infer<typeof deleteOrderSchema>;
+
     if (!orderId || !venue_id) {
       return apiErrors.badRequest("orderId and venue_id required");
     }
 
-    // Use admin client - no authentication required for Live Orders feature
-    const admin = createAdminClient();
-    const { error } = await admin
+    const supabase = await createServerSupabase();
+    const { error } = await supabase
       .from("orders")
       .delete()
       .eq("id", orderId)
@@ -24,10 +29,11 @@ export async function POST(req: Request) {
       return apiErrors.database(error.message);
     }
 
-    return success({});
-  } catch (_error) {
-    const errorMessage = _error instanceof Error ? _error.message : "Unknown error";
-
-    return apiErrors.internal(errorMessage);
+    return {};
+  },
+  {
+    schema: deleteOrderSchema,
+    requireVenueAccess: true,
+    venueIdSource: "body",
   }
-}
+);

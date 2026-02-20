@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { apiErrors } from "@/lib/api/standard-response";
+import { createUnifiedHandler } from "@/lib/api/unified-handler";
+import { RATE_LIMITS } from "@/lib/rate-limit";
+import { z } from "zod";
 
 import OpenAI from "openai";
 import { env } from "@/lib/env";
@@ -22,17 +25,6 @@ async function getBrowser() {
     try {
       // Dynamic import - only loaded at runtime, not during build
       const playwright = await import("playwright-core");
-
-      // Try to install chromium if not already installed (lazy install)
-      try {
-        const { execSync } = await import("child_process");
-        execSync("npx playwright install chromium --with-deps", {
-          stdio: "ignore",
-          timeout: 120000, // 2 minutes max for install
-        });
-      } catch (installError) {
-        // Installation failed or already installed - continue
-      }
 
       browserInstance = await playwright.chromium.launch({
         headless: true,
@@ -279,23 +271,61 @@ async function scrapeWithPlaywright(
   }
 }
 
+const scrapeMenuSchema = z.object({
+  url: z.string().url("A valid URL is required"),
+});
+
+function isSafeScrapeUrl(rawUrl: string): boolean {
+  try {
+    const parsed = new URL(rawUrl);
+    if (!["http:", "https:"].includes(parsed.protocol)) {
+      return false;
+    }
+
+    const host = parsed.hostname.toLowerCase();
+    if (
+      host === "localhost" ||
+      host === "127.0.0.1" ||
+      host === "::1" ||
+      host === "0.0.0.0" ||
+      host.endsWith(".local")
+    ) {
+      return false;
+    }
+
+    // Reject obvious private IPv4 ranges to reduce SSRF risk.
+    if (
+      /^(10\\.|127\\.|169\\.254\\.|172\\.(1[6-9]|2\\d|3[0-1])\\.|192\\.168\\.)/.test(host)
+    ) {
+      return false;
+    }
+
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 /**
  * Scrape Menu from URL using Playwright
  * Self-hosted browser automation - fast, free, and reliable
  * Optimized for JS-heavy sites like Cafe Nur
  */
-export async function POST(req: NextRequest) {
-  const requestId = Math.random().toString(36).substring(7);
+export const POST = createUnifiedHandler(
+  async (_req: NextRequest, context) => {
+    const requestId = Math.random().toString(36).substring(7);
   const startTime = Date.now();
 
-  try {
-    const body = await req.json();
-    const { url } = body;
-
-    if (!url) {
-      return apiErrors.badRequest("URL is required");
+    if (process.env.ENABLE_MENU_SCRAPING !== "true") {
+      return apiErrors.notFound("Not found");
     }
 
+    const { url } = context.body as z.infer<typeof scrapeMenuSchema>;
+    if (!isSafeScrapeUrl(url)) {
+      return apiErrors.badRequest("URL is not allowed");
+    }
+
+    try {
     // Detect site type for optimal strategy
     const siteType = await detectSiteType(url);
 
@@ -402,6 +432,8 @@ Return ONLY valid JSON:
     }
 
     const totalDuration = Date.now() - startTime;
+    void totalDuration;
+    void requestId;
 
     const successResponse = {
       ok: true,
@@ -410,12 +442,19 @@ Return ONLY valid JSON:
     };
 
     return NextResponse.json(successResponse);
-  } catch (_error) {
-    const errorResponse = {
-      ok: false,
-      error: _error instanceof Error ? _error.message : "Failed to scrape menu",
-    };
+    } catch (_error) {
+      const errorResponse = {
+        ok: false,
+        error: _error instanceof Error ? _error.message : "Failed to scrape menu",
+      };
 
-    return NextResponse.json(errorResponse, { status: 500 });
+      return NextResponse.json(errorResponse, { status: 500 });
+    }
+  },
+  {
+    schema: scrapeMenuSchema,
+    requireAuth: true,
+    requireVenueAccess: false,
+    rateLimit: RATE_LIMITS.STRICT,
   }
-}
+);

@@ -20,6 +20,7 @@
     "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,css,md}\"",
     "format:check": "prettier --check \"**/*.{ts,tsx,js,jsx,json,css,md}\"",
     "test": "vitest run",
+    "test:run": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage --config vitest.coverage.config.ts",
     "test:coverage:ui": "vitest --ui --coverage --config vitest.coverage.config.ts",
@@ -43,7 +44,10 @@
     "track:todos": "tsx scripts/track-todos.ts",
     "prepare": "husky install",
     "check:rls": "tsx scripts/check-rls-coverage.ts",
-    "validate": "pnpm run format:check && pnpm run lint && pnpm run typecheck && pnpm run check:rls && pnpm run test",
+    "check:api-policy": "node scripts/check-api-route-policy.mjs",
+    "check:schema-contract": "node scripts/check-schema-contract.mjs",
+    "test:security-critical": "vitest run __tests__/middleware.test.ts __tests__/security/api-route-policy.test.ts __tests__/security/unified-handler-auth.test.ts __tests__/security/idempotency-db.test.ts",
+    "validate": "pnpm run typecheck && pnpm run check:rls && pnpm run check:api-policy && pnpm run check:schema-contract && pnpm run test:security-critical",
     "test:all": "pnpm run test && pnpm run test:e2e && pnpm run test:integration"
   },
   "lint-staged": {

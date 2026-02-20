@@ -1,6 +1,6 @@
 import AichatClientPage from "./page.client";
 import { createAdminClient } from "@/lib/supabase";
-import { getAuthContext } from "@/lib/auth/get-auth-context";
+import { requireDashboardAccess } from "@/lib/auth/get-auth-context";
 import type { ConversationItem } from "./page.client";
 
 interface ConversationStats {
@@ -96,7 +96,7 @@ export default async function AichatPage({ params }: { params: { venueId: string
   const { venueId } = params;
 
   // ── Single auth resolution — handles desktop AND mobile ────────
-  const auth = await getAuthContext(venueId);
+  const auth = await requireDashboardAccess(venueId);
 
   // Fetch conversation history on server
   let conversationData: { conversations: ConversationItem[]; stats: ConversationStats } = {
@@ -105,7 +105,7 @@ export default async function AichatPage({ params }: { params: { venueId: string
   };
 
   try {
-    conversationData = await fetchConversationHistory(venueId);
+    conversationData = await fetchConversationHistory(auth.venueId);
   } catch (error) {
     console.error("[AI Chat SSR] Failed to fetch conversation history:", error);
   }
@@ -117,7 +117,7 @@ export default async function AichatPage({ params }: { params: { venueId: string
     email: auth.email,
     tier: auth.tier,
     role: auth.role,
-    venueId: auth.venueId ?? venueId,
+    venueId: auth.venueId,
     timestamp: new Date().toISOString(),
     page: "AI Chat",
   };
@@ -131,8 +131,8 @@ export default async function AichatPage({ params }: { params: { venueId: string
       />
       <AichatClientPage
         venueId={venueId}
-        tier={auth.tier ?? "starter"}
-        role={auth.role ?? "viewer"}
+        tier={auth.tier}
+        role={auth.role}
         initialConversations={conversationData.conversations as ConversationItem[]}
         initialStats={conversationData.stats}
       />

@@ -4,6 +4,7 @@ import { createAdminClient } from "@/lib/supabase";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import { apiErrors } from "@/lib/api/standard-response";
 import { createKDSTicketsWithAI } from "@/lib/orders/kds-tickets-unified";
+import { logger } from "@/lib/monitoring/structured-logger";
 
 export const runtime = "nodejs";
 
@@ -39,10 +40,25 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    const supabase = createAdminClient();
+
+    // Idempotency guard: Stripe session ID is globally unique for this flow.
+    const { data: existingBySession } = await supabase
+      .from("orders")
+      .select("id, venue_id, order_number, total_amount, payment_status, stripe_session_id")
+      .eq("stripe_session_id", session.id)
+      .maybeSingle();
+
+    if (existingBySession) {
+      return NextResponse.json({
+        success: true,
+        data: { order: existingBySession },
+      });
+    }
+
     const meta = (session.metadata || {}) as Record<string, string>;
 
     if (meta.orderId) {
-      const supabase = createAdminClient();
       const { data: existing } = await supabase
         .from("orders")
         .select("id, venue_id, order_number, total_amount, payment_status")
@@ -96,8 +112,11 @@ export async function POST(req: NextRequest) {
             })
           )
         : [];
-    } catch {
-      // ignore parse error
+    } catch (parseError) {
+      logger.warn("[orders/create-from-checkout-session] failed to parse session metadata items", {
+        sessionId: session.id,
+        error: parseError instanceof Error ? parseError.message : String(parseError),
+      });
     }
 
     if (items.length === 0) {
@@ -111,8 +130,6 @@ export async function POST(req: NextRequest) {
         },
       ];
     }
-
-    const supabase = createAdminClient();
 
     const { data: insertedRows, error } = await supabase
       .from("orders")
@@ -135,9 +152,27 @@ export async function POST(req: NextRequest) {
         stripe_session_id: session.id,
         stripe_payment_intent_id: String(session.payment_intent || ""),
       })
-      .select("*");
+      .select(
+        "id, venue_id, order_number, total_amount, payment_status, stripe_session_id, items, customer_name, table_number, table_id"
+      );
 
     if (error) {
+      // Handle duplicate insert race by returning the already-created order.
+      if (error.code === "23505") {
+        const { data: deduped } = await supabase
+          .from("orders")
+          .select("id, venue_id, order_number, total_amount, payment_status, stripe_session_id")
+          .eq("stripe_session_id", session.id)
+          .maybeSingle();
+
+        if (deduped) {
+          return NextResponse.json({
+            success: true,
+            data: { order: deduped },
+          });
+        }
+      }
+
       return NextResponse.json(
         { success: false, error: { code: "INTERNAL", message: error.message } },
         { status: 500 }
@@ -161,8 +196,12 @@ export async function POST(req: NextRequest) {
         table_number: order.table_number,
         table_id: order.table_id,
       });
-    } catch {
-      // non-blocking
+    } catch (kdsError) {
+      logger.warn("[orders/create-from-checkout-session] KDS ticket creation failed", {
+        orderId: order.id,
+        venueId: order.venue_id,
+        error: kdsError instanceof Error ? kdsError.message : String(kdsError),
+      });
     }
 
     return NextResponse.json({

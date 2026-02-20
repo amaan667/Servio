@@ -1,21 +1,43 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-export async function GET(_req: Request) {
+export async function GET(req: NextRequest) {
   try {
+    if (process.env.NODE_ENV === "production") {
+      return NextResponse.json({ error: "Not found" }, { status: 404 });
+    }
+
+    const secret = process.env.INTERNAL_API_SECRET || process.env.CRON_SECRET;
+    if (!secret) {
+      return NextResponse.json({ error: "Internal secret is not configured" }, { status: 503 });
+    }
+
+    const authHeader = req.headers.get("authorization");
+    if (authHeader !== `Bearer ${secret}`) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
     const supabaseAdmin = createAdminClient();
 
-    // Get the most recent paid order from the last hour
     const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString();
 
     const { data: recentOrder, error: orderError } = await supabaseAdmin
       .from("orders")
       .select(
         `
-        *,
+        id,
+        venue_id,
+        table_number,
+        customer_name,
+        items,
+        total_amount,
+        order_status,
+        payment_status,
+        payment_method,
+        created_at,
         order_items (
           id,
           menu_item_id,
@@ -51,14 +73,11 @@ export async function GET(_req: Request) {
       );
     }
 
-    // Transform the order to include items array
+    const { order_items: orderItems, ...orderWithoutItems } = recentOrder;
     const transformedOrder = {
-      ...recentOrder,
-      items: recentOrder.order_items || [],
+      ...orderWithoutItems,
+      items: orderItems || [],
     };
-
-    // Remove the order_items property since we have items now
-    delete transformedOrder.order_items;
 
     return NextResponse.json({
       order: transformedOrder,

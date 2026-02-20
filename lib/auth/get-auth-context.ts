@@ -25,9 +25,11 @@
 
 import { cache } from "react";
 import { headers } from "next/headers";
+import { redirect } from "next/navigation";
 import { resolveVenueAccess } from "@/lib/auth/resolve-access";
 import { normalizeVenueId } from "@/lib/utils/venueId";
 import { TIER_LIMITS } from "@/lib/tier-restrictions";
+import { logger } from "@/lib/monitoring/structured-logger";
 
 // ── Public types ──────────────────────────────────────────────────────
 
@@ -56,6 +58,14 @@ export interface AuthContext {
   hasFeatureAccess: (feature: FeatureKey) => boolean;
 }
 
+export interface RequiredAuthContext extends AuthContext {
+  userId: string;
+  venueId: string;
+  role: AuthRole;
+  tier: AuthTier;
+  isAuthenticated: true;
+}
+
 // ── Constants ─────────────────────────────────────────────────────────
 
 const VALID_TIERS = new Set<string>(["starter", "pro", "enterprise"]);
@@ -69,6 +79,14 @@ const UNAUTHENTICATED: AuthContext = {
   isAuthenticated: false,
   hasFeatureAccess: () => false,
 };
+
+function signInRedirectPath(venueId: string): string {
+  return `/sign-in?redirect=/dashboard/${encodeURIComponent(venueId)}`;
+}
+
+function forbiddenRedirectPath(venueId: string): string {
+  return `/sign-in?reason=forbidden&redirect=/dashboard/${encodeURIComponent(venueId)}`;
+}
 
 // ── Helpers ───────────────────────────────────────────────────────────
 
@@ -127,9 +145,18 @@ export const getAuthContext = cache(async (venueId: string): Promise<AuthContext
     if (hUserId) {
       const resolved = await resolveVenueAccess(hUserId, normalized);
       if (resolved && resolved.role && resolved.tier) {
-        const tier = VALID_TIERS.has(resolved.tier)
-          ? (resolved.tier as AuthTier)
-          : "starter";
+        const tier = VALID_TIERS.has(resolved.tier) ? (resolved.tier as AuthTier) : null;
+        if (!tier) {
+          return {
+            userId: resolved.userId,
+            email: hEmail ?? null,
+            venueId: resolved.venueId,
+            role: null,
+            tier: null,
+            isAuthenticated: true,
+            hasFeatureAccess: () => false,
+          };
+        }
         return {
           userId: resolved.userId,
           email: hEmail ?? null,
@@ -154,9 +181,18 @@ export const getAuthContext = cache(async (venueId: string): Promise<AuthContext
     if (user) {
       const resolved = await resolveVenueAccess(user.id, normalized);
       if (resolved && resolved.role && resolved.tier) {
-        const tier = VALID_TIERS.has(resolved.tier)
-          ? (resolved.tier as AuthTier)
-          : "starter";
+        const tier = VALID_TIERS.has(resolved.tier) ? (resolved.tier as AuthTier) : null;
+        if (!tier) {
+          return {
+            userId: user.id,
+            email: user.email ?? null,
+            venueId: normalized,
+            role: null,
+            tier: null,
+            isAuthenticated: true,
+            hasFeatureAccess: () => false,
+          };
+        }
         return {
           userId: resolved.userId,
           email: user.email ?? null,
@@ -179,10 +215,44 @@ export const getAuthContext = cache(async (venueId: string): Promise<AuthContext
         hasFeatureAccess: () => false,
       };
     }
-  } catch {
-    // Headers or cookie reading failed — fall through to unauthenticated.
+  } catch (error) {
+    logger.warn("[getAuthContext] resolution failed", {
+      venueId: normalized,
+      error: error instanceof Error ? error.message : String(error),
+    });
   }
 
   // ── Step 4: Unauthenticated ─────────────────────────────────────
   return { ...UNAUTHENTICATED };
 });
+
+/**
+ * Enforce dashboard access server-side before any tenant data fetch.
+ * Redirects unauthenticated users to sign-in and unauthorized users to forbidden sign-in.
+ */
+export async function requireDashboardAccess(venueId: string): Promise<RequiredAuthContext> {
+  const normalized = normalizeVenueId(venueId) ?? venueId;
+  const auth = await getAuthContext(normalized);
+
+  if (!auth.isAuthenticated || !auth.userId) {
+    redirect(signInRedirectPath(normalized));
+  }
+
+  if (!auth.role || !auth.tier) {
+    redirect(forbiddenRedirectPath(normalized));
+  }
+
+  const resolvedAuthVenue = auth.venueId ? normalizeVenueId(auth.venueId) ?? auth.venueId : null;
+  if (resolvedAuthVenue && resolvedAuthVenue !== normalized) {
+    redirect(forbiddenRedirectPath(normalized));
+  }
+
+  return {
+    ...auth,
+    userId: auth.userId,
+    venueId: normalized,
+    role: auth.role,
+    tier: auth.tier,
+    isAuthenticated: true,
+  };
+}

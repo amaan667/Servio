@@ -1,16 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
-import { apiErrors } from "@/lib/api/standard-response";
 import { createAdminClient } from "@/lib/supabase";
+import { createUnifiedHandler } from "@/lib/api/unified-handler";
+import { z } from "zod";
 
-export async function POST(_request: NextRequest) {
-  try {
-    const { venue_id } = await _request.json();
+const clearMenuSchema = z.object({
+  venue_id: z.string().min(1, "venue_id is required"),
+});
 
-    if (!venue_id) {
-      return apiErrors.badRequest("venue_id is required");
-    }
+export const POST = createUnifiedHandler(
+  async (_request: NextRequest, context) => {
+    const { venue_id } = context.body as z.infer<typeof clearMenuSchema>;
 
-    const supabase = await createAdminClient();
+    const supabase = createAdminClient();
 
     // Use the comprehensive catalog clear function
     const clearOperations = [
@@ -55,13 +56,11 @@ export async function POST(_request: NextRequest) {
       deletedCount: totalDeleted,
       details: results,
     });
-  } catch (_error) {
-    return NextResponse.json(
-      {
-        ok: false,
-        error: `Clear menu failed: ${_error instanceof Error ? _error.message : "Unknown _error"}`,
-      },
-      { status: 500 }
-    );
+  },
+  {
+    schema: clearMenuSchema,
+    requireVenueAccess: true,
+    venueIdSource: "body",
+    requireRole: ["owner", "manager"],
   }
-}
+);

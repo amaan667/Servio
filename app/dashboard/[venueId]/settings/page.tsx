@@ -1,24 +1,11 @@
 import SettingsClientPage from "./page.client";
 import { createAdminClient } from "@/lib/supabase";
-import { getAuthContext } from "@/lib/auth/get-auth-context";
-import { normalizeVenueId } from "@/lib/utils/venueId";
+import { requireDashboardAccess } from "@/lib/auth/get-auth-context";
 
 export default async function SettingsPage({ params }: { params: { venueId: string } }) {
   const { venueId } = params;
-  const normalizedVenueId = normalizeVenueId(venueId) ?? venueId;
-
-  // ── Single auth resolution — handles desktop AND mobile ────────
-  const auth = await getAuthContext(venueId);
-
-  if (!auth.isAuthenticated || !auth.userId) {
-    // Not authenticated — let the client handle (redirect to login)
-    return <SettingsClientPage venueId={venueId} />;
-  }
-
-  if (!auth.role || !auth.tier) {
-    // Authenticated but no venue access
-    return <SettingsClientPage venueId={venueId} />;
-  }
+  // Enforce server-side auth and venue authorization before settings queries.
+  const auth = await requireDashboardAccess(venueId);
 
   // ── Access check — only owner and manager can access settings ───
   const isOwner = auth.role === "owner";
@@ -30,7 +17,7 @@ export default async function SettingsPage({ params }: { params: { venueId: stri
     email: auth.email,
     tier: auth.tier,
     role: auth.role,
-    venueId: normalizedVenueId,
+    venueId: auth.venueId,
     timestamp: new Date().toISOString(),
     page: "Settings",
   };
@@ -39,7 +26,7 @@ export default async function SettingsPage({ params }: { params: { venueId: stri
   const supabase = createAdminClient();
 
   const [venueResult, allVenuesResult] = await Promise.all([
-    supabase.from("venues").select("*").eq("venue_id", normalizedVenueId).maybeSingle(),
+    supabase.from("venues").select("*").eq("venue_id", auth.venueId).maybeSingle(),
     supabase
       .from("venues")
       .select("*")

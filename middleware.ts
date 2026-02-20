@@ -1,15 +1,59 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { createServerClient, type CookieOptions } from "@supabase/ssr";
-
-// Public API paths: no auth headers needed
-const PUBLIC_API_PATHS = new Set(["/api/health", "/api/ping", "/api/ready"]);
+import { resolveApiRouteAccess } from "@/lib/api/route-access-policy";
+import { normalizeVenueId } from "@/lib/utils/venueId";
+import { logger } from "@/lib/monitoring/structured-logger";
 
 function shouldRunAuth(pathname: string): boolean {
-  if (PUBLIC_API_PATHS.has(pathname)) return false;
   if (pathname.startsWith("/api/")) return true;
   if (pathname.startsWith("/dashboard")) return true;
   return false;
+}
+
+function withApiVersionHeader(pathname: string, headers: Headers): Headers {
+  if (pathname.startsWith("/api/v1/")) {
+    headers.set("x-api-version", "v1");
+  }
+  return headers;
+}
+
+function getSystemSecret(): string | null {
+  return process.env.INTERNAL_API_SECRET || process.env.CRON_SECRET || null;
+}
+
+function isValidSystemRequest(request: NextRequest): { ok: boolean; reason?: "missing" | "invalid" } {
+  const secret = getSystemSecret();
+  if (!secret) {
+    return { ok: false, reason: "missing" };
+  }
+
+  const authHeader = request.headers.get("authorization");
+  const bearerToken = authHeader?.startsWith("Bearer ") ? authHeader.slice(7) : null;
+  const internalToken = request.headers.get("x-internal-secret");
+  const cronToken = request.headers.get("x-cron-secret");
+
+  if (bearerToken === secret || internalToken === secret || cronToken === secret) {
+    return { ok: true };
+  }
+
+  return { ok: false, reason: "invalid" };
+}
+
+function redirectToSignIn(request: NextRequest, code?: "forbidden" | "auth_unavailable"): NextResponse {
+  const url = new URL("/sign-in", request.url);
+  const redirectPath = `${request.nextUrl.pathname}${request.nextUrl.search}`;
+  url.searchParams.set("redirect", redirectPath);
+
+  if (code) {
+    url.searchParams.set("reason", code);
+  }
+
+  return NextResponse.redirect(url);
+}
+
+function getOrCreateCorrelationId(request: NextRequest): string {
+  return request.headers.get("x-correlation-id") || crypto.randomUUID();
 }
 
 /**
@@ -22,10 +66,7 @@ function shouldRunAuth(pathname: string): boolean {
  * evict aggressively, causing "not authenticated" errors after the tab
  * had been backgrounded.
  */
-function forwardWithHeaders(
-  requestHeaders: Headers,
-  source: NextResponse
-): NextResponse {
+function forwardWithHeaders(requestHeaders: Headers, source: NextResponse): NextResponse {
   const res = NextResponse.next({ request: { headers: requestHeaders } });
   source.cookies.getAll().forEach((c) => {
     res.cookies.set({
@@ -45,24 +86,53 @@ function forwardWithHeaders(
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
+  const correlationId = getOrCreateCorrelationId(request);
 
-  // CRITICAL SECURITY: Always strip sensitive headers from incoming request
-  request.headers.delete("x-user-id");
-  request.headers.delete("x-user-email");
-  request.headers.delete("x-user-tier");
-  request.headers.delete("x-user-role");
-  request.headers.delete("x-venue-id");
+  // Always strip sensitive context headers from incoming requests.
+  const sanitizedHeaders = new Headers(request.headers);
+  sanitizedHeaders.delete("x-user-id");
+  sanitizedHeaders.delete("x-user-email");
+  sanitizedHeaders.delete("x-user-tier");
+  sanitizedHeaders.delete("x-user-role");
+  sanitizedHeaders.delete("x-venue-id");
+  sanitizedHeaders.set("x-correlation-id", correlationId);
 
-  // Only skip auth for explicit public paths
   if (!shouldRunAuth(pathname)) {
     return NextResponse.next({
-      request: { headers: request.headers },
+      request: { headers: sanitizedHeaders },
     });
+  }
+
+  const isApi = pathname.startsWith("/api/");
+
+  if (isApi) {
+    const routePolicy = resolveApiRouteAccess(pathname, request.method);
+
+    if (!routePolicy.knownRoute) {
+      return NextResponse.json({ error: "Unknown API route", code: "ROUTE_NOT_IN_POLICY" }, { status: 404 });
+    }
+
+    if (routePolicy.access === "system") {
+      const systemAuth = isValidSystemRequest(request);
+      if (!systemAuth.ok) {
+        if (systemAuth.reason === "missing") {
+          return NextResponse.json(
+            { error: "System secret is not configured", code: "SYSTEM_SECRET_MISSING" },
+            { status: 503 }
+          );
+        }
+
+        return NextResponse.json({ error: "Unauthorized", code: "SYSTEM_AUTH_REQUIRED" }, { status: 401 });
+      }
+
+      const headersWithVersion = withApiVersionHeader(pathname, new Headers(sanitizedHeaders));
+      return NextResponse.next({ request: { headers: headersWithVersion } });
+    }
   }
 
   let response = NextResponse.next({
     request: {
-      headers: request.headers,
+      headers: sanitizedHeaders,
     },
   });
 
@@ -70,7 +140,7 @@ export async function middleware(request: NextRequest) {
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
   if (!supabaseUrl || !supabaseAnonKey) {
-    if (pathname.startsWith("/api/")) {
+    if (isApi) {
       return NextResponse.json(
         {
           error: "Auth temporarily unavailable",
@@ -79,12 +149,10 @@ export async function middleware(request: NextRequest) {
         { status: 503 }
       );
     }
-    return response;
+
+    return redirectToSignIn(request, "auth_unavailable");
   }
 
-  // Cookie settings — identical for all devices (no mobile-specific overrides).
-  // SameSite=lax is the safe default: it allows cookies on top-level navigations
-  // and same-site requests while blocking cross-site POST requests.
   const cookieSettings: Partial<CookieOptions> = {
     httpOnly: false,
     sameSite: "lax",
@@ -93,7 +161,6 @@ export async function middleware(request: NextRequest) {
     maxAge: 60 * 60 * 24 * 7,
   };
 
-  // Create middleware-specific Supabase client
   const supabase = createServerClient(supabaseUrl, supabaseAnonKey, {
     cookies: {
       getAll() {
@@ -111,13 +178,11 @@ export async function middleware(request: NextRequest) {
     },
   });
 
-  // ── Authenticate the user ──────────────────────────────────────────
   let {
     data: { user },
     error: authError,
   } = await supabase.auth.getUser();
 
-  // Check for Authorization header (client may send Bearer token)
   const authHeader = request.headers.get("Authorization");
   let userFromAuthHeader: { id: string; email?: string } | null = null;
 
@@ -128,8 +193,12 @@ export async function middleware(request: NextRequest) {
       if (userData?.user && !tokenError) {
         userFromAuthHeader = userData.user;
       }
-    } catch {
-      // Token verification failed
+    } catch (error) {
+      logger.warn("[middleware] bearer token verification failed", {
+        correlationId,
+        path: pathname,
+        error: error instanceof Error ? error.message : String(error),
+      });
     }
   }
 
@@ -151,121 +220,142 @@ export async function middleware(request: NextRequest) {
 
       if (refreshedSession?.user && !refreshError) {
         user = refreshedSession.user;
-        authError = null;
       }
-    } catch {
-      // Refresh failed — user stays null, handled downstream.
+    } catch (error) {
+      logger.warn("[middleware] session refresh failed", {
+        correlationId,
+        path: pathname,
+        error: error instanceof Error ? error.message : String(error),
+      });
     }
   }
 
   const session = user ? { user } : null;
 
-  // ── API routes ─────────────────────────────────────────────────────
-  if (pathname.startsWith("/api/")) {
-    const requestHeaders = new Headers(request.headers);
-    if (pathname.startsWith("/api/v1/")) {
-      requestHeaders.set("x-api-version", "v1");
+  if (isApi) {
+    const routePolicy = resolveApiRouteAccess(pathname, request.method);
+    const requestHeaders = withApiVersionHeader(pathname, new Headers(sanitizedHeaders));
+
+    if (!routePolicy.knownRoute) {
+      return NextResponse.json({ error: "Unknown API route", code: "ROUTE_NOT_IN_POLICY" }, { status: 404 });
     }
+
+    const requiresAuth =
+      routePolicy.access === "authenticated" || routePolicy.access === "venue-role-scoped";
+
+    if (!session && requiresAuth) {
+      return NextResponse.json(
+        {
+          error: "Unauthorized",
+          code: "AUTH_REQUIRED",
+        },
+        { status: 401 }
+      );
+    }
+
     if (session) {
       requestHeaders.set("x-user-id", session.user.id);
       requestHeaders.set("x-user-email", session.user.email || "");
 
-      // Try to resolve tier/role from RPC when venueId is in the query string.
-      // If the RPC fails we do NOT fabricate values — downstream handlers
-      // (withUnifiedAuth / createUnifiedHandler) will resolve from the DB.
-      const url = new URL(request.url);
-      const queryVenueId = url.searchParams.get("venueId") || url.searchParams.get("venue_id");
+      const searchParams = new URL(request.url).searchParams;
+      const queryVenueId = searchParams.get("venueId") || searchParams.get("venue_id");
       if (queryVenueId) {
-        const normalizedApiVenueId = queryVenueId.startsWith("venue-")
-          ? queryVenueId
-          : `venue-${queryVenueId}`;
+        const normalizedApiVenueId = normalizeVenueId(queryVenueId) ?? queryVenueId;
         try {
           const { data: apiCtx, error: apiRpcErr } = await supabase.rpc("get_access_context", {
             p_venue_id: normalizedApiVenueId,
           });
+
           if (!apiRpcErr && apiCtx) {
             const apiRpc = apiCtx as { user_id?: string; role?: string; tier?: string };
-            if (apiRpc.user_id && apiRpc.role && apiRpc.tier) {
+            if (apiRpc.user_id === session.user.id && apiRpc.role && apiRpc.tier) {
               requestHeaders.set("x-user-tier", apiRpc.tier.toLowerCase().trim());
               requestHeaders.set("x-user-role", apiRpc.role);
               requestHeaders.set("x-venue-id", normalizedApiVenueId);
+            } else if (routePolicy.access === "venue-role-scoped") {
+              return NextResponse.json({ error: "Forbidden", code: "VENUE_ACCESS_DENIED" }, { status: 403 });
             }
+          } else if (routePolicy.access === "venue-role-scoped") {
+            return NextResponse.json({ error: "Forbidden", code: "VENUE_ACCESS_DENIED" }, { status: 403 });
           }
-        } catch {
-          // RPC failed — leave headers unset; downstream will resolve from DB
+        } catch (error) {
+          logger.warn("[middleware] get_access_context failed for API route", {
+            correlationId,
+            path: pathname,
+            venueId: normalizedApiVenueId,
+            error: error instanceof Error ? error.message : String(error),
+          });
+          if (routePolicy.access === "venue-role-scoped") {
+            return NextResponse.json({ error: "Forbidden", code: "VENUE_ACCESS_DENIED" }, { status: 403 });
+          }
         }
       }
-
-      return forwardWithHeaders(requestHeaders, response);
     }
 
-    // No session
-    if (pathname.startsWith("/api/v1/")) {
-      const requestHeaders = new Headers(request.headers);
-      requestHeaders.set("x-api-version", "v1");
-      return NextResponse.next({ request: { headers: requestHeaders } });
-    }
-    return response;
+    return forwardWithHeaders(requestHeaders, response);
   }
 
-  // ── Dashboard routes ───────────────────────────────────────────────
   if (pathname.startsWith("/dashboard")) {
     if (!session) {
-      return response;
+      return redirectToSignIn(request);
     }
 
     const segments = pathname.split("/").filter(Boolean);
     const venueSegment = segments[1];
-    if (!venueSegment) return response;
 
-    const normalizedVenueId = venueSegment.startsWith("venue-")
-      ? venueSegment
-      : `venue-${venueSegment}`;
+    if (!venueSegment) {
+      const requestHeaders = new Headers(sanitizedHeaders);
+      requestHeaders.set("x-user-id", session.user.id);
+      requestHeaders.set("x-user-email", session.user.email || "");
+      return forwardWithHeaders(requestHeaders, response);
+    }
 
-    // Always build a fresh header set with the authenticated user id.
-    // Role and tier are ONLY set when the RPC returns real DB data.
-    const requestHeaders = new Headers(request.headers);
+    const normalizedVenueId = normalizeVenueId(venueSegment) ?? venueSegment;
+
+    const requestHeaders = new Headers(sanitizedHeaders);
     requestHeaders.set("x-user-id", session.user.id);
     requestHeaders.set("x-user-email", session.user.email || "");
-    requestHeaders.set("x-venue-id", normalizedVenueId);
 
     try {
       const { data, error: rpcErr } = await supabase.rpc("get_access_context", {
         p_venue_id: normalizedVenueId,
       });
 
-      if (!rpcErr && data) {
-        const ctx = data as { user_id?: string; role?: string; tier?: string; venue_id?: string | null };
-
-        if (ctx.user_id && ctx.role && ctx.tier) {
-          const tier = ctx.tier.toLowerCase().trim();
-
-          if (["starter", "pro", "enterprise"].includes(tier)) {
-            requestHeaders.set("x-user-tier", tier);
-            requestHeaders.set("x-user-role", ctx.role);
-            if (ctx.venue_id) {
-              requestHeaders.set("x-venue-id", ctx.venue_id);
-            }
-          }
-          // If tier value is unrecognised we leave x-user-tier unset
-          // so the page falls through to resolveVenueAccess (DB query).
-        }
+      if (rpcErr || !data) {
+        return redirectToSignIn(request, "forbidden");
       }
-      // If RPC failed or returned incomplete data we leave x-user-tier
-      // and x-user-role unset. The page will call resolveVenueAccess.
-    } catch {
-      // RPC threw — headers stay without role/tier.
-    }
 
-    return forwardWithHeaders(requestHeaders, response);
+      const ctx = data as { user_id?: string; role?: string; tier?: string; venue_id?: string | null };
+      const tier = ctx.tier?.toLowerCase().trim();
+
+      if (
+        ctx.user_id !== session.user.id ||
+        !ctx.role ||
+        !tier ||
+        !["starter", "pro", "enterprise"].includes(tier)
+      ) {
+        return redirectToSignIn(request, "forbidden");
+      }
+
+      requestHeaders.set("x-user-tier", tier);
+      requestHeaders.set("x-user-role", ctx.role);
+      requestHeaders.set("x-venue-id", ctx.venue_id || normalizedVenueId);
+
+      return forwardWithHeaders(requestHeaders, response);
+    } catch (error) {
+      logger.warn("[middleware] get_access_context failed for dashboard route", {
+        correlationId,
+        path: pathname,
+        venueId: normalizedVenueId,
+        error: error instanceof Error ? error.message : String(error),
+      });
+      return redirectToSignIn(request, "forbidden");
+    }
   }
 
   return response;
 }
 
 export const config = {
-  matcher: [
-    "/dashboard/:path*",
-    "/api/:path*",
-  ],
+  matcher: ["/dashboard/:path*", "/api/:path*"],
 };

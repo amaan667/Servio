@@ -1,5 +1,5 @@
 import MenuManagementClientPage from "./page.client";
-import { getAuthContext } from "@/lib/auth/get-auth-context";
+import { requireDashboardAccess } from "@/lib/auth/get-auth-context";
 import { createAdminClient } from "@/lib/supabase";
 import { normalizeVenueId } from "@/lib/utils/venueId";
 
@@ -12,7 +12,7 @@ export default async function MenuManagementPage({ params }: { params: { venueId
   const { venueId } = params;
 
   // Server-side auth check
-  const auth = await getAuthContext(venueId);
+  const auth = await requireDashboardAccess(venueId);
 
   // Fetch initial menu items to prevent flickering "0 menu items"
   let initialMenuItems:
@@ -53,8 +53,8 @@ export default async function MenuManagementPage({ params }: { params: { venueId
   return (
     <MenuManagementClientPage
       venueId={venueId}
-      tier={auth.tier ?? "starter"}
-      role={auth.role ?? "viewer"}
+      tier={auth.tier}
+      role={auth.role}
       initialMenuItems={initialMenuItems}
     />
   );

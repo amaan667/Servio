@@ -7,9 +7,8 @@ import { createServerSupabase } from "@/lib/supabase";
 import type { Database } from "@/types/database";
 
 type OrderInsert = Database["public"]["Tables"]["orders"]["Insert"];
-type OrderUpdate = Database["public"]["Tables"]["orders"]["Update"] & {
-  order_status?: string | null;
-};
+type OrderUpdate = Database["public"]["Tables"]["orders"]["Update"];
+type OrderStatus = NonNullable<OrderUpdate["order_status"]>;
 type OrderPaymentStatus = Database["public"]["Tables"]["orders"]["Update"]["payment_status"];
 
 export class OrdersRepo {
@@ -98,7 +97,7 @@ export class OrdersRepo {
   /**
    * Update order status
    */
-  static async updateStatus(orderId: string, status: string) {
+  static async updateStatus(orderId: string, status: OrderStatus) {
     return this.update(orderId, { order_status: status });
   }
 

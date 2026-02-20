@@ -1,5 +1,5 @@
 import OrdersClientPage from "./page.client";
-import { getAuthContext } from "@/lib/auth/get-auth-context";
+import { requireDashboardAccess } from "@/lib/auth/get-auth-context";
 import { createAdminClient } from "@/lib/supabase";
 import { todayWindowForLocal } from "@/lib/time";
 
@@ -48,7 +48,7 @@ export default async function OrdersPage({ params }: { params: { venueId: string
   const { venueId } = params;
 
   // Server-side auth check
-  const auth = await getAuthContext(venueId);
+  const auth = await requireDashboardAccess(venueId);
 
   // Fetch initial orders on server for instant load (no flicker)
   let initialOrders: OrderData[] = [];
@@ -90,9 +90,9 @@ export default async function OrdersPage({ params }: { params: { venueId: string
     hasAuth: auth.isAuthenticated,
     userId: auth.userId,
     email: auth.email,
-    tier: auth.tier ?? "starter",
-    role: auth.role ?? "viewer",
-    venueId: auth.venueId ?? venueId,
+    tier: auth.tier,
+    role: auth.role,
+    venueId: auth.venueId,
     timestamp: new Date().toISOString(),
     page: "Orders",
   };
@@ -106,8 +106,8 @@ export default async function OrdersPage({ params }: { params: { venueId: string
       />
       <OrdersClientPage
         venueId={venueId}
-        tier={auth.tier ?? "starter"}
-        role={auth.role ?? "viewer"}
+        tier={auth.tier}
+        role={auth.role}
         initialOrders={initialOrders}
         initialStats={initialStats}
       />

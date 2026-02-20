@@ -1,10 +1,32 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { stripe } from "@/lib/stripe-client";
 
 import { PRICING_TIERS } from "@/lib/pricing-tiers";
 
-export async function POST() {
+export async function POST(request: NextRequest) {
   try {
+    const secret = process.env.INTERNAL_API_SECRET || process.env.CRON_SECRET;
+    if (!secret) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: "INTERNAL_API_SECRET (or CRON_SECRET) is not configured",
+        },
+        { status: 503 }
+      );
+    }
+
+    const authHeader = request.headers.get("authorization");
+    if (authHeader !== `Bearer ${secret}`) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: "Unauthorized",
+        },
+        { status: 401 }
+      );
+    }
+
     // Use shared PRICING_TIERS configuration
     const products = Object.entries(PRICING_TIERS).map(([tierKey, tierData]) => ({
       tier: tierKey,

@@ -4,10 +4,9 @@ import ClientOnlyWrapper from "@/components/ClientOnlyWrapper";
 import { createAdminClient } from "@/lib/supabase";
 import { getDashboardCounts } from "@/lib/dashboard-counts";
 import { todayWindowForTZ } from "@/lib/time";
-import { getAuthContext } from "@/lib/auth/get-auth-context";
+import { requireDashboardAccess } from "@/lib/auth/get-auth-context";
 import { fetchMenuItemCount } from "@/lib/counts/unified-counts";
 import type { DashboardCounts, DashboardStats } from "./hooks/useDashboardData";
-import { normalizeVenueId } from "@/lib/utils/venueId";
 
 // TEMPORARILY DISABLE SSR TO DEBUG TIER ISSUES
 // Force client-side rendering only
@@ -19,29 +18,22 @@ export const runtime = "nodejs";
 export default async function VenuePage({ params }: { params: { venueId: string } }) {
   const { venueId } = params;
 
-  // Log dashboard page load attempt
-
-  // STEP 1: Server-side auth check (optional - no redirects)
-  // NO REDIRECTS - User requested ZERO sign-in redirects
-  // Auth check is optional - client will handle auth display
-  // Dashboard ALWAYS loads - client handles authentication
-  const auth = await getAuthContext(venueId);
+  // STEP 1: Enforce server-side auth and venue authorization before any tenant data fetch.
+  const auth = await requireDashboardAccess(venueId);
 
   // Log all auth information for browser console
   const authInfo = {
     hasAuth: auth.isAuthenticated,
     userId: auth.userId,
     email: auth.email,
-    tier: auth.tier ?? "starter",
-    role: auth.role ?? "viewer",
-    venueId: auth.venueId ?? venueId,
+    tier: auth.tier,
+    role: auth.role,
+    venueId: auth.venueId,
     timestamp: new Date().toISOString(),
     page: "Dashboard",
   };
 
-  // STEP 2: Fetch initial dashboard data on server (even without auth)
-  // Always fetch data - don't block on auth
-  // Use admin client only after auth verification
+  // STEP 2: Fetch initial dashboard data using service role only after access is validated.
   let initialCounts: DashboardCounts | undefined = undefined;
   let initialStats: DashboardStats | undefined = undefined;
 
@@ -57,7 +49,7 @@ export default async function VenuePage({ params }: { params: { venueId: string 
       const window = todayWindowForTZ(venueTz);
 
       // Normalize venueId format - database stores with venue- prefix
-      const normalizedVenueId = normalizeVenueId(venueId) ?? venueId;
+      const normalizedVenueId = auth.venueId;
 
       // Parallelize all fetches for instant loading
       const now = new Date();
@@ -90,7 +82,7 @@ export default async function VenuePage({ params }: { params: { venueId: string 
           .lt("created_at", window.endUtcISO)
           .neq("order_status", "CANCELLED")
           .neq("order_status", "REFUNDED"),
-        fetchMenuItemCount(venueId),
+        fetchMenuItemCount(auth.venueId),
       ]);
 
       // Process results

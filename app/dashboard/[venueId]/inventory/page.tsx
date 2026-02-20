@@ -5,7 +5,7 @@
 
 import { createAdminClient } from "@/lib/supabase";
 import InventoryClientPage from "./page.client";
-import { getAuthContext } from "@/lib/auth/get-auth-context";
+import { requireDashboardAccess } from "@/lib/auth/get-auth-context";
 import { logger } from "@/lib/monitoring/structured-logger";
 import type { StockLevel } from "@/types/inventory";
 
@@ -24,13 +24,13 @@ interface InventoryStats {
 export default async function InventoryPage({ params }: { params: { venueId: string } }) {
   const { venueId } = params;
 
-  // Server-side auth check - NO REDIRECTS - Dashboard always loads
-  const auth = await getAuthContext(venueId);
+  // Enforce server-side auth and venue authorization before inventory queries.
+  const auth = await requireDashboardAccess(venueId);
 
   // Fetch inventory data on server
   const [initialInventory, stats] = await Promise.all([
-    fetchInventoryItems(venueId),
-    calculateInventoryStats(venueId),
+    fetchInventoryItems(auth.venueId),
+    calculateInventoryStats(auth.venueId),
   ]);
 
   // Log all auth information for browser console
@@ -38,9 +38,9 @@ export default async function InventoryPage({ params }: { params: { venueId: str
     hasAuth: auth.isAuthenticated,
     userId: auth.userId,
     email: auth.email,
-    tier: auth.tier ?? "starter",
-    role: auth.role ?? "viewer",
-    venueId: auth.venueId ?? venueId,
+    tier: auth.tier,
+    role: auth.role,
+    venueId: auth.venueId,
     timestamp: new Date().toISOString(),
     page: "Inventory",
   };
@@ -54,8 +54,8 @@ export default async function InventoryPage({ params }: { params: { venueId: str
       />
       <InventoryClientPage
         venueId={venueId}
-        tier={auth.tier ?? "starter"}
-        role={auth.role ?? "viewer"}
+        tier={auth.tier}
+        role={auth.role}
         initialInventory={initialInventory}
         initialStats={stats}
       />

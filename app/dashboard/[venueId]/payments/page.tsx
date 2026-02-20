@@ -1,5 +1,5 @@
 import PaymentsClientPage from "./page.client";
-import { getAuthContext } from "@/lib/auth/get-auth-context";
+import { requireDashboardAccess } from "@/lib/auth/get-auth-context";
 import { createAdminClient } from "@/lib/supabase";
 import { todayWindowForTZ } from "@/lib/time";
 import { logger } from "@/lib/monitoring/structured-logger";
@@ -136,22 +136,22 @@ export default async function PaymentsPage({ params }: { params: { venueId: stri
   const { venueId } = params;
 
   // Server-side auth check
-  const auth = await getAuthContext(venueId);
+  const auth = await requireDashboardAccess(venueId);
 
   // Log all auth information for browser console
   const authInfo = {
     hasAuth: auth.isAuthenticated,
     userId: auth.userId,
     email: auth.email,
-    tier: auth.tier ?? "starter",
-    role: auth.role ?? "viewer",
-    venueId: auth.venueId ?? venueId,
+    tier: auth.tier,
+    role: auth.role,
+    venueId: auth.venueId,
     timestamp: new Date().toISOString(),
     page: "Payments",
   };
 
   // Fetch payment data on server
-  const { transactions, stats } = await fetchPaymentData(venueId);
+  const { transactions, stats } = await fetchPaymentData(auth.venueId);
 
   return (
     <>
@@ -162,8 +162,8 @@ export default async function PaymentsPage({ params }: { params: { venueId: stri
       />
       <PaymentsClientPage
         venueId={venueId}
-        tier={auth.tier ?? "starter"}
-        role={auth.role ?? "viewer"}
+        tier={auth.tier}
+        role={auth.role}
         initialTransactions={transactions}
         initialStats={stats}
       />

@@ -17,7 +17,7 @@ export async function executeOrdersMarkServed(
 
   const { data: order } = await supabase
     .from("orders")
-    .select("id, status, table_id, tables(table_number)")
+    .select("id, order_status, table_id, tables(table_number)")
     .eq("id", params.orderId)
     .eq("venue_id", venueId)
     .single();
@@ -26,9 +26,9 @@ export async function executeOrdersMarkServed(
     throw new AIAssistantError("Order not found", "INVALID_PARAMS");
   }
 
-  if (order.status !== "ready") {
+  if (order.order_status !== "READY") {
     throw new AIAssistantError(
-      `Order must be in 'ready' status to mark as served (current: ${order.status})`,
+      `Order must be in 'READY' status to mark as served (current: ${order.order_status})`,
       "INVALID_PARAMS"
     );
   }
@@ -38,8 +38,8 @@ export async function executeOrdersMarkServed(
   if (preview) {
     return {
       toolName: "orders.mark_served",
-      before: { status: order.status },
-      after: { status: "served" },
+      before: { status: order.order_status },
+      after: { status: "SERVED" },
       impact: {
         itemsAffected: 1,
         description: `Order will be marked as served${table ? ` for table ${table.table_number}` : ""}`,
@@ -50,7 +50,7 @@ export async function executeOrdersMarkServed(
   const { error: orderError } = await supabase
     .from("orders")
     .update({
-      status: "served",
+      order_status: "SERVED",
       served_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     })
@@ -80,7 +80,7 @@ export async function executeOrdersComplete(
 
   const { data: order } = await supabase
     .from("orders")
-    .select("id, status, total_amount")
+    .select("id, order_status, total_amount")
     .eq("id", params.orderId)
     .eq("venue_id", venueId)
     .single();
@@ -89,15 +89,15 @@ export async function executeOrdersComplete(
     throw new AIAssistantError("Order not found", "INVALID_PARAMS");
   }
 
-  if (order.status === "completed") {
+  if (order.order_status === "COMPLETED") {
     throw new AIAssistantError("Order is already completed", "INVALID_PARAMS");
   }
 
   if (preview) {
     return {
       toolName: "orders.complete",
-      before: { status: order.status },
-      after: { status: "completed" },
+      before: { status: order.order_status },
+      after: { status: "COMPLETED" },
       impact: {
         itemsAffected: 1,
         estimatedRevenue: order.total_amount,
@@ -109,7 +109,7 @@ export async function executeOrdersComplete(
   const { error } = await supabase
     .from("orders")
     .update({
-      status: "completed",
+      order_status: "COMPLETED",
       completed_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     })

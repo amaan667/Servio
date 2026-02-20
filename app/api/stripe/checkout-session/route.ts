@@ -13,6 +13,10 @@ export async function GET(_request: NextRequest) {
       return apiErrors.badRequest("Session ID is required");
     }
 
+    if (!/^cs_[a-zA-Z0-9_]+$/.test(sessionId)) {
+      return apiErrors.badRequest("Invalid session ID format");
+    }
+
     // Fetch session from Stripe with expanded customer data
     const session = await stripe.checkout.sessions.retrieve(sessionId, {
       expand: ["customer"],

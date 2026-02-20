@@ -26,6 +26,10 @@ interface CreateDemoOrderRequest {
 }
 
 export async function POST(req: NextRequest) {
+  if (process.env.ENABLE_PUBLIC_DEMO_ORDERS !== "true") {
+    return apiErrors.notFound("Not found");
+  }
+
   try {
     // Rate limiting
     const rateLimitResult = await rateLimit(req, RATE_LIMITS.GENERAL);

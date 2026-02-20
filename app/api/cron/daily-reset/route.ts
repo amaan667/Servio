@@ -4,6 +4,7 @@ import { createAdminClient } from "@/lib/supabase";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import { env, isDevelopment } from "@/lib/env";
 import { apiErrors } from "@/lib/api/standard-response";
+import { logger } from "@/lib/monitoring/structured-logger";
 
 // This endpoint can be called by a cron job or scheduled task
 // to automatically perform daily reset at midnight
@@ -28,7 +29,11 @@ export async function POST(req: NextRequest) {
 
     // STEP 2: CRON_SECRET authentication (special auth for cron jobs)
     const authHeader = req.headers.get("authorization");
-    const expectedAuth = env("CRON_SECRET") || "default-cron-secret";
+    const expectedAuth = env("CRON_SECRET");
+
+    if (!expectedAuth) {
+      return apiErrors.internal("CRON_SECRET is not configured");
+    }
 
     if (authHeader !== `Bearer ${expectedAuth}`) {
       return apiErrors.unauthorized("Unauthorized");
@@ -173,7 +178,10 @@ export async function POST(req: NextRequest) {
             .eq("venue_id", venue.venue_id);
 
           if (sessionDeleteError) {
-            /* Condition handled */
+            logger.warn("[cron/daily-reset] failed to delete table sessions", {
+              venueId: venue.venue_id,
+              error: sessionDeleteError.message,
+            });
           }
 
           // Delete all tables
@@ -183,7 +191,10 @@ export async function POST(req: NextRequest) {
             .eq("venue_id", venue.venue_id);
 
           if (tableDeleteError) {
-            /* Condition handled */
+            logger.warn("[cron/daily-reset] failed to delete tables", {
+              venueId: venue.venue_id,
+              error: tableDeleteError.message,
+            });
           }
         }
 
@@ -194,7 +205,10 @@ export async function POST(req: NextRequest) {
           .eq("venue_id", venue.venue_id);
 
         if (runtimeDeleteError) {
-          /* Condition handled */
+          logger.warn("[cron/daily-reset] failed to delete table runtime state", {
+            venueId: venue.venue_id,
+            error: runtimeDeleteError.message,
+          });
         }
 
         resetResults.push({

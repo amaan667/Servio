@@ -2,8 +2,22 @@ import { NextRequest } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import { env } from "@/lib/env";
+import { apiErrors } from "@/lib/api/standard-response";
 
 export async function GET(req: NextRequest) {
+  if (process.env.NODE_ENV === "production") {
+    return apiErrors.notFound("Not found");
+  }
+
+  const internalSecret = process.env.INTERNAL_API_SECRET || process.env.CRON_SECRET;
+  if (!internalSecret) {
+    return apiErrors.internal("INTERNAL_API_SECRET (or CRON_SECRET) is not configured");
+  }
+
+  if (req.headers.get("authorization") !== `Bearer ${internalSecret}`) {
+    return apiErrors.unauthorized("Unauthorized");
+  }
+
   try {
     const cookieStore = await cookies();
     const venueId = req.nextUrl.searchParams.get("venueId") || "venue-1e02af4d";
