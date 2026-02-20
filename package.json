@@ -114,7 +114,7 @@
     "framer-motion": "^12.23.22",
     "graphql": "^16.12.0",
     "input-otp": "1.4.1",
-    "ioredis": "^5.8.1",
+    "ioredis": "^5.9.2",
     "isomorphic-dompurify": "^2.33.0",
     "jspdf": "^3.0.3",
     "lucide-react": "^0.454.0",
