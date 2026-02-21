@@ -90,10 +90,7 @@ export const ValidStatusTransitions: Record<OrderStatusType, OrderStatusType[]> 
 };
 
 // Terminal states (orders that cannot change)
-export const TerminalStatuses = new Set([
-  OrderStatus.COMPLETED,
-  OrderStatus.CANCELLED,
-]);
+export const TerminalStatuses = new Set([OrderStatus.COMPLETED, OrderStatus.CANCELLED]);
 
 // Paid statuses (indicates payment has been made)
 export const PaidStatuses = new Set([
@@ -103,7 +100,4 @@ export const PaidStatuses = new Set([
 ]);
 
 // Unpaid statuses
-export const UnpaidStatuses = new Set([
-  PaymentStatus.UNPAID,
-  PaymentStatus.FAILED,
-]);
+export const UnpaidStatuses = new Set([PaymentStatus.UNPAID, PaymentStatus.FAILED]);

@@ -93,7 +93,7 @@ export class StaffService extends BaseService {
       .from("staff")
       .update({ active })
       .eq("id", staffId)
-      .eq("venue_id", venueId)
+      .eq("venue_id", venueId);
 
     if (error) throw error;
     await this.invalidateCachePattern(`staff:list:${venueId}`);

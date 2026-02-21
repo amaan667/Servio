@@ -24,8 +24,7 @@ export async function GET(req: NextRequest) {
       method: "GET",
       headers: {
         Accept: "image/*",
-        "User-Agent":
-          "Mozilla/5.0 (compatible; ServioMenu/1.0; +https://servio.app)",
+        "User-Agent": "Mozilla/5.0 (compatible; ServioMenu/1.0; +https://servio.app)",
       },
       signal: AbortSignal.timeout(10000),
     });
@@ -35,8 +34,7 @@ export async function GET(req: NextRequest) {
         { status: res.status }
       );
     }
-    const contentType =
-      res.headers.get("Content-Type") || "application/octet-stream";
+    const contentType = res.headers.get("Content-Type") || "application/octet-stream";
     const body = await res.arrayBuffer();
     return new NextResponse(body, {
       status: 200,

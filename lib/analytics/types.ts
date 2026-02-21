@@ -7,9 +7,19 @@
 // DATE RANGE & FILTER TYPES
 // ========================================
 
-export type DateRangePreset = "today" | "yesterday" | "this_week" | "last_week" | 
-  "this_month" | "last_month" | "this_quarter" | "this_year" | "last_7_days" | 
-  "last_30_days" | "last_90_days" | "custom";
+export type DateRangePreset =
+  | "today"
+  | "yesterday"
+  | "this_week"
+  | "last_week"
+  | "this_month"
+  | "last_month"
+  | "this_quarter"
+  | "this_year"
+  | "last_7_days"
+  | "last_30_days"
+  | "last_90_days"
+  | "custom";
 
 export interface DateRange {
   start: Date;
@@ -45,12 +55,12 @@ export interface RevenueAnalytics {
   averageOrderValue: number;
   revenueGrowth: number; // percentage compared to previous period
   orderGrowth: number;
-  
+
   // Time series data
   dailyBreakdown: RevenueDataPoint[];
   weeklyComparison: RevenueDataPoint[];
   monthlyTrend: RevenueDataPoint[];
-  
+
   // Period comparisons
   periodOverPeriod: {
     current: number;
@@ -58,7 +68,7 @@ export interface RevenueAnalytics {
     change: number;
     changePercent: number;
   };
-  
+
   // Year over year
   yearOverYear: {
     currentYear: number;
@@ -92,20 +102,20 @@ export interface OrderAnalytics {
   cancelledOrders: number;
   averageOrderValue: number;
   averageOrderTime: number; // in minutes
-  
+
   // Order volumes
   orderVolumeByDay: Array<{
     date: string;
     count: number;
     revenue: number;
   }>;
-  
+
   orderVolumeByHour: Array<{
     hour: number;
     count: number;
     revenue: number;
   }>;
-  
+
   // Order types distribution
   orderTypeDistribution: Array<{
     type: "dine_in" | "takeaway" | "delivery";
@@ -113,14 +123,14 @@ export interface OrderAnalytics {
     revenue: number;
     percentage: number;
   }>;
-  
+
   // Peak hours
   peakHours: Array<{
     hour: number;
     orderCount: number;
     revenue: number;
   }>;
-  
+
   // Order status breakdown
   orderStatusBreakdown: Array<{
     status: string;
@@ -140,7 +150,7 @@ export interface CustomerAnalytics {
   newCustomers: number;
   returningCustomers: number;
   uniqueCustomers: number;
-  
+
   // Customer segments
   customerSegments: Array<{
     segment: CustomerSegment;
@@ -148,12 +158,12 @@ export interface CustomerAnalytics {
     percentage: number;
     revenue: number;
   }>;
-  
+
   // Customer retention
   retentionRate: number;
   repeatPurchaseRate: number;
   averageOrdersPerCustomer: number;
-  
+
   // Customer lifetime value
   averageLifetimeValue: number;
   topCustomers: Array<{
@@ -163,7 +173,7 @@ export interface CustomerAnalytics {
     orderCount: number;
     lastOrderDate: string;
   }>;
-  
+
   // Customer growth
   customerGrowth: {
     newCustomers: number;
@@ -182,7 +192,7 @@ export interface InventoryAnalytics {
   shrinkageRate: number;
   stockoutItems: number;
   lowStockItems: number;
-  
+
   // Inventory usage
   usageByCategory: Array<{
     category: string;
@@ -190,14 +200,14 @@ export interface InventoryAnalytics {
     cost: number;
     percentage: number;
   }>;
-  
+
   // Waste tracking
   wasteByReason: Array<{
     reason: string;
     quantity: number;
     cost: number;
   }>;
-  
+
   // Reorder analysis
   reorderItems: Array<{
     ingredientId: string;
@@ -207,7 +217,7 @@ export interface InventoryAnalytics {
     recommendedOrderQuantity: number;
     estimatedCost: number;
   }>;
-  
+
   // Cost analysis
   costBreakdown: {
     totalCost: number;
@@ -227,22 +237,22 @@ export interface StaffPerformanceAnalytics {
     staffId: string;
     name: string;
     role: string;
-    
+
     // Order handling
     ordersHandled: number;
     revenueGenerated: number;
-    
+
     // Performance metrics
     averageOrderTime: number;
     ordersPerHour: number;
-    
+
     // Customer feedback
     averageRating: number;
-    
+
     // Efficiency
     efficiencyScore: number;
   }>;
-  
+
   // Aggregate metrics
   totalStaff: number;
   averageOrdersPerStaff: number;
@@ -258,12 +268,12 @@ export interface StaffPerformanceAnalytics {
 // REPORT CONFIGURATION TYPES
 // ========================================
 
-export type ReportType = 
-  | "revenue" 
-  | "orders" 
-  | "customers" 
-  | "inventory" 
-  | "staff" 
+export type ReportType =
+  | "revenue"
+  | "orders"
+  | "customers"
+  | "inventory"
+  | "staff"
   | "comprehensive";
 
 export type ExportFormat = "csv" | "excel" | "pdf";
@@ -306,13 +316,13 @@ export interface DashboardMetrics {
   pendingOrders: number;
   todayRevenue: number;
   todayOrders: number;
-  
+
   // Period metrics
   periodRevenue: number;
   periodOrders: number;
   periodAverageOrderValue: number;
   periodGrowth: number;
-  
+
   // Quick stats
   quickStats: Array<{
     label: string;
@@ -321,7 +331,7 @@ export interface DashboardMetrics {
     changeLabel?: string;
     icon?: string;
   }>;
-  
+
   // Alerts
   alerts: Array<{
     id: string;

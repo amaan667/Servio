@@ -225,7 +225,7 @@ git push origin main
    ```
 
 2. Common issues:
-   - Cache keys missing tenant isolation (audit with `lib/cache/cache-key-audit.ts`)
+   - Cache keys missing tenant isolation (ensure format: `namespace:venueId:resourceId`)
    - TTL too short
    - Cache stampede
 

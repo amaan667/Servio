@@ -28,8 +28,10 @@ export async function POST(req: NextRequest) {
 
     // STEP 2: CRON_SECRET authentication (special auth for cron jobs)
     const authHeader = req.headers.get("authorization");
-    const expectedAuth = env("CRON_SECRET") || "default-cron-secret";
-
+    const expectedAuth = env("CRON_SECRET");
+    if (!expectedAuth || expectedAuth.length < 16) {
+      return apiErrors.unauthorized("CRON_SECRET not configured");
+    }
     if (authHeader !== `Bearer ${expectedAuth}`) {
       return apiErrors.unauthorized("Unauthorized");
     }

@@ -38,7 +38,8 @@ export const POST = createUnifiedHandler(
       throw new Error("venueId is required");
     }
 
-    const { cartId, tableNumber, items, totalAmount, customerName, customerPhone, receiptEmail } = body;
+    const { cartId, tableNumber, items, totalAmount, customerName, customerPhone, receiptEmail } =
+      body;
 
     // Cart data stored in metadata
     const itemsSummary = items.map((item) => `${item.name} x${item.quantity}`).join(", ");

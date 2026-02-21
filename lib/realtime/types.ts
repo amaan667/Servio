@@ -10,29 +10,16 @@ import { RealtimeChannel } from "@supabase/supabase-js";
 // ============================================================================
 
 /** Connection state for realtime subscriptions */
-export type ConnectionState = 
-  | 'connecting' 
-  | 'connected' 
-  | 'disconnected' 
-  | 'error'
-  | 'closed';
+export type ConnectionState = "connecting" | "connected" | "disconnected" | "error" | "closed";
 
 /** Event types for postgres changes */
-export type PostgresEventType = 'INSERT' | 'UPDATE' | 'DELETE' | '*';
+export type PostgresEventType = "INSERT" | "UPDATE" | "DELETE" | "*";
 
 /** Channel event types */
-export type ChannelEventType = 
-  | 'postgres_changes'
-  | 'broadcast'
-  | 'presence';
+export type ChannelEventType = "postgres_changes" | "broadcast" | "presence";
 
 /** Subscription status */
-export type SubscriptionStatus = 
-  | 'SUBSCRIBED' 
-  | 'TIMED_OUT' 
-  | 'CLOSED' 
-  | 'CHANNEL_ERROR'
-  | 'ERROR';
+export type SubscriptionStatus = "SUBSCRIBED" | "TIMED_OUT" | "CLOSED" | "CHANNEL_ERROR" | "ERROR";
 
 // ============================================================================
 // Payload Types
@@ -76,7 +63,7 @@ export interface PresenceUser {
 /** Filter configuration for postgres changes */
 export interface SubscriptionFilter {
   column: string;
-  operator: 'eq' | 'neq' | 'gt' | 'gte' | 'lt' | 'lte' | 'like' | 'ilike' | 'in';
+  operator: "eq" | "neq" | "gt" | "gte" | "lt" | "lte" | "like" | "ilike" | "in";
   value: string | number | boolean | (string | number)[];
 }
 
@@ -119,35 +106,22 @@ export type PostgresChangeCallback<T = Record<string, unknown>> = (
 ) => void;
 
 /** Callback for broadcast messages */
-export type BroadcastCallback<T = unknown> = (
-  payload: BroadcastPayload<T>
-) => void;
+export type BroadcastCallback<T = unknown> = (payload: BroadcastPayload<T>) => void;
 
 /** Callback for presence sync */
-export type PresenceCallback = (
-  state: PresenceState
-) => void;
+export type PresenceCallback = (state: PresenceState) => void;
 
 /** Callback for presence join */
-export type PresenceJoinCallback = (
-  key: string,
-  newPresences: PresenceUser[]
-) => void;
+export type PresenceJoinCallback = (key: string, newPresences: PresenceUser[]) => void;
 
 /** Callback for presence leave */
-export type PresenceLeaveCallback = (
-  key: string,
-  leftPresences: PresenceUser[]
-) => void;
+export type PresenceLeaveCallback = (key: string, leftPresences: PresenceUser[]) => void;
 
 /** Callback for subscription status changes */
-export type SubscriptionStatusCallback = (
-  status: SubscriptionStatus,
-  error?: Error
-) => void;
+export type SubscriptionStatusCallback = (status: SubscriptionStatus, error?: Error) => void;
 
 /** Unified callback that handles all event types */
-export type RealtimeCallback<T = unknown> = 
+export type RealtimeCallback<T = unknown> =
   | PostgresChangeCallback<T>
   | BroadcastCallback<T>
   | PresenceCallback
@@ -279,7 +253,7 @@ export interface RealtimeReservation {
 
 export interface RealtimeAnalyticsUpdate {
   venue_id: string;
-  metric_type: 'orders' | 'revenue' | 'items_sold' | 'customers';
+  metric_type: "orders" | "revenue" | "items_sold" | "customers";
   value: number;
   previous_value?: number;
   timestamp: string;
@@ -337,7 +311,7 @@ export interface SubscriptionEntry {
 export interface SubscribeRequest {
   venueId: string;
   channels: Array<{
-    type: 'orders' | 'tables' | 'inventory' | 'reservations' | 'analytics' | 'custom';
+    type: "orders" | "tables" | "inventory" | "reservations" | "analytics" | "custom";
     customChannel?: string;
     events?: PostgresEventType[];
   }>;
@@ -366,7 +340,7 @@ export interface PresenceRequest {
   venueId: string;
   userId: string;
   userData?: Record<string, unknown>;
-  action: 'join' | 'leave';
+  action: "join" | "leave";
 }
 
 /** Presence tracking response */

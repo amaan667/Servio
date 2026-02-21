@@ -134,10 +134,14 @@ export async function GET() {
   }
 
   // Evaluate SLO status
-  metrics.sloStatus.apiAvailability = metrics.availability.uptimePercentage >= SLO_TARGETS.availability ? "met" : "breached";
-  metrics.sloStatus.apiLatency = metrics.latency.apiP95 <= SLO_TARGETS.latencyP95 ? "met" : "breached";
-  metrics.sloStatus.errorRate = metrics.errorRate.ratePercentage <= SLO_TARGETS.errorRate ? "met" : "breached";
-  metrics.sloStatus.cacheHitRate = metrics.cache.hitRate >= SLO_TARGETS.cacheHitRate ? "met" : "breached";
+  metrics.sloStatus.apiAvailability =
+    metrics.availability.uptimePercentage >= SLO_TARGETS.availability ? "met" : "breached";
+  metrics.sloStatus.apiLatency =
+    metrics.latency.apiP95 <= SLO_TARGETS.latencyP95 ? "met" : "breached";
+  metrics.sloStatus.errorRate =
+    metrics.errorRate.ratePercentage <= SLO_TARGETS.errorRate ? "met" : "breached";
+  metrics.sloStatus.cacheHitRate =
+    metrics.cache.hitRate >= SLO_TARGETS.cacheHitRate ? "met" : "breached";
 
   // Overall status
   const hasUnhealthyDeps = Object.values(metrics.dependencies).some((d) => d === "unhealthy");

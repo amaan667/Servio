@@ -36,10 +36,7 @@ export async function GET(req: NextRequest) {
   const venueId = normalizeVenueId(rawVenueId);
 
   if (!venueId) {
-    return NextResponse.json(
-      { error: "venueId query parameter is required" },
-      { status: 400 }
-    );
+    return NextResponse.json({ error: "venueId query parameter is required" }, { status: 400 });
   }
 
   const resolved = await resolveVenueAccess(user.id, venueId);

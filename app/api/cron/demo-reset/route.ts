@@ -17,8 +17,10 @@ export async function GET(req: NextRequest) {
   try {
     // STEP 1: CRON_SECRET authentication (special auth for cron jobs)
     const authHeader = req.headers.get("authorization");
-    const expectedSecret = env("CRON_SECRET") || "demo-reset-secret";
-
+    const expectedSecret = env("CRON_SECRET");
+    if (!expectedSecret || expectedSecret.length < 16) {
+      return apiErrors.unauthorized("CRON_SECRET not configured");
+    }
     if (authHeader !== `Bearer ${expectedSecret}`) {
       return apiErrors.unauthorized("Unauthorized");
     }

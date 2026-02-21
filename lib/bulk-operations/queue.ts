@@ -62,7 +62,16 @@ let activeJobs = 0;
 
 // Notification callbacks
 const completionCallbacks = new Map<string, (job: BulkOperationJob) => void>();
-const progressCallbacks = new Map<string, (progress: { jobId: string; processed: number; total: number; percentage: number; status: string }) => void>();
+const progressCallbacks = new Map<
+  string,
+  (progress: {
+    jobId: string;
+    processed: number;
+    total: number;
+    percentage: number;
+    status: string;
+  }) => void
+>();
 
 /**
  * Create a new bulk operation job
@@ -134,7 +143,13 @@ export function onJobComplete(
  */
 export function onJobProgress(
   jobId: string,
-  callback: (progress: { jobId: string; processed: number; total: number; percentage: number; status: string }) => void
+  callback: (progress: {
+    jobId: string;
+    processed: number;
+    total: number;
+    percentage: number;
+    status: string;
+  }) => void
 ): () => void {
   progressCallbacks.set(jobId, callback);
   return () => progressCallbacks.delete(jobId);
@@ -212,10 +227,7 @@ export function updateJobProgress(
 /**
  * Complete a job
  */
-export function completeJob(
-  jobId: string,
-  _result: BulkOperationResult
-): void {
+export function completeJob(jobId: string, _result: BulkOperationResult): void {
   const job = jobStore.get(jobId);
   if (!job) return;
 
@@ -315,7 +327,13 @@ export async function processWithQueue(
     skipMissingOnUpdate?: boolean;
     skipInvalidOnDelete?: boolean;
     continueOnError?: boolean;
-    progressCallback?: (update: { jobId: string; processed: number; total: number; percentage: number; status: string }) => void;
+    progressCallback?: (update: {
+      jobId: string;
+      processed: number;
+      total: number;
+      percentage: number;
+      status: string;
+    }) => void;
     rollbackOnFailure?: boolean;
   }
 ): Promise<BulkOperationJob> {

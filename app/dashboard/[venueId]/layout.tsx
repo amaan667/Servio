@@ -1,6 +1,8 @@
+import { redirect } from "next/navigation";
 import { AssistantCommandPalette } from "@/components/ai/assistant-command-palette";
 import NavigationBreadcrumb from "@/components/navigation-breadcrumb";
 import { VenueLocaleSync } from "./components/VenueLocaleSync";
+import { getAuthContext } from "@/lib/auth/get-auth-context";
 // import { FeedbackMenu } from "@/components/feedback/FeedbackMenu"; // Temporarily hidden for screenshots
 
 export default async function VenueDashboardLayout({
@@ -11,6 +13,14 @@ export default async function VenueDashboardLayout({
   params: { venueId: string };
 }) {
   const { venueId } = params;
+
+  const auth = await getAuthContext(venueId);
+  if (!auth.isAuthenticated) {
+    redirect("/sign-in?redirect=" + encodeURIComponent(`/dashboard/${venueId}`));
+  }
+  if (!auth.role) {
+    redirect("/dashboard");
+  }
 
   return (
     <>

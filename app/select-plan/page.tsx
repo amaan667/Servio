@@ -207,7 +207,11 @@ export default function SelectPlanPage() {
           const data = await response.json();
 
           if (data.error || !data.url) {
-            toast({ title: "Error", description: data.error || "Failed to create checkout session. Please try again.", variant: "destructive" });
+            toast({
+              title: "Error",
+              description: data.error || "Failed to create checkout session. Please try again.",
+              variant: "destructive",
+            });
             setLoading(false);
             setSelectedTier(null);
             return;
@@ -237,7 +241,11 @@ export default function SelectPlanPage() {
       const data = await response.json();
 
       if (data.error || !data.url) {
-        toast({ title: "Error", description: data.error || "Failed to create checkout session. Please try again.", variant: "destructive" });
+        toast({
+          title: "Error",
+          description: data.error || "Failed to create checkout session. Please try again.",
+          variant: "destructive",
+        });
         setLoading(false);
         setSelectedTier(null);
         return;
@@ -246,7 +254,12 @@ export default function SelectPlanPage() {
       // Redirect to Stripe checkout
       window.location.href = data.url;
     } catch (error) {
-      toast({ title: "Error", description: error instanceof Error ? error.message : "Failed to proceed. Please try again.", variant: "destructive" });
+      toast({
+        title: "Error",
+        description:
+          error instanceof Error ? error.message : "Failed to proceed. Please try again.",
+        variant: "destructive",
+      });
       setLoading(false);
       setSelectedTier(null);
     }

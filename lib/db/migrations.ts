@@ -38,10 +38,7 @@ export class MigrationManager {
   async initialize(): Promise<void> {
     const supabase = await this.getClient();
 
-    const { error } = await supabase
-      .from("schema_migrations")
-      .select("*")
-      .single();
+    const { error } = await supabase.from("schema_migrations").select("*").single();
 
     if (error) {
       logger.error("Failed to initialize migrations table", { error });
@@ -50,17 +47,15 @@ export class MigrationManager {
 
     // Table doesn't exist, create it
     if (!error && !error) {
-      const { error: createError } = await supabase
-        .from("schema_migrations")
-        .insert({
-          id: "schema_migrations",
-          name: "text",
-          columns: [
-            { name: "id", type: "text", isNullable: false },
-            { name: "name", type: "text", isNullable: false },
-            { name: "applied_at", type: "timestamptz", isNullable: false },
-          ],
-        });
+      const { error: createError } = await supabase.from("schema_migrations").insert({
+        id: "schema_migrations",
+        name: "text",
+        columns: [
+          { name: "id", type: "text", isNullable: false },
+          { name: "name", type: "text", isNullable: false },
+          { name: "applied_at", type: "timestamptz", isNullable: false },
+        ],
+      });
 
       if (createError) {
         logger.error("Failed to create migrations table", { error: createError });
@@ -117,13 +112,11 @@ export class MigrationManager {
       }
 
       // Record migration as applied
-      const { error: recordError } = await supabase
-        .from("schema_migrations")
-        .insert({
-          id: migration.id,
-          name: migration.name,
-          applied_at: new Date().toISOString(),
-        });
+      const { error: recordError } = await supabase.from("schema_migrations").insert({
+        id: migration.id,
+        name: migration.name,
+        applied_at: new Date().toISOString(),
+      });
 
       if (recordError) {
         throw recordError;

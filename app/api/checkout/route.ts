@@ -19,7 +19,7 @@ const checkoutSchema = z.object({
   customer_name: z.string().optional().default("Customer"),
   customerPhone: z.string().optional(),
   customer_phone: z.string().optional(),
-  customerEmail: z.string().email().optional().or(z.literal("")), 
+  customerEmail: z.string().email().optional().or(z.literal("")),
   customer_email: z.string().email().optional().or(z.literal("")),
   items: z.array(z.unknown()).optional(),
   source: z.string().optional().default("qr"),
@@ -49,7 +49,8 @@ export const POST = createUnifiedHandler(
     const customerName = body.customerName ?? body.customer_name ?? "Customer";
     const customerPhone = body.customerPhone ?? body.customer_phone;
     const customerEmailRaw = body.customerEmail ?? body.customer_email;
-    const customerEmail = customerEmailRaw && customerEmailRaw !== "" ? customerEmailRaw : undefined;
+    const customerEmail =
+      customerEmailRaw && customerEmailRaw !== "" ? customerEmailRaw : undefined;
     const items = body.items;
     const source = body.source;
     const qrType = body.qrType ?? body.qr_type ?? "TABLE_FULL_SERVICE";

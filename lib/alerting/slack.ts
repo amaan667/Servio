@@ -106,14 +106,26 @@ export async function sendAlert(payload: AlertPayload): Promise<boolean> {
 
 // ─── Convenience alert functions ────────────────────────────────────
 
-export async function alertCritical(title: string, message: string, details?: Record<string, string | number | boolean>) {
+export async function alertCritical(
+  title: string,
+  message: string,
+  details?: Record<string, string | number | boolean>
+) {
   return sendAlert({ title, severity: "critical", message, details });
 }
 
-export async function alertWarning(title: string, message: string, details?: Record<string, string | number | boolean>) {
+export async function alertWarning(
+  title: string,
+  message: string,
+  details?: Record<string, string | number | boolean>
+) {
   return sendAlert({ title, severity: "warning", message, details });
 }
 
-export async function alertResolved(title: string, message: string, details?: Record<string, string | number | boolean>) {
+export async function alertResolved(
+  title: string,
+  message: string,
+  details?: Record<string, string | number | boolean>
+) {
   return sendAlert({ title, severity: "resolved", message, details });
 }

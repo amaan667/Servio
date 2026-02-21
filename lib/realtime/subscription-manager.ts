@@ -1,7 +1,7 @@
 /**
  * Subscription Manager
  * Core subscription management for Supabase Realtime
- * 
+ *
  * Features:
  * - Generic subscription manager class
  * - Automatic reconnection handling
@@ -26,20 +26,11 @@ const DEDUP_WINDOW_MS = 100;
 // Types
 // ============================================================================
 
-export type ConnectionState = 
-  | 'connecting' 
-  | 'connected' 
-  | 'disconnected' 
-  | 'error'
-  | 'closed';
+export type ConnectionState = "connecting" | "connected" | "disconnected" | "error" | "closed";
 
-export type PostgresEventType = 'INSERT' | 'UPDATE' | 'DELETE' | '*';
+export type PostgresEventType = "INSERT" | "UPDATE" | "DELETE" | "*";
 
-export type SubscriptionStatus = 
-  | 'SUBSCRIBED' 
-  | 'TIMED_OUT' 
-  | 'CLOSED' 
-  | 'CHANNEL_ERROR';
+export type SubscriptionStatus = "SUBSCRIBED" | "TIMED_OUT" | "CLOSED" | "CHANNEL_ERROR";
 
 export interface PostgresPayload<T = Record<string, unknown>> {
   eventType: PostgresEventType;
@@ -49,7 +40,7 @@ export interface PostgresPayload<T = Record<string, unknown>> {
 
 export interface SubscriptionFilter {
   column: string;
-  operator: 'eq' | 'neq' | 'gt' | 'gte' | 'lt' | 'lte' | 'like' | 'ilike' | 'in';
+  operator: "eq" | "neq" | "gt" | "gte" | "lt" | "lte" | "like" | "ilike" | "in";
   value: string | number | boolean | (string | number)[];
 }
 
@@ -135,7 +126,7 @@ export class SubscriptionManager {
   private supabase = supabaseBrowser();
   private subscriptions: Map<string, SubscriptionEntry> = new Map();
   private dedupCache = new DedupCache();
-  private connectionState: ConnectionState = 'disconnected';
+  private connectionState: ConnectionState = "disconnected";
   private reconnectAttempts: Map<string, number> = new Map();
   private listeners: Map<string, Set<(status: SubscriptionStatus) => void>> = new Map();
   private eventHandlers: Map<string, Set<(payload: unknown) => void>> = new Map();
@@ -163,23 +154,23 @@ export class SubscriptionManager {
   // --------------------------------------------------------------------------
 
   private initializeConnection(): void {
-    this.updateConnectionState('connecting');
+    this.updateConnectionState("connecting");
 
     if (typeof window !== "undefined") {
-      window.addEventListener('online', () => this.handleOnline());
-      window.addEventListener('offline', () => this.handleOffline());
+      window.addEventListener("online", () => this.handleOnline());
+      window.addEventListener("offline", () => this.handleOffline());
     }
   }
 
   private handleOnline(): void {
-    logger.info('[SubscriptionManager] Browser came online, reconnecting...');
-    this.updateConnectionState('connecting');
+    logger.info("[SubscriptionManager] Browser came online, reconnecting...");
+    this.updateConnectionState("connecting");
     this.reconnectAll();
   }
 
   private handleOffline(): void {
-    logger.warn('[SubscriptionManager] Browser went offline');
-    this.updateConnectionState('disconnected');
+    logger.warn("[SubscriptionManager] Browser went offline");
+    this.updateConnectionState("disconnected");
   }
 
   private updateConnectionState(state: ConnectionState): void {
@@ -218,7 +209,7 @@ export class SubscriptionManager {
 
     channel.subscribe((status: SubscriptionStatus) => {
       this.handleSubscriptionStatus(channelName, status);
-      if (status === 'CHANNEL_ERROR') {
+      if (status === "CHANNEL_ERROR") {
         this.attemptReconnect(channelName);
       }
     });
@@ -227,7 +218,7 @@ export class SubscriptionManager {
       id: channelName,
       channel,
       config,
-      status: 'CLOSED',
+      status: "CLOSED",
       refCount: 1,
       createdAt: Date.now(),
     };
@@ -246,26 +237,27 @@ export class SubscriptionManager {
       if (pgConfig.filters && pgConfig.filters.length > 0) {
         for (const filter of pgConfig.filters) {
           const op = this.operatorToSymbol(filter.operator);
-          const value = Array.isArray(filter.value) 
-            ? `(${filter.value.join(',')})` 
-            : filter.value;
+          const value = Array.isArray(filter.value) ? `(${filter.value.join(",")})` : filter.value;
           filterParts.push(`${filter.column}${op}${value}`);
         }
       }
-      const filterString = filterParts.length > 0 ? filterParts.join(',') : undefined;
+      const filterString = filterParts.length > 0 ? filterParts.join(",") : undefined;
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (channel as any).on(
         "postgres_changes",
         {
-          event: pgConfig.event || '*',
+          event: pgConfig.event || "*",
           schema: pgConfig.schema,
           table: pgConfig.table,
           filter: filterString,
         },
         (payload: RealtimePostgresChangesPayload<Record<string, unknown>>) => {
-          const payloadRecord = payload.new as Record<string, unknown> | null || payload.old as Record<string, unknown> | null || {};
-          const dedupKey = `${pgConfig.table}:${payload.eventType}:${payloadRecord['id'] || Date.now()}`;
+          const payloadRecord =
+            (payload.new as Record<string, unknown> | null) ||
+            (payload.old as Record<string, unknown> | null) ||
+            {};
+          const dedupKey = `${pgConfig.table}:${payload.eventType}:${payloadRecord["id"] || Date.now()}`;
           if (this.dedupCache.shouldProcess(dedupKey, payload)) {
             const transformedPayload: PostgresPayload = {
               eventType: payload.eventType as PostgresEventType,
@@ -282,19 +274,19 @@ export class SubscriptionManager {
     }
   }
 
-  private operatorToSymbol(operator: SubscriptionFilter['operator']): string {
+  private operatorToSymbol(operator: SubscriptionFilter["operator"]): string {
     const symbols: Record<string, string> = {
-      eq: '=',
-      neq: '!=',
-      gt: '>',
-      gte: '>=',
-      lt: '<',
-      lte: '<=',
-      like: '.like.',
-      ilike: '.ilike.',
-      in: '.in.',
+      eq: "=",
+      neq: "!=",
+      gt: ">",
+      gte: ">=",
+      lt: "<",
+      lte: "<=",
+      like: ".like.",
+      ilike: ".ilike.",
+      in: ".in.",
     };
-    return symbols[operator] || '=';
+    return symbols[operator] || "=";
   }
 
   // --------------------------------------------------------------------------
@@ -307,15 +299,15 @@ export class SubscriptionManager {
       entry.status = status;
     }
 
-    if (status === 'SUBSCRIBED') {
+    if (status === "SUBSCRIBED") {
       this.reconnectAttempts.set(channelName, 0);
-      if (this.connectionState !== 'connected') {
-        this.updateConnectionState('connected');
+      if (this.connectionState !== "connected") {
+        this.updateConnectionState("connected");
       }
     }
 
-    if (status === 'CHANNEL_ERROR') {
-      this.updateConnectionState('error');
+    if (status === "CHANNEL_ERROR") {
+      this.updateConnectionState("error");
     }
 
     this.broadcastStatusChange(channelName, status);
@@ -327,7 +319,7 @@ export class SubscriptionManager {
 
   private async attemptReconnect(channelName: string): Promise<void> {
     const currentAttempts = this.reconnectAttempts.get(channelName) || 0;
-    
+
     if (currentAttempts >= MAX_RECONNECT_ATTEMPTS) {
       logger.warn(`[SubscriptionManager] Max reconnect attempts reached for ${channelName}`);
       return;
@@ -339,9 +331,11 @@ export class SubscriptionManager {
     );
 
     this.reconnectAttempts.set(channelName, currentAttempts + 1);
-    logger.info(`[SubscriptionManager] Attempting reconnect ${currentAttempts + 1} for ${channelName} in ${delay}ms`);
+    logger.info(
+      `[SubscriptionManager] Attempting reconnect ${currentAttempts + 1} for ${channelName} in ${delay}ms`
+    );
 
-    await new Promise(resolve => setTimeout(resolve, delay));
+    await new Promise((resolve) => setTimeout(resolve, delay));
 
     const entry = this.subscriptions.get(channelName);
     if (entry) {
@@ -356,7 +350,7 @@ export class SubscriptionManager {
 
   private async reconnectAll(): Promise<void> {
     const channelNames = Array.from(this.subscriptions.keys());
-    
+
     for (const channelName of channelNames) {
       await this.attemptReconnect(channelName);
     }
@@ -373,7 +367,9 @@ export class SubscriptionManager {
         try {
           handler(payload);
         } catch (err) {
-          logger.error(`[SubscriptionManager] Error in event handler for ${eventType}`, { error: err });
+          logger.error(`[SubscriptionManager] Error in event handler for ${eventType}`, {
+            error: err,
+          });
         }
       }
     }
@@ -386,7 +382,9 @@ export class SubscriptionManager {
         try {
           callback(status);
         } catch (err) {
-          logger.error(`[SubscriptionManager] Error in status listener for ${channelName}`, { error: err });
+          logger.error(`[SubscriptionManager] Error in status listener for ${channelName}`, {
+            error: err,
+          });
         }
       }
     }
@@ -396,7 +394,10 @@ export class SubscriptionManager {
   // Listener Management
   // --------------------------------------------------------------------------
 
-  private addStatusListener(channelName: string, callback: (status: SubscriptionStatus) => void): void {
+  private addStatusListener(
+    channelName: string,
+    callback: (status: SubscriptionStatus) => void
+  ): void {
     if (!this.listeners.has(channelName)) {
       this.listeners.set(channelName, new Set());
     }
@@ -441,7 +442,7 @@ export class SubscriptionManager {
     }
 
     entry.refCount--;
-    
+
     if (entry.refCount <= 0) {
       this.supabase.removeChannel(entry.channel);
       this.subscriptions.delete(channelName);
@@ -459,7 +460,7 @@ export class SubscriptionManager {
     this.eventHandlers.clear();
     this.reconnectAttempts.clear();
     this.dedupCache.clear();
-    this.updateConnectionState('disconnected');
+    this.updateConnectionState("disconnected");
   }
 
   getSubscriptions(): SubscriptionEntry[] {
@@ -475,11 +476,11 @@ export class SubscriptionManager {
   // --------------------------------------------------------------------------
 
   static generateChannelName(venueId: string, entityType: string, entityId?: string): string {
-    const parts = ['realtime', venueId, entityType];
+    const parts = ["realtime", venueId, entityType];
     if (entityId) {
       parts.push(entityId);
     }
-    return parts.join(':');
+    return parts.join(":");
   }
 
   static createPostgresConfig(
@@ -487,12 +488,14 @@ export class SubscriptionManager {
     event?: PostgresEventType,
     filters?: SubscriptionFilter[]
   ): PostgresSubscriptionConfig[] {
-    return [{
-      schema: 'public',
-      table,
-      event,
-      filters,
-    }];
+    return [
+      {
+        schema: "public",
+        table,
+        event,
+        filters,
+      },
+    ];
   }
 }
 

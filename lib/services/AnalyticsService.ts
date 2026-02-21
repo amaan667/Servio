@@ -29,7 +29,11 @@ export class AnalyticsService {
   /**
    * Get cache key for analytics data
    */
-  private static getCacheKey(operation: string, venueId: string, filters: AnalyticsFilters): string {
+  private static getCacheKey(
+    operation: string,
+    venueId: string,
+    filters: AnalyticsFilters
+  ): string {
     const dateRangeKey = `${filters.dateRange.start.toISOString()}-${filters.dateRange.end.toISOString()}`;
     return `analytics:${operation}:${venueId}:${dateRangeKey}`;
   }
@@ -48,10 +52,10 @@ export class AnalyticsService {
     const start = new Date(dateRange.start);
     const end = new Date(dateRange.end);
     const periodLength = end.getTime() - start.getTime();
-    
+
     const previousStart = new Date(start.getTime() - periodLength - 86400000); // Add 1 day gap
     const previousEnd = new Date(start.getTime() - 86400000); // Day before current period
-    
+
     return {
       start: previousStart,
       end: previousEnd,
@@ -70,7 +74,7 @@ export class AnalyticsService {
     filters: AnalyticsFilters
   ): Promise<RevenueAnalytics> {
     const cacheKey = this.getCacheKey("revenue", venueId, filters);
-    
+
     return this.withCache(cacheKey, () => this.computeRevenueAnalytics(venueId, filters));
   }
 
@@ -106,15 +110,18 @@ export class AnalyticsService {
       .lte("created_at", previousPeriod.end.toISOString());
 
     const previousRevenue = previousOrders?.reduce((sum, o) => sum + (o.total_amount || 0), 0) || 0;
-    const revenueGrowth = previousRevenue > 0 
-      ? ((totalRevenue - previousRevenue) / previousRevenue) * 100 
-      : 0;
-    const orderGrowth = previousOrders?.length 
-      ? ((totalOrders - previousOrders.length) / previousOrders.length) * 100 
+    const revenueGrowth =
+      previousRevenue > 0 ? ((totalRevenue - previousRevenue) / previousRevenue) * 100 : 0;
+    const orderGrowth = previousOrders?.length
+      ? ((totalOrders - previousOrders.length) / previousOrders.length) * 100
       : 0;
 
     // Get daily breakdown
-    const dailyBreakdown = await this.getDailyRevenueBreakdown(supabase, venueId, filters.dateRange);
+    const dailyBreakdown = await this.getDailyRevenueBreakdown(
+      supabase,
+      venueId,
+      filters.dateRange
+    );
 
     // Get weekly comparison
     const weeklyComparison = await this.getWeeklyComparison(supabase, venueId, filters.dateRange);
@@ -145,7 +152,8 @@ export class AnalyticsService {
       .gte("created_at", new Date(new Date().getFullYear() - 1, 0, 1).toISOString())
       .lt("created_at", yearStart.toISOString());
 
-    const currentYearRevenue = currentYearOrders?.reduce((sum, o) => sum + (o.total_amount || 0), 0) || 0;
+    const currentYearRevenue =
+      currentYearOrders?.reduce((sum, o) => sum + (o.total_amount || 0), 0) || 0;
     const lastYearRevenue = lastYearOrders?.reduce((sum, o) => sum + (o.total_amount || 0), 0) || 0;
 
     return {
@@ -162,9 +170,10 @@ export class AnalyticsService {
         currentYear: currentYearRevenue,
         lastYear: lastYearRevenue,
         change: currentYearRevenue - lastYearRevenue,
-        changePercent: lastYearRevenue > 0 
-          ? ((currentYearRevenue - lastYearRevenue) / lastYearRevenue) * 100 
-          : 0,
+        changePercent:
+          lastYearRevenue > 0
+            ? ((currentYearRevenue - lastYearRevenue) / lastYearRevenue) * 100
+            : 0,
       },
     };
   }
@@ -186,7 +195,7 @@ export class AnalyticsService {
 
     // Group by day
     const dayMap = new Map<string, { revenue: number; orders: number }>();
-    
+
     data?.forEach((order) => {
       const day = new Date(order.created_at).toISOString().split("T")[0] || "";
       const existing = dayMap.get(day) || { revenue: 0, orders: 0 };
@@ -236,13 +245,13 @@ export class AnalyticsService {
 
     // Group by week
     const weekMap = new Map<string, { revenue: number; orders: number }>();
-    
+
     data?.forEach((order) => {
       const date = new Date(order.created_at);
       const weekStart = new Date(date);
       weekStart.setDate(date.getDate() - date.getDay());
       const weekKey = weekStart.toISOString().split("T")[0] || "";
-      
+
       const existing = weekMap.get(weekKey) || { revenue: 0, orders: 0 };
       weekMap.set(weekKey, {
         revenue: existing.revenue + (order.total_amount || 0),
@@ -272,7 +281,7 @@ export class AnalyticsService {
     filters: AnalyticsFilters
   ): Promise<OrderAnalytics> {
     const cacheKey = this.getCacheKey("orders", venueId, filters);
-    
+
     return this.withCache(cacheKey, () => this.computeOrderAnalytics(venueId, filters));
   }
 
@@ -294,26 +303,27 @@ export class AnalyticsService {
 
     // Basic metrics
     const totalOrders = orders?.length || 0;
-    const completedOrders = orders?.filter(o => 
-      ["served", "completed"].includes(o.status)
-    ).length || 0;
-    const cancelledOrders = orders?.filter(o => 
-      o.status === "cancelled"
-    ).length || 0;
+    const completedOrders =
+      orders?.filter((o) => ["served", "completed"].includes(o.status)).length || 0;
+    const cancelledOrders = orders?.filter((o) => o.status === "cancelled").length || 0;
     const totalRevenue = orders?.reduce((sum, o) => sum + (o.total_amount || 0), 0) || 0;
     const averageOrderValue = totalOrders > 0 ? totalRevenue / totalOrders : 0;
 
     // Average order time
-    const completedWithTime = orders?.filter(o => 
-      o.updated_at && o.created_at && ["served", "completed"].includes(o.status)
-    ) || [];
-    const averageOrderTime = completedWithTime.length > 0
-      ? completedWithTime.reduce((sum, o) => {
-          const created = new Date(o.created_at).getTime();
-          const updated = new Date(o.updated_at).getTime();
-          return sum + (updated - created);
-        }, 0) / completedWithTime.length / 60000 // Convert to minutes
-      : 0;
+    const completedWithTime =
+      orders?.filter(
+        (o) => o.updated_at && o.created_at && ["served", "completed"].includes(o.status)
+      ) || [];
+    const averageOrderTime =
+      completedWithTime.length > 0
+        ? completedWithTime.reduce((sum, o) => {
+            const created = new Date(o.created_at).getTime();
+            const updated = new Date(o.updated_at).getTime();
+            return sum + (updated - created);
+          }, 0) /
+          completedWithTime.length /
+          60000 // Convert to minutes
+        : 0;
 
     // Order volume by hour
     const hourlyMap = new Map<number, { count: number; revenue: number }>();
@@ -336,7 +346,7 @@ export class AnalyticsService {
     const peakHours = orderVolumeByHour
       .sort((a, b) => b.count - a.count)
       .slice(0, 5)
-      .map(h => ({ hour: h.hour, orderCount: h.count, revenue: h.revenue }));
+      .map((h) => ({ hour: h.hour, orderCount: h.count, revenue: h.revenue }));
 
     // Order type distribution
     const typeMap = new Map<string, { count: number; revenue: number }>();
@@ -411,7 +421,7 @@ export class AnalyticsService {
     filters: AnalyticsFilters
   ): Promise<CustomerAnalytics> {
     const cacheKey = this.getCacheKey("customers", venueId, filters);
-    
+
     return this.withCache(cacheKey, () => this.computeCustomerAnalytics(venueId, filters));
   }
 
@@ -441,22 +451,26 @@ export class AnalyticsService {
     if (error) throw error;
 
     // Analyze customers
-    const customerMap = new Map<string, { 
-      orders: number; 
-      revenue: number; 
-      firstOrder: string; 
-      lastOrder: string;
-    }>();
+    const customerMap = new Map<
+      string,
+      {
+        orders: number;
+        revenue: number;
+        firstOrder: string;
+        lastOrder: string;
+      }
+    >();
 
     allOrders?.forEach((order) => {
-      const key = order.customer_name || `anonymous-${order.customer_email || "unknown"}` || "anonymous";
+      const key =
+        order.customer_name || `anonymous-${order.customer_email || "unknown"}` || "anonymous";
       const existing = customerMap.get(key) || {
         orders: 0,
         revenue: 0,
         firstOrder: order.created_at,
         lastOrder: order.created_at,
       };
-      
+
       customerMap.set(key, {
         orders: existing.orders + 1,
         revenue: existing.revenue + (order.total_amount || 0),
@@ -469,8 +483,8 @@ export class AnalyticsService {
     const totalCustomers = customers.length;
 
     // New vs returning in period
-    const newCustomers = customers.filter(([, data]) => 
-      new Date(data.firstOrder) >= start && new Date(data.firstOrder) <= end
+    const newCustomers = customers.filter(
+      ([, data]) => new Date(data.firstOrder) >= start && new Date(data.firstOrder) <= end
     ).length;
     const returningCustomers = totalCustomers - newCustomers;
 
@@ -483,34 +497,33 @@ export class AnalyticsService {
     });
 
     const customerSegments = [
-      { segment: "new" as const, count: segments.filter(s => s.segment === "new").length },
-      { segment: "returning" as const, count: segments.filter(s => s.segment === "returning").length },
-      { segment: "loyal" as const, count: segments.filter(s => s.segment === "loyal").length },
-    ].map(s => ({
+      { segment: "new" as const, count: segments.filter((s) => s.segment === "new").length },
+      {
+        segment: "returning" as const,
+        count: segments.filter((s) => s.segment === "returning").length,
+      },
+      { segment: "loyal" as const, count: segments.filter((s) => s.segment === "loyal").length },
+    ].map((s) => ({
       ...s,
       percentage: totalCustomers > 0 ? (s.count / totalCustomers) * 100 : 0,
       revenue: segments
-        .filter(seg => seg.segment === s.segment)
+        .filter((seg) => seg.segment === s.segment)
         .reduce((sum, seg) => sum + seg.revenue, 0),
     }));
 
     // Retention and repeat rates
-    const repeatCustomers = customers.filter(c => c[1].orders > 1).length;
+    const repeatCustomers = customers.filter((c) => c[1].orders > 1).length;
     const retentionRate = totalCustomers > 0 ? (repeatCustomers / totalCustomers) * 100 : 0;
-    const repeatPurchaseRate = totalCustomers > 0 
-      ? (repeatCustomers / (customers.filter(c => c[1].orders >= 1).length)) * 100 
-      : 0;
-    const averageOrdersPerCustomer = totalCustomers > 0 
-      ? allOrders?.length 
-        ? allOrders.length / totalCustomers 
-        : 0 
-      : 0;
+    const repeatPurchaseRate =
+      totalCustomers > 0
+        ? (repeatCustomers / customers.filter((c) => c[1].orders >= 1).length) * 100
+        : 0;
+    const averageOrdersPerCustomer =
+      totalCustomers > 0 ? (allOrders?.length ? allOrders.length / totalCustomers : 0) : 0;
 
     // Customer lifetime value
     const totalCustomerRevenue = customers.reduce((sum, [, data]) => sum + data.revenue, 0);
-    const averageLifetimeValue = totalCustomers > 0 
-      ? totalCustomerRevenue / totalCustomers 
-      : 0;
+    const averageLifetimeValue = totalCustomers > 0 ? totalCustomerRevenue / totalCustomers : 0;
 
     // Top customers
     const topCustomers = customers
@@ -555,7 +568,7 @@ export class AnalyticsService {
     filters: AnalyticsFilters
   ): Promise<InventoryAnalytics> {
     const cacheKey = this.getCacheKey("inventory", venueId, filters);
-    
+
     return this.withCache(cacheKey, () => this.computeInventoryAnalytics(venueId, filters));
   }
 
@@ -584,26 +597,24 @@ export class AnalyticsService {
     if (logsError) throw logsError;
 
     // Calculate metrics
-    const totalInventoryValue = ingredients?.reduce((sum, ing) => {
-      return sum + (ing.quantity || 0) * (ing.cost_per_unit || 0);
-    }, 0) || 0;
+    const totalInventoryValue =
+      ingredients?.reduce((sum, ing) => {
+        return sum + (ing.quantity || 0) * (ing.cost_per_unit || 0);
+      }, 0) || 0;
 
-    const lowStockItems = ingredients?.filter(ing => 
-      (ing.quantity || 0) <= (ing.min_quantity || 0)
-    ).length || 0;
+    const lowStockItems =
+      ingredients?.filter((ing) => (ing.quantity || 0) <= (ing.min_quantity || 0)).length || 0;
 
-    const stockoutItems = ingredients?.filter(ing => 
-      (ing.quantity || 0) === 0
-    ).length || 0;
+    const stockoutItems = ingredients?.filter((ing) => (ing.quantity || 0) === 0).length || 0;
 
     // Usage by category
     const categoryMap = new Map<string, { quantity: number; cost: number }>();
-    ingredients?.forEach(ing => {
+    ingredients?.forEach((ing) => {
       const cat = ing.category || "Uncategorized";
       const existing = categoryMap.get(cat) || { quantity: 0, cost: 0 };
       categoryMap.set(cat, {
         quantity: existing.quantity + (ing.quantity || 0),
-        cost: existing.cost + ((ing.quantity || 0) * (ing.cost_per_unit || 0)),
+        cost: existing.cost + (ing.quantity || 0) * (ing.cost_per_unit || 0),
       });
     });
 
@@ -615,20 +626,23 @@ export class AnalyticsService {
     }));
 
     // Waste tracking
-    const wasteLogs = logs?.filter(log => log.action === "remove") || [];
-    const wasteByReason = Array.from(
-      new Set(wasteLogs.map(l => l.reason || "Other"))
-    ).map(reason => {
-      const logsWithReason = wasteLogs.filter(l => (l.reason || "Other") === reason);
-      const quantity = logsWithReason.reduce((sum, l) => sum + (l.quantity_change || 0), 0);
-      const cost = logsWithReason.reduce((sum, l) => sum + Math.abs(l.quantity_change || 0) * 0, 0);
-      return { reason, quantity, cost };
-    });
+    const wasteLogs = logs?.filter((log) => log.action === "remove") || [];
+    const wasteByReason = Array.from(new Set(wasteLogs.map((l) => l.reason || "Other"))).map(
+      (reason) => {
+        const logsWithReason = wasteLogs.filter((l) => (l.reason || "Other") === reason);
+        const quantity = logsWithReason.reduce((sum, l) => sum + (l.quantity_change || 0), 0);
+        const cost = logsWithReason.reduce(
+          (sum, l) => sum + Math.abs(l.quantity_change || 0) * 0,
+          0
+        );
+        return { reason, quantity, cost };
+      }
+    );
 
     // Reorder items
     const reorderItems = ingredients
-      ?.filter(ing => (ing.quantity || 0) <= (ing.min_quantity || 0))
-      .map(ing => ({
+      ?.filter((ing) => (ing.quantity || 0) <= (ing.min_quantity || 0))
+      .map((ing) => ({
         ingredientId: ing.id,
         name: ing.name,
         currentStock: ing.quantity || 0,
@@ -669,7 +683,7 @@ export class AnalyticsService {
     filters: AnalyticsFilters
   ): Promise<StaffPerformanceAnalytics> {
     const cacheKey = this.getCacheKey("staff", venueId, filters);
-    
+
     return this.withCache(cacheKey, () => this.computeStaffPerformanceAnalytics(venueId, filters));
   }
 
@@ -700,17 +714,20 @@ export class AnalyticsService {
     if (ordersError) throw ordersError;
 
     // Calculate per-staff metrics
-    const staffMap = new Map<string, {
-      name: string;
-      role: string;
-      orders: number;
-      revenue: number;
-      totalTime: number;
-      orderCount: number;
-    }>();
+    const staffMap = new Map<
+      string,
+      {
+        name: string;
+        role: string;
+        orders: number;
+        revenue: number;
+        totalTime: number;
+        orderCount: number;
+      }
+    >();
 
     // Add staff to map
-    staff?.forEach(s => {
+    staff?.forEach((s) => {
       const fullName = (s.profiles as { full_name?: string } | null)?.full_name || "Unknown";
       staffMap.set(s.user_id, {
         name: fullName,
@@ -723,12 +740,12 @@ export class AnalyticsService {
     });
 
     // Aggregate order data
-    orders?.forEach(order => {
+    orders?.forEach((order) => {
       if (order.assigned_to && staffMap.has(order.assigned_to)) {
         const existing = staffMap.get(order.assigned_to)!;
         existing.orders += 1;
         existing.revenue += order.total_amount || 0;
-        
+
         if (["served", "completed"].includes(order.status)) {
           existing.orderCount += 1;
           const time = new Date(order.updated_at).getTime() - new Date(order.created_at).getTime();
@@ -738,13 +755,13 @@ export class AnalyticsService {
     });
 
     const staffMembers = Array.from(staffMap.values())
-      .map(s => ({
+      .map((s) => ({
         staffId: "",
         name: s.name,
         role: s.role,
         ordersHandled: s.orders,
         revenueGenerated: s.revenue,
-        averageOrderTime: s.orderCount > 0 ? (s.totalTime / s.orderCount) / 60000 : 0,
+        averageOrderTime: s.orderCount > 0 ? s.totalTime / s.orderCount / 60000 : 0,
         ordersPerHour: 0, // Would need shift data
         averageRating: 0, // Would need feedback data
         efficiencyScore: Math.min(100, (s.revenue / 100) * 100), // Simplified
@@ -759,11 +776,13 @@ export class AnalyticsService {
       totalStaff,
       averageOrdersPerStaff: (orders?.length || 0) / totalStaff,
       averageRevenuePerStaff: totalRevenue / totalStaff,
-      topPerformer: staffMembers[0] ? {
-        staffId: "",
-        name: staffMembers[0].name,
-        revenue: staffMembers[0].revenueGenerated,
-      } : null,
+      topPerformer: staffMembers[0]
+        ? {
+            staffId: "",
+            name: staffMembers[0].name,
+            revenue: staffMembers[0].revenueGenerated,
+          }
+        : null,
     };
   }
 
@@ -776,7 +795,7 @@ export class AnalyticsService {
    */
   static async getDashboardMetrics(venueId: string): Promise<DashboardMetrics> {
     const cacheKey = `analytics:dashboard:${venueId}`;
-    
+
     return this.withCache(cacheKey, () => this.computeDashboardMetrics(venueId), 60);
   }
 
@@ -795,14 +814,14 @@ export class AnalyticsService {
         .eq("venue_id", venueId)
         .in("status", ["confirmed", "preparing", "ready"])
         .gte("created_at", today.toISOString()),
-      
+
       supabase
         .from("orders")
         .select("id")
         .eq("venue_id", venueId)
         .eq("status", "pending")
         .gte("created_at", today.toISOString()),
-      
+
       supabase
         .from("orders")
         .select("total_amount")
@@ -814,9 +833,8 @@ export class AnalyticsService {
     const activeOrders = activeOrdersResult.data?.length || 0;
     const pendingOrders = pendingOrdersResult.data?.length || 0;
     const todayOrders = todayOrdersResult.data?.length || 0;
-    const todayRevenue = todayOrdersResult.data?.reduce(
-      (sum, o) => sum + (o.total_amount || 0), 0
-    ) || 0;
+    const todayRevenue =
+      todayOrdersResult.data?.reduce((sum, o) => sum + (o.total_amount || 0), 0) || 0;
 
     // Get period data
     const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
@@ -870,7 +888,7 @@ export class AnalyticsService {
     switch (config.type) {
       case "revenue": {
         const analytics = await this.getRevenueAnalytics(venueId, filters);
-        data = analytics.dailyBreakdown.map(d => ({
+        data = analytics.dailyBreakdown.map((d) => ({
           date: d.date,
           revenue: d.revenue,
           orders: d.orders,
@@ -886,7 +904,7 @@ export class AnalyticsService {
       }
       case "orders": {
         const analytics = await this.getOrderAnalytics(venueId, filters);
-        data = analytics.orderVolumeByDay.map(d => ({
+        data = analytics.orderVolumeByDay.map((d) => ({
           date: d.date,
           count: d.count,
           revenue: d.revenue,
@@ -901,7 +919,7 @@ export class AnalyticsService {
       }
       case "customers": {
         const analytics = await this.getCustomerAnalytics(venueId, filters);
-        data = analytics.topCustomers.map(c => ({
+        data = analytics.topCustomers.map((c) => ({
           name: c.customerName,
           totalRevenue: c.totalRevenue,
           orderCount: c.orderCount,

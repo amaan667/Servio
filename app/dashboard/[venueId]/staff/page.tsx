@@ -15,7 +15,9 @@ interface StaffStats {
 /**
  * Fetch staff members and statistics for a venue
  */
-async function fetchStaffData(venueId: string): Promise<{ staff: StaffRow[]; stats: StaffStats } | null> {
+async function fetchStaffData(
+  venueId: string
+): Promise<{ staff: StaffRow[]; stats: StaffStats } | null> {
   try {
     const supabase = createAdminClient();
 
@@ -44,13 +46,18 @@ async function fetchStaffData(venueId: string): Promise<{ staff: StaffRow[]; sta
       total_staff: staff.length,
       owners: staff.filter((s) => s.role === "owner").length,
       managers: staff.filter((s) => s.role === "manager").length,
-      staff_count: staff.filter((s) => s.role === "staff" || s.role === "server" || s.role === "kitchen").length,
+      staff_count: staff.filter(
+        (s) => s.role === "staff" || s.role === "server" || s.role === "kitchen"
+      ).length,
       active_staff: staff.filter((s) => s.active !== false).length,
     };
 
     return { staff, stats };
   } catch (error) {
-    logger.error("Error fetching staff data", { venueId, error: error instanceof Error ? error.message : "Unknown error" });
+    logger.error("Error fetching staff data", {
+      venueId,
+      error: error instanceof Error ? error.message : "Unknown error",
+    });
     return null;
   }
 }

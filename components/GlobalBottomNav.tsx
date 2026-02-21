@@ -141,12 +141,7 @@ export default function GlobalBottomNav({
 
               const body = res.ok ? await res.json() : null;
               const data = body?.data ?? body;
-              if (
-                data &&
-                typeof data === "object" &&
-                data !== null &&
-                "live_count" in data
-              ) {
+              if (data && typeof data === "object" && data !== null && "live_count" in data) {
                 const liveCount = (data as { live_count?: number }).live_count;
                 setLiveOrdersCount(liveCount || 0);
 

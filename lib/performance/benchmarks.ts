@@ -150,7 +150,10 @@ export class PerformanceBenchmark {
   /**
    * Compare two benchmarks
    */
-  compare(name1: string, name2: string): {
+  compare(
+    name1: string,
+    name2: string
+  ): {
     faster: string;
     speedup: number;
     percentFaster: number;
@@ -191,7 +194,8 @@ export class PerformanceBenchmark {
    */
   private getMemoryUsage(): number {
     if (typeof performance !== "undefined" && "memory" in performance) {
-      const perfMemory = (performance as Performance & { memory: { usedJSHeapSize: number } }).memory;
+      const perfMemory = (performance as Performance & { memory: { usedJSHeapSize: number } })
+        .memory;
       return perfMemory?.usedJSHeapSize || 0;
     }
     return 0;
@@ -236,18 +240,12 @@ export const benchmark = new PerformanceBenchmark();
  * Decorator for automatic benchmarking
  */
 export function Benchmark(name: string, _options?: BenchmarkOptions) {
-  return function (
-    _target: unknown,
-    propertyKey: string,
-    descriptor: PropertyDescriptor
-  ) {
+  return function (_target: unknown, propertyKey: string, descriptor: PropertyDescriptor) {
     const originalMethod = descriptor.value;
 
     descriptor.value = async function (...args: unknown[]) {
       const fullName = `${name}.${propertyKey}`;
-      return benchmark.benchmark(fullName, () =>
-        originalMethod.apply(this, args)
-      );
+      return benchmark.benchmark(fullName, () => originalMethod.apply(this, args));
     };
 
     return descriptor;

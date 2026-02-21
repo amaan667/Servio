@@ -114,7 +114,11 @@ export default function PaymentSuccessPage() {
         );
         router.push("/");
       } catch (_error) {
-        toast({ title: "Error", description: `Error finding order. Session ID: ${sessionId}`, variant: "destructive" });
+        toast({
+          title: "Error",
+          description: `Error finding order. Session ID: ${sessionId}`,
+          variant: "destructive",
+        });
         router.push("/");
       }
     };

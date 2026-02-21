@@ -35,7 +35,7 @@ async function fetchPaymentData(venueId: string): Promise<{
 }> {
   const supabase = createAdminClient();
   const todayWindow = todayWindowForTZ("Europe/London");
-  
+
   const todayStart = todayWindow.startUtcISO || new Date().toISOString();
   const todayEnd = todayWindow.endUtcISO || new Date().toISOString();
 

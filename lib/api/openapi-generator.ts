@@ -27,12 +27,15 @@ interface OpenAPIDocument {
   paths: Record<string, Record<string, unknown>>;
   components: {
     schemas?: Record<string, unknown>;
-    securitySchemes?: Record<string, {
-      type: string;
-      scheme?: string;
-      bearerFormat?: string;
-      description?: string;
-    }>;
+    securitySchemes?: Record<
+      string,
+      {
+        type: string;
+        scheme?: string;
+        bearerFormat?: string;
+        description?: string;
+      }
+    >;
   };
 }
 
@@ -87,7 +90,7 @@ export function generateOpenAPIDocument(
     };
 
     paths[fullPath] = {
-      [route.method.toLowerCase()]: operation
+      [route.method.toLowerCase()]: operation,
     };
   }
 

@@ -179,7 +179,11 @@ function RefundDialog({
       setCustomReason("");
     } catch (error) {
       // Refund error - handled by toast notification
-      toast({ title: "Error", description: error instanceof Error ? error.message : "Failed to process refund", variant: "destructive" });
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to process refund",
+        variant: "destructive",
+      });
     } finally {
       setIsProcessing(false);
     }
@@ -336,10 +340,22 @@ interface GroupedReceipts {
   [date: string]: PaymentOrder[];
 }
 
-const PaymentsClient: React.FC<PaymentsClientProps> = ({ venueId, initialTransactions, initialStats }) => {
+const PaymentsClient: React.FC<PaymentsClientProps> = ({
+  venueId,
+  initialTransactions,
+  initialStats,
+}) => {
   void initialStats; // Initial stats available for future use
-  const [unpaidOrders, setUnpaidOrders] = useState<PaymentOrder[]>(initialTransactions?.filter((o: PaymentTransaction) => o.payment_status === "UNPAID") as unknown as PaymentOrder[] || []);
-  const [todayReceipts, setTodayReceipts] = useState<PaymentOrder[]>(initialTransactions?.filter((o: PaymentTransaction) => o.payment_status === "PAID") as unknown as PaymentOrder[] || []);
+  const [unpaidOrders, setUnpaidOrders] = useState<PaymentOrder[]>(
+    (initialTransactions?.filter(
+      (o: PaymentTransaction) => o.payment_status === "UNPAID"
+    ) as unknown as PaymentOrder[]) || []
+  );
+  const [todayReceipts, setTodayReceipts] = useState<PaymentOrder[]>(
+    (initialTransactions?.filter(
+      (o: PaymentTransaction) => o.payment_status === "PAID"
+    ) as unknown as PaymentOrder[]) || []
+  );
   const [historyReceipts, setHistoryReceipts] = useState<PaymentOrder[]>([]);
   const [groupedHistoryReceipts, setGroupedHistoryReceipts] = useState<GroupedReceipts>({});
   const [selectedReceipt, setSelectedReceipt] = useState<PaymentOrder | null>(null);
@@ -747,8 +763,8 @@ const PaymentsClient: React.FC<PaymentsClientProps> = ({ venueId, initialTransac
   }, [venueId]);
 
   const handleMarkAsPaid = async (orderId: string) => {
-      // Generate unique idempotency key for this request
-      const idempotencyKey = `${orderId}-${Date.now()}-${Math.random().toString(36).substring(2, 11)}`;
+    // Generate unique idempotency key for this request
+    const idempotencyKey = `${orderId}-${Date.now()}-${Math.random().toString(36).substring(2, 11)}`;
     try {
       setIsProcessingPayment(orderId);
       const response = await fetch("/api/orders/mark-paid", {
@@ -768,7 +784,11 @@ const PaymentsClient: React.FC<PaymentsClientProps> = ({ venueId, initialTransac
 
       if (!response.ok) {
         const errorMessage = data?.error?.message || data?.error || "Failed to mark order as paid";
-        toast({ title: "Error", description: `Failed to mark order as paid: ${errorMessage}`, variant: "destructive" });
+        toast({
+          title: "Error",
+          description: `Failed to mark order as paid: ${errorMessage}`,
+          variant: "destructive",
+        });
         return;
       }
 

@@ -3,8 +3,8 @@
  * Provides edge-optimized functions for low-latency responses
  */
 
-import { NextRequest, NextResponse } from 'next/server';
-import { logger } from '@/lib/monitoring/structured-logger';
+import { NextRequest, NextResponse } from "next/server";
+import { logger } from "@/lib/monitoring/structured-logger";
 
 /**
  * Edge function configuration
@@ -20,11 +20,11 @@ export interface EdgeFunctionConfig {
  * Edge response headers
  */
 export interface EdgeResponseHeaders {
-  'Cache-Control'?: string;
-  'CDN-Cache-Control'?: string;
-  'Edge-Cache-Tag'?: string;
-  'X-Edge-Region'?: string;
-  'X-Edge-Cache-Status'?: string;
+  "Cache-Control"?: string;
+  "CDN-Cache-Control"?: string;
+  "Edge-Cache-Tag"?: string;
+  "X-Edge-Region"?: string;
+  "X-Edge-Cache-Status"?: string;
 }
 
 /**
@@ -49,7 +49,7 @@ export interface EdgeCache {
  * Edge cache implementation using KV storage
  */
 export class EdgeKVCache implements EdgeCache {
-  private prefix = 'edge_cache_';
+  private prefix = "edge_cache_";
 
   async get(key: string): Promise<string | null> {
     try {
@@ -75,7 +75,7 @@ export class EdgeKVCache implements EdgeCache {
 
       return entry.value;
     } catch (error) {
-      logger.error('Edge cache get failed', { error, key });
+      logger.error("Edge cache get failed", { error, key });
       return null;
     }
   }
@@ -96,7 +96,7 @@ export class EdgeKVCache implements EdgeCache {
         expires: Date.now() + ttl * 1000,
       });
     } catch (error) {
-      logger.error('Edge cache set failed', { error, key });
+      logger.error("Edge cache set failed", { error, key });
     }
   }
 
@@ -110,7 +110,7 @@ export class EdgeKVCache implements EdgeCache {
         cache.__edgeCache.delete(this.prefix + key);
       }
     } catch (error) {
-      logger.error('Edge cache delete failed', { error, key });
+      logger.error("Edge cache delete failed", { error, key });
     }
   }
 }
@@ -122,15 +122,16 @@ export function createEdgeCacheHeaders(config: EdgeFunctionConfig): EdgeResponse
   const headers: EdgeResponseHeaders = {};
 
   if (config.cacheTTL) {
-    headers['Cache-Control'] = `public, max-age=${config.cacheTTL}`;
+    headers["Cache-Control"] = `public, max-age=${config.cacheTTL}`;
   }
 
   if (config.staleWhileRevalidate) {
-    headers['CDN-Cache-Control'] = `public, s-maxage=${config.cacheTTL || 300}, stale-while-revalidate=${config.staleWhileRevalidate}`;
+    headers["CDN-Cache-Control"] =
+      `public, s-maxage=${config.cacheTTL || 300}, stale-while-revalidate=${config.staleWhileRevalidate}`;
   }
 
   if (config.region) {
-    headers['X-Edge-Region'] = config.region;
+    headers["X-Edge-Region"] = config.region;
   }
 
   return headers;
@@ -164,11 +165,11 @@ export function withEdgeFunction(
           const response = NextResponse.json(JSON.parse(cached), {
             headers: {
               ...createEdgeCacheHeaders(config),
-              'X-Edge-Cache-Status': 'HIT',
+              "X-Edge-Cache-Status": "HIT",
             },
           });
 
-          logger.debug('Edge cache hit', { cacheKey, region });
+          logger.debug("Edge cache hit", { cacheKey, region });
           return response;
         }
       }
@@ -183,7 +184,7 @@ export function withEdgeFunction(
 
         await cache.set(cacheKey, body, { ttl: config.cacheTTL });
 
-        response.headers.set('X-Edge-Cache-Status', 'MISS');
+        response.headers.set("X-Edge-Cache-Status", "MISS");
       }
 
       // Add edge headers
@@ -195,20 +196,20 @@ export function withEdgeFunction(
       });
 
       const duration = Date.now() - startTime;
-      logger.info('Edge function executed', { region, duration });
+      logger.info("Edge function executed", { region, duration });
 
       return response;
     } catch (error) {
       const duration = Date.now() - startTime;
-      logger.error('Edge function failed', { error, region, duration });
+      logger.error("Edge function failed", { error, region, duration });
 
       return NextResponse.json(
-        { error: 'Internal server error' },
+        { error: "Internal server error" },
         {
           status: 500,
           headers: {
-            'X-Edge-Region': region,
-            'X-Edge-Cache-Status': 'ERROR',
+            "X-Edge-Region": region,
+            "X-Edge-Cache-Status": "ERROR",
           },
         }
       );
@@ -222,7 +223,7 @@ export function withEdgeFunction(
 function generateCacheKey(request: NextRequest): string {
   const url = new URL(request.url);
   const method = request.method;
-  const headers = request.headers.get('authorization') || '';
+  const headers = request.headers.get("authorization") || "";
 
   return `${method}:${url.pathname}:${url.search}:${headers.substring(0, 16)}`;
 }
@@ -233,7 +234,7 @@ function generateCacheKey(request: NextRequest): string {
 function getEdgeRegion(): string {
   // In production, this would detect the actual edge region
   // For now, return a default
-  return process.env.EDGE_REGION || 'us-east-1';
+  return process.env.EDGE_REGION || "us-east-1";
 }
 
 /**
@@ -242,10 +243,10 @@ function getEdgeRegion(): string {
 export async function edgeGetMenuItems(context: EdgeContext): Promise<NextResponse> {
   const { request } = context;
   const url = new URL(request.url);
-  const venueId = url.searchParams.get('venueId');
+  const venueId = url.searchParams.get("venueId");
 
   if (!venueId) {
-    return NextResponse.json({ error: 'Missing venueId' }, { status: 400 });
+    return NextResponse.json({ error: "Missing venueId" }, { status: 400 });
   }
 
   // Fetch menu items from database
@@ -265,17 +266,17 @@ export async function edgeGetMenuItems(context: EdgeContext): Promise<NextRespon
 export async function edgeGetVenueInfo(context: EdgeContext): Promise<NextResponse> {
   const { request } = context;
   const url = new URL(request.url);
-  const venueId = url.searchParams.get('venueId');
+  const venueId = url.searchParams.get("venueId");
 
   if (!venueId) {
-    return NextResponse.json({ error: 'Missing venueId' }, { status: 400 });
+    return NextResponse.json({ error: "Missing venueId" }, { status: 400 });
   }
 
   // Fetch venue info from database
   // This is a placeholder - implement actual data fetching
   const venueInfo = {
     venueId,
-    name: 'Sample Venue',
+    name: "Sample Venue",
     cachedAt: new Date().toISOString(),
   };
 
@@ -288,10 +289,10 @@ export async function edgeGetVenueInfo(context: EdgeContext): Promise<NextRespon
 export async function edgeGetPublicMenu(context: EdgeContext): Promise<NextResponse> {
   const { request } = context;
   const url = new URL(request.url);
-  const venueId = url.searchParams.get('venueId');
+  const venueId = url.searchParams.get("venueId");
 
   if (!venueId) {
-    return NextResponse.json({ error: 'Missing venueId' }, { status: 400 });
+    return NextResponse.json({ error: "Missing venueId" }, { status: 400 });
   }
 
   // Fetch public menu from database
@@ -313,7 +314,7 @@ export async function edgeHealthCheck(context: EdgeContext): Promise<NextRespons
   const { region } = context;
 
   return NextResponse.json({
-    status: 'healthy',
+    status: "healthy",
     region,
     timestamp: new Date().toISOString(),
   });
@@ -325,10 +326,10 @@ export async function edgeHealthCheck(context: EdgeContext): Promise<NextRespons
 export async function edgeInvalidateCache(context: EdgeContext): Promise<NextResponse> {
   const { request, cache } = context;
   const url = new URL(request.url);
-  const cacheKey = url.searchParams.get('key');
+  const cacheKey = url.searchParams.get("key");
 
   if (!cacheKey) {
-    return NextResponse.json({ error: 'Missing cache key' }, { status: 400 });
+    return NextResponse.json({ error: "Missing cache key" }, { status: 400 });
   }
 
   await cache.delete(cacheKey);
@@ -348,7 +349,7 @@ export async function edgeBatchRequests(context: EdgeContext): Promise<NextRespo
   const body = await request.json();
 
   if (!Array.isArray(body.requests)) {
-    return NextResponse.json({ error: 'Invalid batch request' }, { status: 400 });
+    return NextResponse.json({ error: "Invalid batch request" }, { status: 400 });
   }
 
   // Process batch requests
@@ -373,10 +374,11 @@ export async function edgeGeoRouting(context: EdgeContext): Promise<NextResponse
   const { request } = context;
 
   // Get client IP
-  const ip = request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || 'unknown';
+  const ip =
+    request.headers.get("x-forwarded-for") || request.headers.get("x-real-ip") || "unknown";
 
   // Get country from IP (placeholder)
-  const country = request.headers.get('cf-ipcountry') || 'US';
+  const country = request.headers.get("cf-ipcountry") || "US";
 
   // Route to nearest region
   const region = getNearestRegion(country);
@@ -394,17 +396,17 @@ export async function edgeGeoRouting(context: EdgeContext): Promise<NextResponse
  */
 function getNearestRegion(country: string): string {
   const regionMap: Record<string, string> = {
-    US: 'us-east-1',
-    CA: 'us-east-1',
-    GB: 'eu-west-1',
-    DE: 'eu-central-1',
-    FR: 'eu-west-1',
-    AU: 'ap-southeast-2',
-    JP: 'ap-northeast-1',
-    SG: 'ap-southeast-1',
+    US: "us-east-1",
+    CA: "us-east-1",
+    GB: "eu-west-1",
+    DE: "eu-central-1",
+    FR: "eu-west-1",
+    AU: "ap-southeast-2",
+    JP: "ap-northeast-1",
+    SG: "ap-southeast-1",
   };
 
-  return regionMap[country] || 'us-east-1';
+  return regionMap[country] || "us-east-1";
 }
 
 /**
@@ -413,14 +415,14 @@ function getNearestRegion(country: string): string {
 export async function edgeABTest(context: EdgeContext): Promise<NextResponse> {
   const { request } = context;
   const url = new URL(request.url);
-  const experimentId = url.searchParams.get('experiment');
+  const experimentId = url.searchParams.get("experiment");
 
   if (!experimentId) {
-    return NextResponse.json({ error: 'Missing experiment ID' }, { status: 400 });
+    return NextResponse.json({ error: "Missing experiment ID" }, { status: 400 });
   }
 
   // Get user ID for consistent bucketing
-  const userId = request.headers.get('x-user-id') || generateAnonymousUserId();
+  const userId = request.headers.get("x-user-id") || generateAnonymousUserId();
 
   // Assign to variant
   const variant = assignVariant(userId, experimentId);
@@ -445,9 +447,9 @@ function generateAnonymousUserId(): string {
  */
 function assignVariant(userId: string, experimentId: string): string {
   const hash = hashString(`${userId}:${experimentId}`);
-  const variants = ['control', 'variant_a', 'variant_b'];
+  const variants = ["control", "variant_a", "variant_b"];
   const variant = variants[hash % variants.length];
-  return variant || 'control';
+  return variant || "control";
 }
 
 /**
@@ -457,7 +459,7 @@ function hashString(str: string): number {
   let hash = 0;
   for (let i = 0; i < str.length; i++) {
     const char = str.charCodeAt(i);
-    hash = ((hash << 5) - hash) + char;
+    hash = (hash << 5) - hash + char;
     hash = hash & hash; // Convert to 32bit integer
   }
   return Math.abs(hash);

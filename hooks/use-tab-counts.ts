@@ -76,8 +76,16 @@ export function useTabCounts(venueId: string, tz: string, liveWindowMins = 30) {
             today_orders_count: Number(raw.today_orders_count) || 0,
             active_tables_count: Number(raw.active_tables_count) || 0,
             tables_set_up: Number(raw.tables_set_up) || 0,
-            in_use_now: Number((raw as { in_use_now?: number; tables_in_use?: number }).in_use_now ?? (raw as { tables_in_use?: number }).tables_in_use) || 0,
-            reserved_now: Number((raw as { reserved_now?: number; tables_reserved_now?: number }).reserved_now ?? (raw as { tables_reserved_now?: number }).tables_reserved_now) || 0,
+            in_use_now:
+              Number(
+                (raw as { in_use_now?: number; tables_in_use?: number }).in_use_now ??
+                  (raw as { tables_in_use?: number }).tables_in_use
+              ) || 0,
+            reserved_now:
+              Number(
+                (raw as { reserved_now?: number; tables_reserved_now?: number }).reserved_now ??
+                  (raw as { tables_reserved_now?: number }).tables_reserved_now
+              ) || 0,
             reserved_later: Number(raw.reserved_later) || 0,
             waiting: Number(raw.waiting) || 0,
           };

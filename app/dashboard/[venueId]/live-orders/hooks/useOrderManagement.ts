@@ -23,18 +23,18 @@ export function useOrderManagement(
   const [allTodayOrders, setAllTodayOrders] = useState<Order[]>([]);
   const [historyOrders, setHistoryOrders] = useState<Order[]>([]);
   const [groupedHistoryOrders, setGroupedHistoryOrders] = useState<Record<string, Order[]>>({});
-  
+
   // Pagination state for history
   const [historyPage, setHistoryPage] = useState(1);
   const [historyHasMore, setHistoryHasMore] = useState(true);
   const [historyLoading, setHistoryLoading] = useState(false);
-  
+
   // Always show loading until first fetch completes to avoid flashing "No Orders"
   const [loading, setLoading] = useState(!initialOrders);
   const [todayWindow, setTodayWindow] = useState<{ startUtcISO: string; endUtcISO: string } | null>(
     null
   );
-  
+
   // Use ref to track mounted state and avoid state updates on unmounted components
   const isMountedRef = useRef(true);
 
@@ -255,36 +255,36 @@ export function useOrderManagement(
   };
 
   // Load history with pagination
-  const loadHistoryPage = useCallback(async (page: number) => {
-    if (!isMountedRef.current || historyLoading) return;
+  const loadHistoryPage = useCallback(
+    async (page: number) => {
+      if (!isMountedRef.current || historyLoading) return;
 
-    setHistoryLoading(true);
-    const window = todayWindowForLocal();
-    
-    try {
-      const pageSize = 50;
-      const offset = (page - 1) * pageSize;
-      
-      const { data, error } = await createClient()
-        .from("orders")
-        .select("*")
-        .eq("venue_id", venueId)
-        .lt("created_at", window.startUtcISO)
-        .in("payment_status", ["PAID", "UNPAID"])
-        .order("created_at", { ascending: false })
-        .range(offset, offset + pageSize);
+      setHistoryLoading(true);
+      const window = todayWindowForLocal();
 
-      if (!error && data && isMountedRef.current) {
-        const processedHistory = (data as Order[]).map((order: Order) => ({
-          ...order,
-          payment_status: "PAID",
-          order_status: "COMPLETED" as const,
-        }));
+      try {
+        const pageSize = 50;
+        const offset = (page - 1) * pageSize;
 
-        if (page === 1) {
-          setHistoryOrders(processedHistory);
-          const grouped = processedHistory.reduce(
-            (acc: Record<string, Order[]>, order) => {
+        const { data, error } = await createClient()
+          .from("orders")
+          .select("*")
+          .eq("venue_id", venueId)
+          .lt("created_at", window.startUtcISO)
+          .in("payment_status", ["PAID", "UNPAID"])
+          .order("created_at", { ascending: false })
+          .range(offset, offset + pageSize);
+
+        if (!error && data && isMountedRef.current) {
+          const processedHistory = (data as Order[]).map((order: Order) => ({
+            ...order,
+            payment_status: "PAID",
+            order_status: "COMPLETED" as const,
+          }));
+
+          if (page === 1) {
+            setHistoryOrders(processedHistory);
+            const grouped = processedHistory.reduce((acc: Record<string, Order[]>, order) => {
               const date = new Date(order.created_at).toLocaleDateString("en-GB", {
                 day: "2-digit",
                 month: "short",
@@ -293,38 +293,38 @@ export function useOrderManagement(
               if (!acc[date]) acc[date] = [];
               acc[date].push(order);
               return acc;
-            },
-            {}
-          );
-          setGroupedHistoryOrders(grouped);
-        } else {
-          setHistoryOrders(prev => [...prev, ...processedHistory]);
-          setGroupedHistoryOrders(prev => {
-            const newGrouped = { ...prev };
-            processedHistory.forEach(order => {
-              const date = new Date(order.created_at).toLocaleDateString("en-GB", {
-                day: "2-digit",
-                month: "short",
-                year: "numeric",
+            }, {});
+            setGroupedHistoryOrders(grouped);
+          } else {
+            setHistoryOrders((prev) => [...prev, ...processedHistory]);
+            setGroupedHistoryOrders((prev) => {
+              const newGrouped = { ...prev };
+              processedHistory.forEach((order) => {
+                const date = new Date(order.created_at).toLocaleDateString("en-GB", {
+                  day: "2-digit",
+                  month: "short",
+                  year: "numeric",
+                });
+                if (!newGrouped[date]) newGrouped[date] = [];
+                newGrouped[date].push(order);
               });
-              if (!newGrouped[date]) newGrouped[date] = [];
-              newGrouped[date].push(order);
+              return newGrouped;
             });
-            return newGrouped;
-          });
-        }
+          }
 
-        // Check if there are more records
-        setHistoryHasMore(data.length === pageSize);
+          // Check if there are more records
+          setHistoryHasMore(data.length === pageSize);
+        }
+      } catch (error) {
+        console.error("Error loading history page:", error);
+      } finally {
+        if (isMountedRef.current) {
+          setHistoryLoading(false);
+        }
       }
-    } catch (error) {
-      console.error("Error loading history page:", error);
-    } finally {
-      if (isMountedRef.current) {
-        setHistoryLoading(false);
-      }
-    }
-  }, [venueId, historyLoading]);
+    },
+    [venueId, historyLoading]
+  );
 
   const handleOrderUpdate = useCallback(() => {
     // Always reload orders on update to ensure we get fresh data from database

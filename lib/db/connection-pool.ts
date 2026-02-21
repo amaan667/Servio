@@ -3,7 +3,7 @@
 // Prevents connection exhaustion under load
 // ============================================================================
 
-import { createClient, SupabaseClient } from '@supabase/supabase-js';
+import { createClient, SupabaseClient } from "@supabase/supabase-js";
 
 export interface PooledClientOptions {
   maxConnections?: number;
@@ -106,9 +106,10 @@ export class SupabaseConnectionPool {
       idleConnections: this.stats.idleConnections,
       totalConnections: this.stats.totalConnections,
       waitingRequests: this.stats.waitingRequests,
-      avgWaitTime: this.stats.totalAcquisitions > 0
-        ? this.stats.totalWaitTime / this.stats.totalAcquisitions
-        : 0,
+      avgWaitTime:
+        this.stats.totalAcquisitions > 0
+          ? this.stats.totalWaitTime / this.stats.totalAcquisitions
+          : 0,
     };
   }
 
@@ -138,7 +139,7 @@ export class SupabaseConnectionPool {
           this.waitingQueue.splice(index, 1);
           this.stats.waitingRequests--;
         }
-        reject(new Error('Connection timeout'));
+        reject(new Error("Connection timeout"));
       }, this.options.connectionTimeout);
 
       this.waitingQueue.push({
@@ -168,7 +169,7 @@ export function getConnectionPool(): SupabaseConnectionPool {
     const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
     if (!url || !key) {
-      throw new Error('Supabase URL and key must be set');
+      throw new Error("Supabase URL and key must be set");
     }
 
     poolInstance = new SupabaseConnectionPool(url, key);
@@ -197,9 +198,7 @@ export class ReadReplicaRouter {
 
   constructor(config: ReplicaConfig) {
     this.primary = new SupabaseConnectionPool(config.primary.url, config.primary.key);
-    this.replicas = config.replicas.map(
-      (r) => new SupabaseConnectionPool(r.url, r.key)
-    );
+    this.replicas = config.replicas.map((r) => new SupabaseConnectionPool(r.url, r.key));
   }
 
   getReplica(): SupabaseConnectionPool {

@@ -87,18 +87,16 @@ export async function POST() {
     const projectRef = supabaseUrl.match(/https:\/\/([^.]+)\.supabase\.co/)?.[1] || "default";
 
     // Clear basic auth cookies even on error
-    [`sb-${projectRef}-auth-token`, "sb-access-token", "sb-refresh-token"].forEach(
-      (cookieName) => {
-        response.cookies.set(cookieName, "", {
-          maxAge: 0,
-          expires: new Date(0),
-          path: "/",
-          sameSite: "lax",
-          secure: isProduction(),
-          httpOnly: false,
-        });
-      }
-    );
+    [`sb-${projectRef}-auth-token`, "sb-access-token", "sb-refresh-token"].forEach((cookieName) => {
+      response.cookies.set(cookieName, "", {
+        maxAge: 0,
+        expires: new Date(0),
+        path: "/",
+        sameSite: "lax",
+        secure: isProduction(),
+        httpOnly: false,
+      });
+    });
 
     return response;
   }

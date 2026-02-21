@@ -38,16 +38,12 @@ export function trackError(
     case "critical":
       captureException(error, { ...context, severity });
       // Fire-and-forget Slack alert for critical errors
-      alertCritical(
-        `Critical Error: ${context.action || "unknown"}`,
-        errorMessage,
-        {
-          ...(context.userId && { userId: context.userId }),
-          ...(context.venueId && { venueId: context.venueId }),
-          ...(context.orderId && { orderId: context.orderId }),
-          action: context.action || "unknown",
-        }
-      ).catch(() => {
+      alertCritical(`Critical Error: ${context.action || "unknown"}`, errorMessage, {
+        ...(context.userId && { userId: context.userId }),
+        ...(context.venueId && { venueId: context.venueId }),
+        ...(context.orderId && { orderId: context.orderId }),
+        action: context.action || "unknown",
+      }).catch(() => {
         // Alerting must never crash the application
       });
       break;

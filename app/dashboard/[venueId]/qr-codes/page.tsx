@@ -62,7 +62,10 @@ async function fetchQRCodeData(venueId: string): Promise<QRCodePageData> {
       .eq("venue_id", venueId);
 
     if (countersError) {
-      logger.error("[QR Codes] Error fetching counters:", { error: countersError.message, venueId });
+      logger.error("[QR Codes] Error fetching counters:", {
+        error: countersError.message,
+        venueId,
+      });
     } else if (countersData) {
       counters = countersData;
     }

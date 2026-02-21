@@ -92,9 +92,7 @@ export function getClientIdentifier(req: NextRequest): string {
   const forwarded = req.headers.get("x-forwarded-for");
   const first = forwarded?.split(",")[0];
   const ip =
-    (typeof first === "string" ? first.trim() : null) ??
-    req.headers.get("x-real-ip") ??
-    "unknown";
+    (typeof first === "string" ? first.trim() : null) ?? req.headers.get("x-real-ip") ?? "unknown";
   return `ip:${ip}`;
 }
 
@@ -257,7 +255,7 @@ export async function getRateLimitStatus(
       const cutoff = now - windowMs;
       await redis.zremrangebyscore(key, 0, cutoff);
       const count = await redis.zcard(key);
-      
+
       return {
         count,
         remaining: Math.max(0, limit - count),

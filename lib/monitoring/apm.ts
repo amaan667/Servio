@@ -50,7 +50,6 @@ function initializeDatadog(): void {
         component: "api",
       },
     });
-
   } catch (_error) {
     // Datadog package not installed - graceful degradation
   }
@@ -64,7 +63,6 @@ function initializeNewRelic(): void {
     // Dynamic import to avoid breaking if package not installed
 
     require("newrelic");
-
   } catch (_error) {
     // New Relic package not installed - graceful degradation
   }

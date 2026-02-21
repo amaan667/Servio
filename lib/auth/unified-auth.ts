@@ -605,7 +605,11 @@ export function withUnifiedAuth(
           // Still need venue data for the handler context
           venueData = await verifyVenueAccess(normalizedVenueId, user.id, req);
           if (venueData) {
-            venueData = { ...venueData, tier: tier || venueData.tier, role: role || venueData.role };
+            venueData = {
+              ...venueData,
+              tier: tier || venueData.tier,
+              role: role || venueData.role,
+            };
           }
         }
 

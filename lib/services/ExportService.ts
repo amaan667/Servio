@@ -22,10 +22,10 @@ export class ExportService {
 
     // Determine columns to export
     const keys = columns || (Object.keys(data[0] || {}) as (keyof T)[]);
-    
+
     // Build CSV header
     const headers = keys.map((key) => this.escapeCsvCell(String(key))).join(",");
-    
+
     // Build CSV rows
     const rows = data.map((row) =>
       keys
@@ -117,11 +117,10 @@ export class ExportService {
       .map(([key, value]) => `<p><strong>${this.formatTitle(key)}:</strong> ${value}</p>`)
       .join("");
 
-    const tableHeaders = report.data && report.data.length > 0 ? Object.keys(report.data[0] || {}) : [];
+    const tableHeaders =
+      report.data && report.data.length > 0 ? Object.keys(report.data[0] || {}) : [];
     const tableRows = report.data
-      .map((row) =>
-        `<tr>${tableHeaders.map((header) => `<td>${row[header]}</td>`).join("")}</tr>`
-      )
+      .map((row) => `<tr>${tableHeaders.map((header) => `<td>${row[header]}</td>`).join("")}</tr>`)
       .join("");
 
     return `
@@ -138,7 +137,9 @@ export class ExportService {
             <h2>Summary</h2>
             ${summaryHtml}
           </div>
-          ${tableHeaders.length > 0 ? `
+          ${
+            tableHeaders.length > 0
+              ? `
             <table>
               <thead>
                 <tr>${tableHeaders.map((h) => `<th>${this.formatTitle(h)}</th>`).join("")}</tr>
@@ -147,7 +148,9 @@ export class ExportService {
                 ${tableRows}
               </tbody>
             </table>
-          ` : ""}
+          `
+              : ""
+          }
         </body>
       </html>
     `;

@@ -34,7 +34,13 @@ interface WebMenuItem {
   /** Layout rect for spatial image matching (optional). */
   rect?: Rect;
   /** Per-field confidence 0-1 for user feedback (optional). */
-  _confidence?: { name?: number; description?: number; price?: number; category?: number; image_url?: number };
+  _confidence?: {
+    name?: number;
+    description?: number;
+    price?: number;
+    category?: number;
+    image_url?: number;
+  };
 }
 
 interface PageImage {
@@ -243,10 +249,7 @@ async function extractAllPageImages(page: import("puppeteer-core").Page): Promis
 /**
  * Associate extracted images with menu items based on proximity and alt text
  */
-function associateImagesWithItems(
-  domItems: WebMenuItem[],
-  allImages: PageImage[]
-): WebMenuItem[] {
+function associateImagesWithItems(domItems: WebMenuItem[], allImages: PageImage[]): WebMenuItem[] {
   const itemImageMap = new Map<string, PageImage[]>();
 
   allImages.forEach((image) => {
@@ -328,12 +331,20 @@ function associateImagesWithItemsMultiSignal(
         if (altText.includes(itemName) || itemName.includes(altText)) {
           score += 0.5;
           textScore += 0.5;
-        } else if (itemName.split(" ").filter((w) => w.length > 2).some((w) => altText.includes(w))) {
+        } else if (
+          itemName
+            .split(" ")
+            .filter((w) => w.length > 2)
+            .some((w) => altText.includes(w))
+        ) {
           score += 0.25;
           textScore += 0.25;
         }
       }
-      const urlMatch = itemName.split(" ").filter((w) => w.length > 2).some((w) => urlParts.includes(w));
+      const urlMatch = itemName
+        .split(" ")
+        .filter((w) => w.length > 2)
+        .some((w) => urlParts.includes(w));
       if (urlMatch) {
         score += 0.3;
         textScore += 0.3;
@@ -425,7 +436,19 @@ async function extractFromDOM(page: import("puppeteer-core").Page): Promise<WebM
     ];
 
     function hasNameAndPrice(el: Element): boolean {
-      const nameSelectors = ["[data-name]", '[itemprop="name"]', '[class*="name"]', '[class*="title"]', "h1", "h2", "h3", "h4", "strong", ".product-title", ".item-name"];
+      const nameSelectors = [
+        "[data-name]",
+        '[itemprop="name"]',
+        '[class*="name"]',
+        '[class*="title"]',
+        "h1",
+        "h2",
+        "h3",
+        "h4",
+        "strong",
+        ".product-title",
+        ".item-name",
+      ];
       let hasName = false;
       for (const s of nameSelectors) {
         const n = el.querySelector(s);
@@ -543,7 +566,12 @@ async function extractFromDOM(page: import("puppeteer-core").Page): Promise<WebM
         let descEl: Element | null = null;
         for (const selector of descSelectors) {
           descEl = el.querySelector(selector);
-          if (descEl && descEl.textContent && descEl.textContent.trim().length > 5 && descEl.textContent !== name) {
+          if (
+            descEl &&
+            descEl.textContent &&
+            descEl.textContent.trim().length > 5 &&
+            descEl.textContent !== name
+          ) {
             break;
           }
         }
@@ -618,8 +646,14 @@ async function extractFromDOM(page: import("puppeteer-core").Page): Promise<WebM
         if (!priceMatch || priceMatch[1] == null) return;
         const priceNum = parseFloat(priceMatch[1].replace(",", "."));
         const beforePrice = text.substring(0, text.indexOf(priceMatch[0])).trim();
-        const lines = beforePrice.split(/\n/).map((s) => s.trim()).filter(Boolean);
-        const name = lines.length > 0 ? lines[lines.length - 1] : beforePrice.split(/\s{2,}/)[0] || beforePrice.slice(0, 80);
+        const lines = beforePrice
+          .split(/\n/)
+          .map((s) => s.trim())
+          .filter(Boolean);
+        const name =
+          lines.length > 0
+            ? lines[lines.length - 1]
+            : beforePrice.split(/\s{2,}/)[0] || beforePrice.slice(0, 80);
         if (!name || name.length < 2 || name.length > 150) return;
         const nameNorm = name.toLowerCase().trim();
         if (seenNormalized.has(nameNorm)) return;
@@ -724,14 +758,15 @@ function mergeExtractedData(
           break;
         }
         if (itemWords.length >= 2) {
-          const matchCount = itemWords.filter(
-            (w) => key.includes(w) || base.includes(w)
-          ).length;
+          const matchCount = itemWords.filter((w) => key.includes(w) || base.includes(w)).length;
           if (matchCount >= 2 && !bestImage) {
             bestImage = img;
             bestStrength = "two-words";
           }
-        } else if (itemWords.length === 1 && (key.includes(itemWords[0]!) || base.includes(itemWords[0]!))) {
+        } else if (
+          itemWords.length === 1 &&
+          (key.includes(itemWords[0]!) || base.includes(itemWords[0]!))
+        ) {
           if (!bestImage) {
             bestImage = img;
             bestStrength = "two-words";
@@ -748,9 +783,21 @@ function mergeExtractedData(
       }
     }
 
-    const visionConf = { name: 0.95, description: 0.9, price: 0.95, category: 0.9, image_url: image_url ? 0.85 : 0.5 };
+    const visionConf = {
+      name: 0.95,
+      description: 0.9,
+      price: 0.95,
+      category: 0.9,
+      image_url: image_url ? 0.85 : 0.5,
+    };
     const domConf = domMatch
-      ? { name: 0.75, description: 0.7, price: 0.75, category: domMatch.category ? 0.8 : 0.5, image_url: domMatch.image_url ? 0.8 : 0.5 }
+      ? {
+          name: 0.75,
+          description: 0.7,
+          price: 0.75,
+          category: domMatch.category ? 0.8 : 0.5,
+          image_url: domMatch.image_url ? 0.8 : 0.5,
+        }
       : null;
     const confidence = domConf
       ? {
@@ -853,4 +900,3 @@ function levenshteinDistance(str1: string, str2: string): number {
 
   return matrix[rows]![cols]!;
 }
-

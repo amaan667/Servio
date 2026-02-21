@@ -1,13 +1,13 @@
 /**
  * Feature Flags System
- * 
+ *
  * UNLOCK-style feature flags for gradual rollouts and experimental features.
  * Flags are checked server-side and can be overridden per-venue or per-user.
  */
 
 import { createServerSupabase } from "@/lib/supabase";
 
-export type FeatureFlag = 
+export type FeatureFlag =
   | "experimental_ai_matching"
   | "beta_multi_language"
   | "new_menu_extraction_v2"
@@ -89,7 +89,7 @@ export async function isEnabled(
 
   try {
     const supabase = await createServerSupabase();
-    
+
     // Check venue-specific override
     if (options?.venueId) {
       const { data: override } = await supabase
@@ -133,7 +133,7 @@ export async function isEnabled(
       const tierOrder = ["starter", "pro", "enterprise"];
       const userTierIndex = tierOrder.indexOf(subscription?.tier ?? "starter");
       const requiredTierIndex = tierOrder.indexOf(config.tierRequired);
-      
+
       if (userTierIndex < requiredTierIndex) {
         enabled = false;
       }
@@ -141,12 +141,11 @@ export async function isEnabled(
 
     // Check rollout percentage
     if (config.rolloutPercent !== undefined && config.rolloutPercent < 100) {
-      const rolloutSeed = options?.venueId 
-        ? hashString(options.venueId + feature) % 100 
+      const rolloutSeed = options?.venueId
+        ? hashString(options.venueId + feature) % 100
         : Math.random() * 100;
       enabled = rolloutSeed < config.rolloutPercent;
     }
-
   } catch {
     // Fail open - if we can't check, use default
   }
@@ -158,40 +157,36 @@ export async function isEnabled(
 /**
  * Enable a feature for a venue (admin only)
  */
-export async function enableFor(
-  feature: FeatureFlag,
-  venueId: string
-): Promise<void> {
+export async function enableFor(feature: FeatureFlag, venueId: string): Promise<void> {
   const supabase = await createServerSupabase();
-  await supabase
-    .from("feature_flag_overrides")
-    .upsert({
+  await supabase.from("feature_flag_overrides").upsert(
+    {
       feature,
       venue_id: venueId,
       enabled: true,
       updated_at: new Date().toISOString(),
-    }, { onConflict: "feature,venue_id" });
-  
+    },
+    { onConflict: "feature,venue_id" }
+  );
+
   invalidateCache(feature, venueId);
 }
 
 /**
  * Disable a feature for a venue (admin only)
  */
-export async function disableFor(
-  feature: FeatureFlag,
-  venueId: string
-): Promise<void> {
+export async function disableFor(feature: FeatureFlag, venueId: string): Promise<void> {
   const supabase = await createServerSupabase();
-  await supabase
-    .from("feature_flag_overrides")
-    .upsert({
+  await supabase.from("feature_flag_overrides").upsert(
+    {
       feature,
       venue_id: venueId,
       enabled: false,
       updated_at: new Date().toISOString(),
-    }, { onConflict: "feature,venue_id" });
-  
+    },
+    { onConflict: "feature,venue_id" }
+  );
+
   invalidateCache(feature, venueId);
 }
 
@@ -213,7 +208,10 @@ export async function getAllFeatures(
   venueId: string
 ): Promise<Record<FeatureFlag, { enabled: boolean; config: FeatureConfig }>> {
   const supabase = await createServerSupabase();
-  const result: Record<FeatureFlag, { enabled: boolean; config: FeatureConfig }> = {} as Record<FeatureFlag, { enabled: boolean; config: FeatureConfig }>;
+  const result: Record<FeatureFlag, { enabled: boolean; config: FeatureConfig }> = {} as Record<
+    FeatureFlag,
+    { enabled: boolean; config: FeatureConfig }
+  >;
 
   // Get venue tier
   const { data: subscription } = await supabase
@@ -227,14 +225,17 @@ export async function getAllFeatures(
   for (const [key, config] of Object.entries(FEATURES)) {
     const feature = key as FeatureFlag;
     const enabled = await isEnabled(feature, { venueId });
-    
+
     result[feature] = {
       enabled,
       config: {
         ...config,
-        description: config.tierRequired && tierOrder.indexOf(subscription?.tier ?? "starter") < tierOrder.indexOf(config.tierRequired)
-          ? `${config.description} (${config.tierRequired}+ tier only)`
-          : config.description,
+        description:
+          config.tierRequired &&
+          tierOrder.indexOf(subscription?.tier ?? "starter") <
+            tierOrder.indexOf(config.tierRequired)
+            ? `${config.description} (${config.tierRequired}+ tier only)`
+            : config.description,
       },
     };
   }
@@ -249,7 +250,7 @@ function hashString(str: string): number {
   let hash = 0;
   for (let i = 0; i < str.length; i++) {
     const char = str.charCodeAt(i);
-    hash = ((hash << 5) - hash) + char;
+    hash = (hash << 5) - hash + char;
     hash = hash & hash;
   }
   return Math.abs(hash);

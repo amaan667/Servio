@@ -2088,15 +2088,12 @@ span:not(button span):not(button * span):not([class*="button"] span) {
     color: #ffffff !important; /* white text on mobile */
   }
 
-
-
   /* Mobile ordering UI optimizations */
   /* Ensure images don't overflow on mobile */
   img {
     max-width: 100%;
     height: auto;
   }
-
 
   /* Ensure text is readable on mobile */
   h1,
@@ -2116,8 +2113,6 @@ span:not(button span):not(button * span):not([class*="button"] span) {
     transform: scale(0.98);
     transition: transform 0.1s ease;
   }
-
-
 
   /* CRITICAL: Disable hover effects on mobile - keep text white on touch devices */
   /* Only apply hover color changes on devices that actually support hover (desktop) */

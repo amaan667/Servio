@@ -21,28 +21,43 @@ export interface UseBulkMenuOperationsReturn {
   result: BulkOperationResult | null;
   error: Error | null;
   cancel: () => void;
-  createItems: (items: Array<{
-    name_en?: string;
-    name_ar?: string;
-    description_en?: string;
-    description_ar?: string;
-    price?: number;
-    category?: string;
-    is_available?: boolean;
-  }>, options?: { dryRun?: boolean }) => Promise<BulkOperationResult | null>;
-  updateItems: (updates: Array<{
-    id: string;
-    data: Record<string, unknown>;
-  }>, options?: { dryRun?: boolean; skipMissing?: boolean }) => Promise<BulkOperationResult | null>;
-  deleteItems: (ids: string[], options?: { dryRun?: boolean; skipMissing?: boolean }) => Promise<BulkOperationResult | null>;
+  createItems: (
+    items: Array<{
+      name_en?: string;
+      name_ar?: string;
+      description_en?: string;
+      description_ar?: string;
+      price?: number;
+      category?: string;
+      is_available?: boolean;
+    }>,
+    options?: { dryRun?: boolean }
+  ) => Promise<BulkOperationResult | null>;
+  updateItems: (
+    updates: Array<{
+      id: string;
+      data: Record<string, unknown>;
+    }>,
+    options?: { dryRun?: boolean; skipMissing?: boolean }
+  ) => Promise<BulkOperationResult | null>;
+  deleteItems: (
+    ids: string[],
+    options?: { dryRun?: boolean; skipMissing?: boolean }
+  ) => Promise<BulkOperationResult | null>;
   reset: () => void;
 }
 
-export function useBulkMenuOperations(options: UseBulkMenuOperationsOptions): UseBulkMenuOperationsReturn {
+export function useBulkMenuOperations(
+  options: UseBulkMenuOperationsOptions
+): UseBulkMenuOperationsReturn {
   const { venueId, onSuccess, onError } = options;
 
   const [isLoading, setIsLoading] = useState(false);
-  const [progress, setProgress] = useState<{ completed: number; total: number; percent: number } | null>(null);
+  const [progress, setProgress] = useState<{
+    completed: number;
+    total: number;
+    percent: number;
+  } | null>(null);
   const [operationId, setOperationId] = useState<string | null>(null);
   const [result, setResult] = useState<BulkOperationResult | null>(null);
   const [error, setError] = useState<Error | null>(null);
@@ -116,7 +131,12 @@ export function useBulkMenuOperations(options: UseBulkMenuOperationsOptions): Us
         const response = await fetch("/api/bulk/menu-items", {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ venueId, updates, dryRun: opts?.dryRun, skipMissing: opts?.skipMissing }),
+          body: JSON.stringify({
+            venueId,
+            updates,
+            dryRun: opts?.dryRun,
+            skipMissing: opts?.skipMissing,
+          }),
         });
 
         if (!response.ok) {
@@ -153,7 +173,12 @@ export function useBulkMenuOperations(options: UseBulkMenuOperationsOptions): Us
         const response = await fetch("/api/bulk/menu-items", {
           method: "DELETE",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ venueId, ids, dryRun: opts?.dryRun, skipMissing: opts?.skipMissing }),
+          body: JSON.stringify({
+            venueId,
+            ids,
+            dryRun: opts?.dryRun,
+            skipMissing: opts?.skipMissing,
+          }),
         });
 
         if (!response.ok) {

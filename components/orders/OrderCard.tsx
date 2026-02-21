@@ -369,7 +369,11 @@ export function OrderCard({
 
   const handleStatusUpdate = async (nextStatusRaw: string) => {
     if (!venueId) {
-      toast({ title: "Error", description: "Venue ID missing. Please refresh the page.", variant: "destructive" });
+      toast({
+        title: "Error",
+        description: "Venue ID missing. Please refresh the page.",
+        variant: "destructive",
+      });
       return;
     }
 
@@ -432,7 +436,11 @@ export function OrderCard({
         setAllTicketsBumped(null);
       }
     } catch (_error) {
-      toast({ title: "Error", description: _error instanceof Error ? _error.message : "Failed to update order status", variant: "destructive" });
+      toast({
+        title: "Error",
+        description: _error instanceof Error ? _error.message : "Failed to update order status",
+        variant: "destructive",
+      });
     } finally {
       setIsProcessing(false);
     }

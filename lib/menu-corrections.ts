@@ -8,10 +8,15 @@
  * Train the system: apply stored corrections to extracted items (by item name) before insert.
  * When user re-extracts, past corrections override extracted values so the DB stores corrected data.
  */
-export function applyCorrectionsToExtractedItems<T extends { name: string; description?: string; price?: number; category?: string; image_url?: string }>(
-  items: T[],
-  corrections: CorrectionRow[]
-): T[] {
+export function applyCorrectionsToExtractedItems<
+  T extends {
+    name: string;
+    description?: string;
+    price?: number;
+    category?: string;
+    image_url?: string;
+  },
+>(items: T[], corrections: CorrectionRow[]): T[] {
   if (corrections.length === 0) return items;
   const byItemName = new Map<string, CorrectionRow[]>();
   for (const c of corrections) {

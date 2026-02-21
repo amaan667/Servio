@@ -1,5 +1,5 @@
-import crypto from 'crypto';
-import Stripe from 'stripe';
+import crypto from "crypto";
+import Stripe from "stripe";
 
 // ============================================================================
 // STRIPE WEBHOOK SIGNATURE VERIFICATION
@@ -22,7 +22,7 @@ export class WebhookError extends Error {
 
   constructor(message: string, code: string, isRetryable = false) {
     super(message);
-    this.name = 'WebhookError';
+    this.name = "WebhookError";
     this.code = code;
     this.timestamp = Date.now();
     this.isRetryable = isRetryable;
@@ -44,49 +44,41 @@ export function verifyStripeWebhook(
   }
 ): VerifiedWebhookEvent {
   if (!signature) {
-    throw new WebhookError('Missing stripe-signature header', 'SIGNATURE_MISSING');
+    throw new WebhookError("Missing stripe-signature header", "SIGNATURE_MISSING");
   }
 
   // Parse the signature header
-  const elements = signature.split(',');
+  const elements = signature.split(",");
   const signatureMap: Record<string, string> = {};
-  
+
   for (const element of elements) {
-    const [key, value] = element.split('=');
+    const [key, value] = element.split("=");
     if (key && value) {
       signatureMap[key] = value;
     }
   }
 
-  const timestamp = signatureMap['t'];
-  const expectedSignature = signatureMap['v1'];
+  const timestamp = signatureMap["t"];
+  const expectedSignature = signatureMap["v1"];
 
   if (!timestamp || !expectedSignature) {
-    throw new WebhookError(
-      'Invalid stripe-signature format',
-      'SIGNATURE_INVALID_FORMAT'
-    );
+    throw new WebhookError("Invalid stripe-signature format", "SIGNATURE_INVALID_FORMAT");
   }
 
   // Validate timestamp to prevent replay attacks
-  const timestampAgeSeconds = Math.floor(
-    (Date.now() / 1000) - parseInt(timestamp, 10)
-  );
-  
+  const timestampAgeSeconds = Math.floor(Date.now() / 1000 - parseInt(timestamp, 10));
+
   const tolerance = options?.timestampTolerance ?? MAX_TIMESTAMP_AGE_SECONDS;
-  
+
   if (timestampAgeSeconds > tolerance) {
     throw new WebhookError(
       `Webhook timestamp is too old (${timestampAgeSeconds}s > ${tolerance}s). Possible replay attack.`,
-      'SIGNATURE_TIMESTAMP_EXPIRED'
+      "SIGNATURE_TIMESTAMP_EXPIRED"
     );
   }
 
   if (timestampAgeSeconds < -60) {
-    throw new WebhookError(
-      'Webhook timestamp is in the future',
-      'SIGNATURE_TIMESTAMP_FUTURE'
-    );
+    throw new WebhookError("Webhook timestamp is in the future", "SIGNATURE_TIMESTAMP_FUTURE");
   }
 
   // Construct the signed payload
@@ -94,28 +86,22 @@ export function verifyStripeWebhook(
 
   // Verify the signature using HMAC SHA-256
   const computedSignature = crypto
-    .createHmac('sha256', webhookSecret)
+    .createHmac("sha256", webhookSecret)
     .update(signedPayload)
-    .digest('hex');
+    .digest("hex");
 
   // Use timing-safe comparison to prevent timing attacks
-  const signatureBuffer = Buffer.from(expectedSignature, 'hex');
-  const computedBuffer = Buffer.from(computedSignature, 'hex');
+  const signatureBuffer = Buffer.from(expectedSignature, "hex");
+  const computedBuffer = Buffer.from(computedSignature, "hex");
 
   if (signatureBuffer.length !== computedBuffer.length) {
-    throw new WebhookError(
-      'Signature length mismatch',
-      'SIGNATURE_INVALID'
-    );
+    throw new WebhookError("Signature length mismatch", "SIGNATURE_INVALID");
   }
 
   const signatureMatches = crypto.timingSafeEqual(signatureBuffer, computedBuffer);
 
   if (!signatureMatches) {
-    throw new WebhookError(
-      'Signature verification failed',
-      'SIGNATURE_INVALID'
-    );
+    throw new WebhookError("Signature verification failed", "SIGNATURE_INVALID");
   }
 
   // Parse the event
@@ -123,26 +109,23 @@ export function verifyStripeWebhook(
   try {
     event = JSON.parse(payload.toString()) as Stripe.Event;
   } catch {
-    throw new WebhookError(
-      'Invalid JSON in webhook payload',
-      'PAYLOAD_INVALID_JSON'
-    );
+    throw new WebhookError("Invalid JSON in webhook payload", "PAYLOAD_INVALID_JSON");
   }
 
   // Validate tenant and venue isolation if provided
   const eventData = event.data.object as unknown as Record<string, unknown>;
-  
+
   if (options?.tenantId && (eventData.tenant_id as string) !== options.tenantId) {
     throw new WebhookError(
-      'Tenant ID mismatch - possible cross-tenant data access',
-      'TENANT_ISOLATION_VIOLATION'
+      "Tenant ID mismatch - possible cross-tenant data access",
+      "TENANT_ISOLATION_VIOLATION"
     );
   }
 
   if (options?.venueId && (eventData.venue_id as string) !== options.venueId) {
     throw new WebhookError(
-      'Venue ID mismatch - possible cross-venue data access',
-      'VENUE_ISOLATION_VIOLATION'
+      "Venue ID mismatch - possible cross-venue data access",
+      "VENUE_ISOLATION_VIOLATION"
     );
   }
 
@@ -168,16 +151,12 @@ export function verifyStripeWebhookWithLibrary(
   let event: Stripe.Event;
 
   try {
-    event = Stripe.webhooks.constructEvent(
-      payload,
-      signature,
-      webhookSecret
-    );
+    event = Stripe.webhooks.constructEvent(payload, signature, webhookSecret);
   } catch (err) {
     if (err instanceof Stripe.errors.StripeSignatureVerificationError) {
       throw new WebhookError(
         `Stripe signature verification failed: ${err.message}`,
-        'SIGNATURE_INVALID'
+        "SIGNATURE_INVALID"
       );
     }
     throw err;
@@ -185,19 +164,13 @@ export function verifyStripeWebhookWithLibrary(
 
   // Validate tenant and venue isolation
   const eventData = event.data.object as unknown as Record<string, unknown>;
-  
+
   if (options?.tenantId && (eventData.tenant_id as string) !== options.tenantId) {
-    throw new WebhookError(
-      'Tenant ID mismatch',
-      'TENANT_ISOLATION_VIOLATION'
-    );
+    throw new WebhookError("Tenant ID mismatch", "TENANT_ISOLATION_VIOLATION");
   }
 
   if (options?.venueId && (eventData.venue_id as string) !== options.venueId) {
-    throw new WebhookError(
-      'Venue ID mismatch',
-      'VENUE_ISOLATION_VIOLATION'
-    );
+    throw new WebhookError("Venue ID mismatch", "VENUE_ISOLATION_VIOLATION");
   }
 
   return {
@@ -211,14 +184,14 @@ export function verifyStripeWebhookWithLibrary(
 // WEBHOOK EVENT TYPE GUARDS
 // ============================================================================
 
-export type StripeEventType = 
-  | 'payment_intent.succeeded'
-  | 'payment_intent.payment_failed'
-  | 'charge.refunded'
-  | 'customer.subscription.updated'
-  | 'customer.subscription.deleted'
-  | 'invoice.paid'
-  | 'invoice.payment_failed';
+export type StripeEventType =
+  | "payment_intent.succeeded"
+  | "payment_intent.payment_failed"
+  | "charge.refunded"
+  | "customer.subscription.updated"
+  | "customer.subscription.deleted"
+  | "invoice.paid"
+  | "invoice.payment_failed";
 
 export interface PaymentIntentSucceeded {
   id: string;
@@ -232,7 +205,7 @@ export interface PaymentIntentSucceeded {
 }
 
 export function isPaymentIntentSucceeded(event: Stripe.Event): event is Stripe.Event {
-  return event.type === 'payment_intent.succeeded';
+  return event.type === "payment_intent.succeeded";
 }
 
 export interface ChargeRefunded {
@@ -245,14 +218,14 @@ export interface ChargeRefunded {
 }
 
 export function isChargeRefunded(event: Stripe.Event): event is Stripe.Event {
-  return event.type === 'charge.refunded';
+  return event.type === "charge.refunded";
 }
 
 // ============================================================================
 // WEBHOOK PROCESSING WITH IDEMPOTENCY
 // ============================================================================
 
-import { getIdempotencyResult, storeIdempotencyResult } from './idempotency';
+import { getIdempotencyResult, storeIdempotencyResult } from "./idempotency";
 
 /**
  * Process a webhook event with idempotency protection
@@ -270,8 +243,8 @@ export async function processWebhookWithIdempotency<T>(
       return { result: cached.data as T, wasIdempotent: true };
     }
     throw new WebhookError(
-      cached.error ?? 'Previous webhook processing failed',
-      'WEBHOOK_ALREADY_PROCESSED',
+      cached.error ?? "Previous webhook processing failed",
+      "WEBHOOK_ALREADY_PROCESSED",
       false
     );
   }
@@ -279,16 +252,16 @@ export async function processWebhookWithIdempotency<T>(
   try {
     const result = await handler();
 
-    storeIdempotencyResult(key, tenantId, 'webhook_processing', {
+    storeIdempotencyResult(key, tenantId, "webhook_processing", {
       success: true,
       data: result,
     });
 
     return { result, wasIdempotent: false };
   } catch (error) {
-    storeIdempotencyResult(key, tenantId, 'webhook_processing', {
+    storeIdempotencyResult(key, tenantId, "webhook_processing", {
       success: false,
-      error: error instanceof Error ? error.message : 'Unknown error',
+      error: error instanceof Error ? error.message : "Unknown error",
     });
     throw error;
   }
@@ -299,7 +272,7 @@ export async function processWebhookWithIdempotency<T>(
 // ============================================================================
 
 export function logWebhookSecurityEvent(
-  _type: 'verification_success' | 'verification_failure' | 'tenant_violation',
+  _type: "verification_success" | "verification_failure" | "tenant_violation",
   _details: {
     eventId?: string;
     eventType?: string;

@@ -26,7 +26,7 @@ export type {
   BroadcastPayload,
   PresenceState,
   PresenceUser,
-} from './types';
+} from "./types";
 
 // Re-export from subscription-manager
-export { SubscriptionManager, subscriptionManager } from './subscription-manager';
+export { SubscriptionManager, subscriptionManager } from "./subscription-manager";

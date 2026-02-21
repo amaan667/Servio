@@ -4,11 +4,11 @@
  * Identifies and reports duplicate/legacy code patterns in lib/
  */
 
-import { readdirSync, readFileSync, writeFileSync, existsSync } from 'fs';
-import { join } from 'path';
+import { readdirSync, readFileSync, writeFileSync, existsSync } from "fs";
+import { join } from "path";
 
-const LIB_DIR = join(process.cwd(), 'lib');
-const REPORT_FILE = join(process.cwd(), 'legacy-code-report.md');
+const LIB_DIR = join(process.cwd(), "lib");
+const REPORT_FILE = join(process.cwd(), "legacy-code-report.md");
 
 interface DuplicateInfo {
   file: string;
@@ -27,67 +27,67 @@ interface LegacyPattern {
 const LEGACY_PATTERNS = [
   {
     pattern: /console\.(log|error|warn|info)/,
-    description: 'Console statements that should be replaced with structured logging',
-    recommendation: 'Use logger from lib/monitoring/structured-logger.ts',
+    description: "Console statements that should be replaced with structured logging",
+    recommendation: "Use logger from lib/monitoring/structured-logger.ts",
   },
   {
     pattern: /JSON\.parse\(/g,
-    description: 'Manual JSON parsing without error handling',
-    recommendation: 'Use safeJsonParse utility',
+    description: "Manual JSON parsing without error handling",
+    recommendation: "Use safeJsonParse utility",
   },
   {
     pattern: /setTimeout.*1000/g,
-    description: 'Hardcoded 1-second timeouts',
-    recommendation: 'Extract to constant with meaningful name',
+    description: "Hardcoded 1-second timeouts",
+    recommendation: "Extract to constant with meaningful name",
   },
   {
     pattern: /catch\s*\(\s*_\s*\)/g,
-    description: 'Empty catch blocks that silently ignore errors',
-    recommendation: 'Log errors or handle them appropriately',
+    description: "Empty catch blocks that silently ignore errors",
+    recommendation: "Log errors or handle them appropriately",
   },
   {
     pattern: /@ts-ignore/g,
-    description: 'TypeScript ignore comments',
-    recommendation: 'Fix the type issue instead of ignoring it',
+    description: "TypeScript ignore comments",
+    recommendation: "Fix the type issue instead of ignoring it",
   },
   {
     pattern: /any\s*[:=]/g,
     description: 'Uses of "any" type',
-    recommendation: 'Use specific types or unknown with proper guards',
+    recommendation: "Use specific types or unknown with proper guards",
   },
 ];
 
 // Duplicate detection patterns
 const DUPLICATE_PATTERNS = [
   {
-    name: 'getCacheKey',
+    name: "getCacheKey",
     match: /function\s+(getCacheKey|cacheKey)/,
-    description: 'Duplicate cache key generation functions',
-    recommendation: 'Use lib/cache/constants.ts cacheKeys',
+    description: "Duplicate cache key generation functions",
+    recommendation: "Use lib/cache/constants.ts cacheKeys",
   },
   {
-    name: 'formatCurrency',
+    name: "formatCurrency",
     match: /function\s+(formatCurrency|formatPrice)/,
-    description: 'Duplicate currency formatting functions',
-    recommendation: 'Use lib/money.ts formatCurrency',
+    description: "Duplicate currency formatting functions",
+    recommendation: "Use lib/money.ts formatCurrency",
   },
   {
-    name: 'validateEmail',
+    name: "validateEmail",
     match: /function\s+validateEmail/,
-    description: 'Duplicate email validation',
-    recommendation: 'Use lib/security.ts validateEmail',
+    description: "Duplicate email validation",
+    recommendation: "Use lib/security.ts validateEmail",
   },
   {
-    name: 'dateFormatting',
+    name: "dateFormatting",
     match: /function\s+(formatDate|formatTime)/,
-    description: 'Duplicate date formatting',
-    recommendation: 'Use date-fns or lib/dates.ts',
+    description: "Duplicate date formatting",
+    recommendation: "Use date-fns or lib/dates.ts",
   },
 ];
 
 function scanFile(filePath: string): LegacyPattern[] {
-  const content = readFileSync(filePath, 'utf-8');
-  const lines = content.split('\n');
+  const content = readFileSync(filePath, "utf-8");
+  const lines = content.split("\n");
   const issues: LegacyPattern[] = [];
 
   // Check for legacy patterns
@@ -111,14 +111,14 @@ function findDuplicateFunctions(): DuplicateInfo[] {
   const functionsFound: Map<string, string[]> = new Map();
 
   const files = readdirSync(LIB_DIR, { recursive: true })
-    .filter((f) => f.toString().endsWith('.ts') && !f.toString().includes('.d.ts'))
+    .filter((f) => f.toString().endsWith(".ts") && !f.toString().includes(".d.ts"))
     .map((f) => join(LIB_DIR, f.toString()));
 
   for (const file of files) {
     if (!existsSync(file)) continue;
-    
-    const content = readFileSync(file, 'utf-8');
-    const lines = content.split('\n');
+
+    const content = readFileSync(file, "utf-8");
+    const lines = content.split("\n");
 
     for (const pattern of DUPLICATE_PATTERNS) {
       const match = content.match(pattern.match);
@@ -147,13 +147,13 @@ function findDuplicateFunctions(): DuplicateInfo[] {
 }
 
 function generateReport(): void {
-  console.log('🔍 Scanning lib/ directory for legacy code patterns...\n');
+  console.log("🔍 Scanning lib/ directory for legacy code patterns...\n");
 
   const allIssues: LegacyPattern[] = [];
   const duplicates = findDuplicateFunctions();
 
   const files = readdirSync(LIB_DIR, { recursive: true })
-    .filter((f) => f.toString().endsWith('.ts') && !f.toString().includes('.d.ts'))
+    .filter((f) => f.toString().endsWith(".ts") && !f.toString().includes(".d.ts"))
     .map((f) => join(LIB_DIR, f.toString()));
 
   for (const file of files) {
@@ -163,16 +163,16 @@ function generateReport(): void {
   }
 
   // Generate markdown report
-  let report = '# Legacy Code Report\n\n';
+  let report = "# Legacy Code Report\n\n";
   report += `Generated: ${new Date().toISOString()}\n\n`;
 
-  report += '## Summary\n\n';
+  report += "## Summary\n\n";
   report += `- **Legacy Patterns Found**: ${allIssues.length}\n`;
   report += `- **Duplicate Functions**: ${duplicates.length}\n\n`;
 
-  report += '## Duplicate Functions\n\n';
-  report += '| Function | Files | Recommendation |\n';
-  report += '|----------|-------|----------------|\n';
+  report += "## Duplicate Functions\n\n";
+  report += "| Function | Files | Recommendation |\n";
+  report += "|----------|-------|----------------|\n";
 
   const uniqueDuplicates = new Map();
   for (const dup of duplicates) {
@@ -183,13 +183,13 @@ function generateReport(): void {
   }
 
   for (const [func, dup] of uniqueDuplicates) {
-    const files = dup.file.split('/').slice(-3).join('/');
+    const files = dup.file.split("/").slice(-3).join("/");
     report += `| ${func} | ${files} | Consolidate to single utility |\n`;
   }
 
-  report += '\n## Legacy Patterns\n\n';
-  report += '| Pattern | Description | Recommendation |\n';
-  report += '|---------|-------------|---------------|\n';
+  report += "\n## Legacy Patterns\n\n";
+  report += "| Pattern | Description | Recommendation |\n";
+  report += "|---------|-------------|---------------|\n";
 
   const uniquePatterns = new Map();
   for (const issue of allIssues) {
@@ -202,16 +202,18 @@ function generateReport(): void {
     report += `| ${issue.pattern.substring(0, 30)}... | ${issue.description} | ${issue.recommendation} |\n`;
   }
 
-  report += '\n## Priority Actions\n\n';
-  report += '1. **High Priority**: Replace all console statements with structured logging\n';
-  report += '2. **High Priority**: Add error handling to empty catch blocks\n';
+  report += "\n## Priority Actions\n\n";
+  report += "1. **High Priority**: Replace all console statements with structured logging\n";
+  report += "2. **High Priority**: Add error handling to empty catch blocks\n";
   report += '3. **Medium Priority**: Replace "any" types with specific types\n';
-  report += '4. **Medium Priority**: Remove @ts-ignore comments\n';
-  report += '5. **Low Priority**: Consolidate duplicate utility functions\n';
+  report += "4. **Medium Priority**: Remove @ts-ignore comments\n";
+  report += "5. **Low Priority**: Consolidate duplicate utility functions\n";
 
   writeFileSync(REPORT_FILE, report);
   console.log(`✅ Report generated: ${REPORT_FILE}\n`);
-  console.log(`Found ${allIssues.length} legacy patterns and ${duplicates.length} duplicate functions.`);
+  console.log(
+    `Found ${allIssues.length} legacy patterns and ${duplicates.length} duplicate functions.`
+  );
 }
 
 // Run if called directly

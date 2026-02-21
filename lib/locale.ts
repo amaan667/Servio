@@ -13,15 +13,35 @@ export interface LocaleInfo {
 
 // Curated list: country code -> currency (ISO 4217) and primary IANA timezone
 const COUNTRY_LOCALE: Record<string, Omit<LocaleInfo, "countryCode">> = {
-  GB: { countryName: "United Kingdom", currency: "GBP", timezone: "Europe/London", locale: "en-GB" },
-  US: { countryName: "United States", currency: "USD", timezone: "America/New_York", locale: "en-US" },
+  GB: {
+    countryName: "United Kingdom",
+    currency: "GBP",
+    timezone: "Europe/London",
+    locale: "en-GB",
+  },
+  US: {
+    countryName: "United States",
+    currency: "USD",
+    timezone: "America/New_York",
+    locale: "en-US",
+  },
   IE: { countryName: "Ireland", currency: "EUR", timezone: "Europe/Dublin", locale: "en-IE" },
   FR: { countryName: "France", currency: "EUR", timezone: "Europe/Paris", locale: "fr-FR" },
   DE: { countryName: "Germany", currency: "EUR", timezone: "Europe/Berlin", locale: "de-DE" },
   ES: { countryName: "Spain", currency: "EUR", timezone: "Europe/Madrid", locale: "es-ES" },
   IT: { countryName: "Italy", currency: "EUR", timezone: "Europe/Rome", locale: "it-IT" },
-  NL: { countryName: "Netherlands", currency: "EUR", timezone: "Europe/Amsterdam", locale: "nl-NL" },
-  AE: { countryName: "United Arab Emirates", currency: "AED", timezone: "Asia/Dubai", locale: "ar-AE" },
+  NL: {
+    countryName: "Netherlands",
+    currency: "EUR",
+    timezone: "Europe/Amsterdam",
+    locale: "nl-NL",
+  },
+  AE: {
+    countryName: "United Arab Emirates",
+    currency: "AED",
+    timezone: "Asia/Dubai",
+    locale: "ar-AE",
+  },
   SG: { countryName: "Singapore", currency: "SGD", timezone: "Asia/Singapore", locale: "en-SG" },
   JP: { countryName: "Japan", currency: "JPY", timezone: "Asia/Tokyo", locale: "ja-JP" },
   AU: { countryName: "Australia", currency: "AUD", timezone: "Australia/Sydney", locale: "en-AU" },
@@ -35,10 +55,20 @@ const COUNTRY_LOCALE: Record<string, Omit<LocaleInfo, "countryCode">> = {
   SE: { countryName: "Sweden", currency: "SEK", timezone: "Europe/Stockholm", locale: "sv-SE" },
   NO: { countryName: "Norway", currency: "NOK", timezone: "Europe/Oslo", locale: "nb-NO" },
   DK: { countryName: "Denmark", currency: "DKK", timezone: "Europe/Copenhagen", locale: "da-DK" },
-  NZ: { countryName: "New Zealand", currency: "NZD", timezone: "Pacific/Auckland", locale: "en-NZ" },
+  NZ: {
+    countryName: "New Zealand",
+    currency: "NZD",
+    timezone: "Pacific/Auckland",
+    locale: "en-NZ",
+  },
   MX: { countryName: "Mexico", currency: "MXN", timezone: "America/Mexico_City", locale: "es-MX" },
   BR: { countryName: "Brazil", currency: "BRL", timezone: "America/Sao_Paulo", locale: "pt-BR" },
-  ZA: { countryName: "South Africa", currency: "ZAR", timezone: "Africa/Johannesburg", locale: "en-ZA" },
+  ZA: {
+    countryName: "South Africa",
+    currency: "ZAR",
+    timezone: "Africa/Johannesburg",
+    locale: "en-ZA",
+  },
   HK: { countryName: "Hong Kong", currency: "HKD", timezone: "Asia/Hong_Kong", locale: "zh-HK" },
 };
 

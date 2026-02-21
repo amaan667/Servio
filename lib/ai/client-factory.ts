@@ -30,10 +30,12 @@ import { cookies } from "next/headers";
  * const { data } = await supabase.from("orders").select("*");
  * ```
  */
-export async function createAIClient(options: {
-  venueId?: string;
-  organizationId?: string;
-} = {}): Promise<ReturnType<typeof createServerClient>> {
+export async function createAIClient(
+  options: {
+    venueId?: string;
+    organizationId?: string;
+  } = {}
+): Promise<ReturnType<typeof createServerClient>> {
   const cookieStore = await cookies();
 
   // Create client with RLS enabled
@@ -153,7 +155,7 @@ export function validateAIClient(
   if (process.env.NODE_ENV === "development") {
     console.warn(
       `[AI Security] ${context.tool}: Ensure client was created using createAIClient() ` +
-      `to respect RLS policies. Using createClient() bypasses RLS.`
+        `to respect RLS policies. Using createClient() bypasses RLS.`
     );
   }
 }
@@ -238,10 +240,7 @@ export function addTenantFilter<T extends { eq: (column: string, value: string) 
  * }
  * ```
  */
-export async function verifyVenueAccess(
-  userId: string,
-  venueId: string
-): Promise<boolean> {
+export async function verifyVenueAccess(userId: string, venueId: string): Promise<boolean> {
   const supabase = await createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.SUPABASE_ANON_KEY!,

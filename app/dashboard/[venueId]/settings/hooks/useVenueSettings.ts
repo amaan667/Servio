@@ -2,11 +2,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { supabaseBrowser as createClient } from "@/lib/supabase";
 import { toast } from "@/hooks/use-toast";
-import {
-  detectBrowserLocale,
-  getLocaleForCountry,
-  COUNTRY_OPTIONS,
-} from "@/lib/locale";
+import { detectBrowserLocale, getLocaleForCountry, COUNTRY_OPTIONS } from "@/lib/locale";
 
 export const DAYS_OF_WEEK = [
   "monday",
@@ -83,9 +79,7 @@ export function useVenueSettings(venue: Venue) {
   const [venueAddress, setVenueAddress] = useState(venue.address || "");
   const [country, setCountry] = useState<string>(venue.country || "");
   const [timezone, setTimezone] = useState(venue.timezone || "Europe/London");
-  const [currency, setCurrency] = useState(
-    (venue as { currency?: string }).currency || "GBP"
-  );
+  const [currency, setCurrency] = useState((venue as { currency?: string }).currency || "GBP");
   const [venueType, setVenueType] = useState(venue.venue_type || "restaurant");
   const [serviceType, setServiceType] = useState(venue.service_type || "table_service");
   const [operatingHours, setOperatingHours] = useState<OperatingHours>(
@@ -150,7 +144,10 @@ export function useVenueSettings(venue: Venue) {
     setAllowEmailInput((venue as { allow_email_input?: boolean }).allow_email_input ?? true);
     setReceiptLogoUrl((venue as { receipt_logo_url?: string }).receipt_logo_url || "");
     setReceiptFooterText((venue as { receipt_footer_text?: string }).receipt_footer_text || "");
-    setNotifyCustomerOnReady(venue.notify_customer_on_ready ?? (venue.service_type === "counter_pickup" || venue.service_type === "both"));
+    setNotifyCustomerOnReady(
+      venue.notify_customer_on_ready ??
+        (venue.service_type === "counter_pickup" || venue.service_type === "both")
+    );
   }, [venue.venue_id, venue.updated_at]);
 
   // Track unsaved changes

@@ -6,7 +6,7 @@ export function todayWindowForLocal() {
   // Build the start of today and start of tomorrow in the device's local timezone
   // then convert those instants to UTC ISO strings.
   const now = new Date();
-  
+
   // Get local midnight (start of today)
   const startLocal = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
   // Get next midnight (start of tomorrow)
@@ -46,7 +46,7 @@ export function todayWindowForTZ(tz: string | undefined) {
       endUtcISO: toUtcIso(endLocal),
     };
   }
-  
+
   // Default: use device local time
   return todayWindowForLocal();
 }

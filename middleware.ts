@@ -22,10 +22,7 @@ function shouldRunAuth(pathname: string): boolean {
  * evict aggressively, causing "not authenticated" errors after the tab
  * had been backgrounded.
  */
-function forwardWithHeaders(
-  requestHeaders: Headers,
-  source: NextResponse
-): NextResponse {
+function forwardWithHeaders(requestHeaders: Headers, source: NextResponse): NextResponse {
   const res = NextResponse.next({ request: { headers: requestHeaders } });
   source.cookies.getAll().forEach((c) => {
     res.cookies.set({
@@ -211,7 +208,9 @@ export async function middleware(request: NextRequest) {
   // ── Dashboard routes ───────────────────────────────────────────────
   if (pathname.startsWith("/dashboard")) {
     if (!session) {
-      return response;
+      const signInUrl = new URL("/sign-in", request.url);
+      signInUrl.searchParams.set("redirect", pathname);
+      return NextResponse.redirect(signInUrl);
     }
 
     const segments = pathname.split("/").filter(Boolean);
@@ -235,7 +234,12 @@ export async function middleware(request: NextRequest) {
       });
 
       if (!rpcErr && data) {
-        const ctx = data as { user_id?: string; role?: string; tier?: string; venue_id?: string | null };
+        const ctx = data as {
+          user_id?: string;
+          role?: string;
+          tier?: string;
+          venue_id?: string | null;
+        };
 
         if (ctx.user_id && ctx.role && ctx.tier) {
           const tier = ctx.tier.toLowerCase().trim();
@@ -264,8 +268,5 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: [
-    "/dashboard/:path*",
-    "/api/:path*",
-  ],
+  matcher: ["/dashboard/:path*", "/api/:path*"],
 };

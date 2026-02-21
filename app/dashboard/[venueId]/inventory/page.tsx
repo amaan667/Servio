@@ -68,10 +68,10 @@ export default async function InventoryPage({ params }: { params: { venueId: str
  */
 async function fetchInventoryItems(venueId: string): Promise<StockLevel[]> {
   const startTime = Date.now();
-  
+
   try {
     const supabase = createAdminClient();
-    
+
     const { data, error } = await supabase
       .from("v_stock_levels")
       .select("*")
@@ -94,10 +94,14 @@ async function fetchInventoryItems(venueId: string): Promise<StockLevel[]> {
 
     return (data as StockLevel[]) || [];
   } catch (error) {
-    logger.error("Error fetching inventory items", {
-      venueId,
-      error: error instanceof Error ? error.message : "Unknown error",
-    }, error as Error);
+    logger.error(
+      "Error fetching inventory items",
+      {
+        venueId,
+        error: error instanceof Error ? error.message : "Unknown error",
+      },
+      error as Error
+    );
     return [];
   }
 }
@@ -107,10 +111,10 @@ async function fetchInventoryItems(venueId: string): Promise<StockLevel[]> {
  */
 async function calculateInventoryStats(venueId: string): Promise<InventoryStats> {
   const startTime = Date.now();
-  
+
   try {
     const supabase = createAdminClient();
-    
+
     const { data: ingredients, error } = await supabase
       .from("v_stock_levels")
       .select("on_hand, reorder_level, cost_per_unit")
@@ -165,10 +169,14 @@ async function calculateInventoryStats(venueId: string): Promise<InventoryStats>
 
     return stats;
   } catch (error) {
-    logger.error("Error calculating inventory stats", {
-      venueId,
-      error: error instanceof Error ? error.message : "Unknown error",
-    }, error as Error);
+    logger.error(
+      "Error calculating inventory stats",
+      {
+        venueId,
+        error: error instanceof Error ? error.message : "Unknown error",
+      },
+      error as Error
+    );
     return {
       totalItems: 0,
       lowStockItems: 0,

@@ -87,8 +87,8 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
                   <>
                     Supabase environment variables are not set. Add{" "}
                     <code className="text-sm bg-gray-100 px-1">NEXT_PUBLIC_SUPABASE_URL</code> and{" "}
-                    <code className="text-sm bg-gray-100 px-1">NEXT_PUBLIC_SUPABASE_ANON_KEY</code> in
-                    Railway Variables, then redeploy.
+                    <code className="text-sm bg-gray-100 px-1">NEXT_PUBLIC_SUPABASE_ANON_KEY</code>{" "}
+                    in Railway Variables, then redeploy.
                   </>
                 ) : isAuthError ? (
                   "There was an authentication error. This might be due to a session issue."

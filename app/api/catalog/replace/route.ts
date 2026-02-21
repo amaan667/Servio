@@ -257,11 +257,13 @@ export const POST = withUnifiedAuth(
 
       // STEP 6: Business logic
       const supabase = await createServerSupabase();
-      let validationSummary: {
-        priceOutliers: number;
-        priceFormatInconsistent: number;
-        categoryInconsistent: number;
-      } | undefined;
+      let validationSummary:
+        | {
+            priceOutliers: number;
+            priceFormatInconsistent: number;
+            categoryInconsistent: number;
+          }
+        | undefined;
 
       // Step 1: Convert file to images (PDF or direct image)
       let pdfImages: string[] | undefined;
@@ -316,9 +318,13 @@ export const POST = withUnifiedAuth(
           venueId: normalizedVenueId,
         });
         const validated = validateExtractedItems(extractionResult.items);
-        const inconsistentPrice = validated.filter((v) => !v.validation.priceFormatConsistent).length;
+        const inconsistentPrice = validated.filter(
+          (v) => !v.validation.priceFormatConsistent
+        ).length;
         const outliers = validated.filter((v) => v.validation.priceOutlier).length;
-        const inconsistentCategory = validated.filter((v) => !v.validation.categoryConsistent).length;
+        const inconsistentCategory = validated.filter(
+          (v) => !v.validation.categoryConsistent
+        ).length;
         validationSummary = {
           priceOutliers: outliers,
           priceFormatInconsistent: inconsistentPrice,
@@ -559,7 +565,11 @@ export const POST = withUnifiedAuth(
         items: finalItems.length,
         mode: extractionResult.mode,
         duration: `${duration}ms`,
-        ...(validationSummary && validationSummary.priceOutliers + validationSummary.priceFormatInconsistent + validationSummary.categoryInconsistent > 0
+        ...(validationSummary &&
+        validationSummary.priceOutliers +
+          validationSummary.priceFormatInconsistent +
+          validationSummary.categoryInconsistent >
+          0
           ? { validation: validationSummary }
           : {}),
       });

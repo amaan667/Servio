@@ -260,7 +260,9 @@ export default function AnalyticsClient({
                     {periodComparison.change >= 0 ? (
                       <>
                         <TrendingUp className="h-4 w-4 text-green-600" />
-                        <span className={`font-semibold ${periodComparison.change >= 0 ? "text-green-600" : "text-red-600"}`}>
+                        <span
+                          className={`font-semibold ${periodComparison.change >= 0 ? "text-green-600" : "text-red-600"}`}
+                        >
                           +{Math.round(periodComparison.change)}%
                         </span>
                       </>
@@ -381,7 +383,8 @@ export default function AnalyticsClient({
                       .slice(0, 7)
                       .map(([day, orders]) => {
                         const maxOrders = Math.max(...Object.values(ordersData.ordersByDay || {}));
-                        const percentage = maxOrders > 0 ? Math.round((orders / maxOrders) * 100) : 0;
+                        const percentage =
+                          maxOrders > 0 ? Math.round((orders / maxOrders) * 100) : 0;
                         return (
                           <div key={day} className="space-y-1">
                             <div className="flex items-center justify-between text-sm">

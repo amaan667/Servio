@@ -26,9 +26,7 @@ export async function syncVenueTiersForOrg(organizationId: string, tier: string)
     .eq("organization_id", organizationId);
 
   if (error) {
-    throw new Error(
-      `Failed to sync venue tiers for org ${organizationId}: ${error.message}`
-    );
+    throw new Error(`Failed to sync venue tiers for org ${organizationId}: ${error.message}`);
   }
 }
 

@@ -61,14 +61,20 @@ export default async function VenuePage({ params }: { params: { venueId: string 
 
       // Parallelize all fetches for instant loading
       const now = new Date();
-      const [countsResult, tablesResult, sessionsResult, reservationsResult, ordersResult, menuItemsResult] =
-        await Promise.all([
-          getDashboardCounts(supabase, {
-            venueId: normalizedVenueId,
-            tz: venueTz,
-            liveWindowMins: 30,
-          }).then((c) => ({ data: c, error: null })),
-          supabase.from("tables").select("id, is_active").eq("venue_id", normalizedVenueId),
+      const [
+        countsResult,
+        tablesResult,
+        sessionsResult,
+        reservationsResult,
+        ordersResult,
+        menuItemsResult,
+      ] = await Promise.all([
+        getDashboardCounts(supabase, {
+          venueId: normalizedVenueId,
+          tz: venueTz,
+          liveWindowMins: 30,
+        }).then((c) => ({ data: c, error: null })),
+        supabase.from("tables").select("id, is_active").eq("venue_id", normalizedVenueId),
         supabase
           .from("table_sessions")
           .select("id, status, table_id")

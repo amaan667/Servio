@@ -36,8 +36,7 @@ export const ErrorMessages = {
   VALIDATION_TOO_LONG: (field: string, max: number) =>
     `${field} must be no more than ${max} characters`,
   VALIDATION_INVALID_FORMAT: (field: string) => `${field} has an invalid format`,
-  VALIDATION_MISMATCH: (field1: string, field2: string) =>
-    `${field1} and ${field2} don't match`,
+  VALIDATION_MISMATCH: (field1: string, field2: string) => `${field1} and ${field2} don't match`,
 
   // Resource Errors
   NOT_FOUND: "The requested resource was not found",
@@ -102,10 +101,7 @@ export const ErrorMessages = {
 /**
  * Get user-friendly error message with context
  */
-export function getUserFriendlyError(
-  error: Error | string,
-  context?: ErrorContext
-): string {
+export function getUserFriendlyError(error: Error | string, context?: ErrorContext): string {
   const errorMessage = typeof error === "string" ? error : error.message;
 
   // Map common error patterns to friendly messages

@@ -1,12 +1,18 @@
 /**
  * Environment Verification Endpoint
- * Checks if required environment variables are set and services are accessible
+ * Checks if required environment variables are set and services are accessible.
+ * DEV ONLY: Disabled in production to avoid leaking config.
  */
 
 import { NextRequest, NextResponse } from "next/server";
 import { createServerSupabase } from "@/lib/supabase";
+import { isDevelopment } from "@/lib/env";
+import { logger } from "@/lib/monitoring/structured-logger";
 
 export async function GET(_request: NextRequest) {
+  if (!isDevelopment()) {
+    return NextResponse.json({ error: "Not available" }, { status: 404 });
+  }
   try {
     const checks = {
       // Environment variables
@@ -31,24 +37,26 @@ export async function GET(_request: NextRequest) {
     // Test database connectivity
     try {
       const supabase = await createServerSupabase();
-      const { data, error } = await supabase.from("venues").select("count").limit(1);
+      const { error } = await supabase.from("venues").select("count").limit(1);
       checks.database = !error;
-    } catch (error) {
-      /* Error handled silently */
+    } catch (err) {
+      logger.warn("verify_env_database_check_failed", {
+        error: err instanceof Error ? err.message : String(err),
+      });
     }
 
     // Test entitlements RPC
     try {
       const supabase = await createServerSupabase();
-      // Test with a non-existent venue to check if RPC exists and is accessible
       const { error } = await supabase.rpc("get_venue_entitlements", {
         p_venue_id: "test-venue-id",
       });
-      // We expect an error (venue not found), but if RPC doesn't exist, we'd get a different error
       checks.entitlementsRpc =
         !!error && (error.message?.includes("forbidden") || error.message?.includes("not found"));
-    } catch (error) {
-      /* Error handled silently */
+    } catch (err) {
+      logger.warn("verify_env_entitlements_check_failed", {
+        error: err instanceof Error ? err.message : String(err),
+      });
     }
 
     // Test downgrade validation function
@@ -59,16 +67,20 @@ export async function GET(_request: NextRequest) {
         p_new_tier: "starter",
       });
       checks.downgradeValidation = !error && typeof data === "boolean";
-    } catch (error) {
-      /* Error handled silently */
+    } catch (err) {
+      logger.warn("verify_env_downgrade_check_failed", {
+        error: err instanceof Error ? err.message : String(err),
+      });
     }
 
     // Check if order state machine is importable
     try {
       await import("@/lib/orders/state-machine");
       checks.orderStateMachine = true;
-    } catch (error) {
-      /* Error handled silently */
+    } catch (err) {
+      logger.warn("verify_env_state_machine_import_failed", {
+        error: err instanceof Error ? err.message : String(err),
+      });
     }
 
     // Determine overall health

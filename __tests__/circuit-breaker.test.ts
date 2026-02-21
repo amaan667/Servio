@@ -3,10 +3,7 @@
  */
 
 import { describe, it, expect, beforeEach } from "vitest";
-import {
-  CircuitBreaker,
-  CircuitBreakerRegistry,
-} from "../lib/patterns/circuit-breaker";
+import { CircuitBreaker, CircuitBreakerRegistry } from "../lib/patterns/circuit-breaker";
 
 describe("CircuitBreaker", () => {
   describe("Initial State", () => {
@@ -69,11 +66,9 @@ describe("CircuitBreaker", () => {
         windowSize: 5000,
       });
 
-      const result = await breaker.execute(
-        async () => {
-          throw new Error("Test error");
-        }
-      );
+      const result = await breaker.execute(async () => {
+        throw new Error("Test error");
+      });
 
       expect(result.success).toBe(false);
       expect(result.error).toBe("Test error");
@@ -94,9 +89,13 @@ describe("CircuitBreaker", () => {
       });
 
       // First failure
-      await breaker.execute(async () => { throw new Error("Error 1"); });
+      await breaker.execute(async () => {
+        throw new Error("Error 1");
+      });
       // Second failure - should open circuit
-      await breaker.execute(async () => { throw new Error("Error 2"); });
+      await breaker.execute(async () => {
+        throw new Error("Error 2");
+      });
 
       expect(breaker.getState()).toBe("OPEN");
 
@@ -119,7 +118,9 @@ describe("CircuitBreaker", () => {
       });
 
       // Open the circuit
-      await breaker.execute(async () => { throw new Error("Error"); });
+      await breaker.execute(async () => {
+        throw new Error("Error");
+      });
 
       // Call with fallback
       const result = await breaker.execute(
@@ -141,12 +142,16 @@ describe("CircuitBreaker", () => {
       });
 
       // Open the circuit
-      await breaker.execute(async () => { throw new Error("Error"); });
+      await breaker.execute(async () => {
+        throw new Error("Error");
+      });
 
       // Call where fallback also fails
       const result = await breaker.execute(
         async () => "original",
-        async () => { throw new Error("Fallback error"); }
+        async () => {
+          throw new Error("Fallback error");
+        }
       );
 
       expect(result.success).toBe(false);
@@ -165,7 +170,9 @@ describe("CircuitBreaker", () => {
       });
 
       // Open the circuit
-      await breaker.execute(async () => { throw new Error("Error"); });
+      await breaker.execute(async () => {
+        throw new Error("Error");
+      });
       expect(breaker.getState()).toBe("OPEN");
 
       // Wait for reset timeout
@@ -185,7 +192,9 @@ describe("CircuitBreaker", () => {
       });
 
       // Open the circuit
-      await breaker.execute(async () => { throw new Error("Error"); });
+      await breaker.execute(async () => {
+        throw new Error("Error");
+      });
 
       // Wait for reset timeout
       await new Promise((resolve) => setTimeout(resolve, 100));
@@ -209,13 +218,17 @@ describe("CircuitBreaker", () => {
       });
 
       // Open the circuit
-      await breaker.execute(async () => { throw new Error("Error"); });
+      await breaker.execute(async () => {
+        throw new Error("Error");
+      });
 
       // Wait for reset timeout
       await new Promise((resolve) => setTimeout(resolve, 100));
 
       // Failure in HALF_OPEN should re-open circuit
-      await breaker.execute(async () => { throw new Error("Error again"); });
+      await breaker.execute(async () => {
+        throw new Error("Error again");
+      });
 
       expect(breaker.getState()).toBe("OPEN");
     });
@@ -233,7 +246,9 @@ describe("CircuitBreaker", () => {
 
       // Accumulate some state
       await breaker.execute(async () => "success");
-      await breaker.execute(async () => { throw new Error("Error"); });
+      await breaker.execute(async () => {
+        throw new Error("Error");
+      });
 
       expect(breaker.getMetrics().successCount).toBe(1);
       expect(breaker.getMetrics().failureCount).toBe(1);
@@ -306,8 +321,12 @@ describe("CircuitBreakerRegistry", () => {
 
     // Open stripe breaker
     const stripe = registry.getBreaker("stripe");
-    await stripe.execute(async () => { throw new Error("Error"); });
-    await stripe.execute(async () => { throw new Error("Error"); });
+    await stripe.execute(async () => {
+      throw new Error("Error");
+    });
+    await stripe.execute(async () => {
+      throw new Error("Error");
+    });
 
     // Reset all
     registry.resetAll();
@@ -320,7 +339,9 @@ describe("Circuit Breaker Metrics", () => {
   it("should track last failure time", async () => {
     const breaker = new CircuitBreaker({ service: "stripe" });
 
-    await breaker.execute(async () => { throw new Error("Error"); });
+    await breaker.execute(async () => {
+      throw new Error("Error");
+    });
 
     const metrics = breaker.getMetrics();
     expect(metrics.lastFailure).toBeInstanceOf(Date);
@@ -342,7 +363,9 @@ describe("Circuit Breaker Metrics", () => {
       resetTimeout: 50,
     });
 
-    await breaker.execute(async () => { throw new Error("Error"); });
+    await breaker.execute(async () => {
+      throw new Error("Error");
+    });
 
     const beforeChange = breaker.getMetrics().lastStateChange;
 

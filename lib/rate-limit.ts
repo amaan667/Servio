@@ -47,7 +47,7 @@ async function getRedisClient() {
     if (process.env.NODE_ENV === "production") {
       throw new Error(
         "REDIS_URL is required in production. Rate limiting requires Redis for distributed deployments. " +
-        "Set REDIS_URL environment variable or deploy with Redis enabled."
+          "Set REDIS_URL environment variable or deploy with Redis enabled."
       );
     }
     // Development: allow in-memory fallback for local testing
@@ -74,7 +74,7 @@ async function getRedisClient() {
     if (process.env.NODE_ENV === "production") {
       throw new Error(
         `Failed to connect to Redis: ${error instanceof Error ? error.message : String(error)}. ` +
-        "Redis is required for production rate limiting."
+          "Redis is required for production rate limiting."
       );
     }
     // Development: allow fallback on connection errors
@@ -86,7 +86,11 @@ async function getRedisClient() {
  * Check Redis connection health
  * Returns true if Redis is available and responsive
  */
-export async function checkRedisHealth(): Promise<{ healthy: boolean; latency?: number; error?: string }> {
+export async function checkRedisHealth(): Promise<{
+  healthy: boolean;
+  latency?: number;
+  error?: string;
+}> {
   try {
     const redis = await getRedisClient();
     if (!redis) {
@@ -101,7 +105,11 @@ export async function checkRedisHealth(): Promise<{ healthy: boolean; latency?: 
     return { healthy: true, latency };
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
-    logger.error("Redis health check failed", { error: errorMessage, type: "redis_health" }, error instanceof Error ? error : undefined);
+    logger.error(
+      "Redis health check failed",
+      { error: errorMessage, type: "redis_health" },
+      error instanceof Error ? error : undefined
+    );
     return { healthy: false, error: errorMessage };
   }
 }

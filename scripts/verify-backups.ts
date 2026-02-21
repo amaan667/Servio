@@ -5,8 +5,8 @@
  * Verifies database backups and ensures data integrity
  */
 
-import { createClient } from '@supabase/supabase-js';
-import { logger } from '@/lib/monitoring/structured-logger';
+import { createClient } from "@supabase/supabase-js";
+import { logger } from "@/lib/monitoring/structured-logger";
 
 interface BackupConfig {
   supabaseUrl: string;
@@ -19,7 +19,7 @@ interface BackupInfo {
   id: string;
   created_at: string;
   size: number;
-  status: 'completed' | 'failed' | 'in_progress';
+  status: "completed" | "failed" | "in_progress";
 }
 
 interface VerificationResult {
@@ -46,16 +46,19 @@ class BackupVerifier {
   async getRecentBackups(): Promise<BackupInfo[]> {
     try {
       const { data, error } = await this.supabase
-        .from('backups')
-        .select('*')
-        .gte('created_at', new Date(Date.now() - this.config.backupRetentionDays * 24 * 60 * 60 * 1000).toISOString())
-        .order('created_at', { ascending: false });
+        .from("backups")
+        .select("*")
+        .gte(
+          "created_at",
+          new Date(Date.now() - this.config.backupRetentionDays * 24 * 60 * 60 * 1000).toISOString()
+        )
+        .order("created_at", { ascending: false });
 
       if (error) throw error;
 
       return (data || []) as BackupInfo[];
     } catch (error) {
-      logger.error('Failed to fetch recent backups', { error });
+      logger.error("Failed to fetch recent backups", { error });
       throw error;
     }
   }
@@ -71,16 +74,16 @@ class BackupVerifier {
 
       // Get backup details
       const { data: backup, error: backupError } = await this.supabase
-        .from('backups')
-        .select('*')
-        .eq('id', backupId)
+        .from("backups")
+        .select("*")
+        .eq("id", backupId)
         .single();
 
       if (backupError) throw backupError;
 
       // Verify backup exists and is accessible
       if (!backup) {
-        throw new Error('Backup not found');
+        throw new Error("Backup not found");
       }
 
       // Calculate checksum (placeholder - implement actual checksum calculation)
@@ -91,14 +94,14 @@ class BackupVerifier {
 
       // Update backup verification status
       await this.supabase
-        .from('backups')
+        .from("backups")
         .update({
           verified: true,
           verified_at: new Date().toISOString(),
           checksum,
           record_counts: recordCounts,
         })
-        .eq('id', backupId);
+        .eq("id", backupId);
 
       const duration = Date.now() - startTime;
 
@@ -126,13 +129,13 @@ class BackupVerifier {
 
       // Update backup verification status
       await this.supabase
-        .from('backups')
+        .from("backups")
         .update({
           verified: false,
           verified_at: new Date().toISOString(),
           verification_error: errorMessage,
         })
-        .eq('id', backupId);
+        .eq("id", backupId);
 
       return {
         backupId,
@@ -159,14 +162,7 @@ class BackupVerifier {
    * Verify record counts in critical tables
    */
   private async verifyRecordCounts(): Promise<Record<string, number>> {
-    const criticalTables = [
-      'venues',
-      'orders',
-      'menu_items',
-      'tables',
-      'users',
-      'staff',
-    ];
+    const criticalTables = ["venues", "orders", "menu_items", "tables", "users", "staff"];
 
     const recordCounts: Record<string, number> = {};
 
@@ -174,7 +170,7 @@ class BackupVerifier {
       try {
         const { count, error } = await this.supabase
           .from(table)
-          .select('*', { count: 'exact', head: true });
+          .select("*", { count: "exact", head: true });
 
         if (error) {
           logger.warn(`Failed to count records in ${table}`, { error });
@@ -201,7 +197,7 @@ class BackupVerifier {
     logger.info(`Verifying ${backups.length} recent backups`);
 
     for (const backup of backups) {
-      if (backup.status === 'completed') {
+      if (backup.status === "completed") {
         const result = await this.verifyBackup(backup.id);
         results.push(result);
       }
@@ -216,16 +212,16 @@ class BackupVerifier {
   async checkFailedBackups(): Promise<BackupInfo[]> {
     try {
       const { data, error } = await this.supabase
-        .from('backups')
-        .select('*')
-        .eq('status', 'failed')
-        .gte('created_at', new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString());
+        .from("backups")
+        .select("*")
+        .eq("status", "failed")
+        .gte("created_at", new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString());
 
       if (error) throw error;
 
       return (data || []) as BackupInfo[];
     } catch (error) {
-      logger.error('Failed to check for failed backups', { error });
+      logger.error("Failed to check for failed backups", { error });
       throw error;
     }
   }
@@ -237,7 +233,7 @@ class BackupVerifier {
     if (failedBackups.length === 0) return;
 
     logger.error(`Found ${failedBackups.length} failed backups`, {
-      backups: failedBackups.map(b => ({ id: b.id, created_at: b.created_at })),
+      backups: failedBackups.map((b) => ({ id: b.id, created_at: b.created_at })),
     });
 
     // Send alert (placeholder - implement actual alerting)
@@ -252,7 +248,7 @@ class BackupVerifier {
    * Run scheduled verification
    */
   async runScheduledVerification(): Promise<void> {
-    logger.info('Starting scheduled backup verification');
+    logger.info("Starting scheduled backup verification");
 
     try {
       // Verify all recent backups
@@ -263,16 +259,16 @@ class BackupVerifier {
       await this.alertFailedBackups(failedBackups);
 
       // Log summary
-      const verified = results.filter(r => r.verified).length;
-      const failed = results.filter(r => !r.verified).length;
+      const verified = results.filter((r) => r.verified).length;
+      const failed = results.filter((r) => !r.verified).length;
 
-      logger.info('Backup verification completed', {
+      logger.info("Backup verification completed", {
         total: results.length,
         verified,
         failed,
       });
     } catch (error) {
-      logger.error('Scheduled backup verification failed', { error });
+      logger.error("Scheduled backup verification failed", { error });
       throw error;
     }
   }
@@ -281,49 +277,53 @@ class BackupVerifier {
 // Main execution
 async function main() {
   const config: BackupConfig = {
-    supabaseUrl: process.env.SUPABASE_URL || '',
-    supabaseServiceKey: process.env.SUPABASE_SERVICE_ROLE_KEY || '',
-    backupRetentionDays: parseInt(process.env.BACKUP_RETENTION_DAYS || '30', 10),
-    verificationInterval: parseInt(process.env.BACKUP_VERIFICATION_INTERVAL || '24', 10),
+    supabaseUrl: process.env.SUPABASE_URL || "",
+    supabaseServiceKey: process.env.SUPABASE_SERVICE_ROLE_KEY || "",
+    backupRetentionDays: parseInt(process.env.BACKUP_RETENTION_DAYS || "30", 10),
+    verificationInterval: parseInt(process.env.BACKUP_VERIFICATION_INTERVAL || "24", 10),
   };
 
   if (!config.supabaseUrl || !config.supabaseServiceKey) {
-    console.error('Missing required environment variables: SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY');
+    console.error(
+      "Missing required environment variables: SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY"
+    );
     process.exit(1);
   }
 
   const verifier = new BackupVerifier(config);
 
-  const command = process.argv[2] || 'verify';
+  const command = process.argv[2] || "verify";
 
   switch (command) {
-    case 'verify':
+    case "verify":
       await verifier.runScheduledVerification();
       break;
-    case 'verify-backup':
+    case "verify-backup":
       const backupId = process.argv[3];
       if (!backupId) {
-        console.error('Missing backup ID');
+        console.error("Missing backup ID");
         process.exit(1);
       }
       const result = await verifier.verifyBackup(backupId);
       console.log(JSON.stringify(result, null, 2));
       break;
-    case 'list':
+    case "list":
       const backups = await verifier.getRecentBackups();
       console.log(JSON.stringify(backups, null, 2));
       break;
-    case 'check-failed':
+    case "check-failed":
       const failed = await verifier.checkFailedBackups();
       console.log(JSON.stringify(failed, null, 2));
       break;
     default:
-      console.log('Usage: tsx scripts/verify-backups.ts {verify|verify-backup|list|check-failed} [backupId]');
+      console.log(
+        "Usage: tsx scripts/verify-backups.ts {verify|verify-backup|list|check-failed} [backupId]"
+      );
       process.exit(1);
   }
 }
 
-main().catch(error => {
-  console.error('Backup verification failed:', error);
+main().catch((error) => {
+  console.error("Backup verification failed:", error);
   process.exit(1);
 });

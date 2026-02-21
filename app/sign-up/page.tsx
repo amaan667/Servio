@@ -36,7 +36,11 @@ export default function SignUpPage() {
       });
 
       if (error) {
-        toast({ title: "Error", description: `Sign up failed: ${error.message}`, variant: "destructive" });
+        toast({
+          title: "Error",
+          description: `Sign up failed: ${error.message}`,
+          variant: "destructive",
+        });
         setIsSigningUp(false);
         return;
       }
@@ -46,7 +50,11 @@ export default function SignUpPage() {
         window.location.href = data.url;
       }
     } catch (_error) {
-      toast({ title: "Error", description: "Sign up failed. Please try again.", variant: "destructive" });
+      toast({
+        title: "Error",
+        description: "Sign up failed. Please try again.",
+        variant: "destructive",
+      });
       setIsSigningUp(false);
     }
   };

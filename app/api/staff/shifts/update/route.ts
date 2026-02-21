@@ -34,8 +34,6 @@ export async function POST(req: Request) {
     if (error) return apiErrors.badRequest(error.message);
     return success({ data: data || [] });
   } catch (_error) {
-    return apiErrors.internal(
-      _error instanceof Error ? _error.message : "Internal server error"
-    );
+    return apiErrors.internal(_error instanceof Error ? _error.message : "Internal server error");
   }
 }

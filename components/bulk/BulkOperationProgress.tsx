@@ -42,23 +42,35 @@ export function BulkOperationProgress({
 
   const getStatusColor = (): string => {
     switch (status) {
-      case "pending": return "bg-gray-500";
-      case "in_progress": return "bg-blue-500";
-      case "completed": return "bg-green-500";
-      case "failed": return "bg-red-500";
-      case "cancelled": return "bg-yellow-500";
-      default: return "bg-gray-500";
+      case "pending":
+        return "bg-gray-500";
+      case "in_progress":
+        return "bg-blue-500";
+      case "completed":
+        return "bg-green-500";
+      case "failed":
+        return "bg-red-500";
+      case "cancelled":
+        return "bg-yellow-500";
+      default:
+        return "bg-gray-500";
     }
   };
 
   const getStatusText = (): string => {
     switch (status) {
-      case "pending": return "Pending";
-      case "in_progress": return "Processing...";
-      case "completed": return "Completed";
-      case "failed": return "Failed";
-      case "cancelled": return "Cancelled";
-      default: return "Unknown";
+      case "pending":
+        return "Pending";
+      case "in_progress":
+        return "Processing...";
+      case "completed":
+        return "Completed";
+      case "failed":
+        return "Failed";
+      case "cancelled":
+        return "Cancelled";
+      default:
+        return "Unknown";
     }
   };
 
@@ -66,24 +78,41 @@ export function BulkOperationProgress({
     <div className="bulk-operation-progress p-4 bg-white rounded-lg shadow">
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-3">
-          <div className={`w-3 h-3 rounded-full ${getStatusColor()} ${status === "in_progress" ? "animate-pulse" : ""}`} />
+          <div
+            className={`w-3 h-3 rounded-full ${getStatusColor()} ${status === "in_progress" ? "animate-pulse" : ""}`}
+          />
           <span className="font-medium">{getStatusText()}</span>
         </div>
         {status === "failed" && onRetry && (
-          <button onClick={onRetry} className="px-3 py-1 text-sm bg-blue-500 text-white rounded hover:bg-blue-600">Retry</button>
+          <button
+            onClick={onRetry}
+            className="px-3 py-1 text-sm bg-blue-500 text-white rounded hover:bg-blue-600"
+          >
+            Retry
+          </button>
         )}
         {status === "in_progress" && onCancel && (
-          <button onClick={onCancel} className="px-3 py-1 text-sm bg-gray-500 text-white rounded hover:bg-gray-600">Cancel</button>
+          <button
+            onClick={onCancel}
+            className="px-3 py-1 text-sm bg-gray-500 text-white rounded hover:bg-gray-600"
+          >
+            Cancel
+          </button>
         )}
       </div>
 
       <div className="mb-4">
         <div className="flex justify-between text-sm mb-1">
           <span>{progress}% complete</span>
-          <span>{completed + failed} / {total}</span>
+          <span>
+            {completed + failed} / {total}
+          </span>
         </div>
         <div className="w-full h-3 bg-gray-200 rounded-full overflow-hidden">
-          <div className={`h-full ${getStatusColor()} transition-all duration-300`} style={{ width: `${progress}%` }} />
+          <div
+            className={`h-full ${getStatusColor()} transition-all duration-300`}
+            style={{ width: `${progress}%` }}
+          />
         </div>
       </div>
 

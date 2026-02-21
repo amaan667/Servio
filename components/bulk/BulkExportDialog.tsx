@@ -13,12 +13,7 @@ export interface BulkExportDialogProps {
   onExport: (format: "csv" | "json", filters?: Record<string, unknown>) => void;
 }
 
-export function BulkExportDialog({
-  isOpen,
-  onClose,
-  entityType,
-  onExport,
-}: BulkExportDialogProps) {
+export function BulkExportDialog({ isOpen, onClose, entityType, onExport }: BulkExportDialogProps) {
   const [format, setFormat] = useState<"csv" | "json">("csv");
   const [includeFilters, setIncludeFilters] = useState(false);
   const [dateRange, setDateRange] = useState<"all" | "today" | "week" | "month">("all");
@@ -40,7 +35,12 @@ export function BulkExportDialog({
           <h3 className="text-lg font-medium">Export {entityLabel}</h3>
           <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M6 18L18 6M6 6l12 12"
+              />
             </svg>
           </button>
         </div>
@@ -111,7 +111,10 @@ export function BulkExportDialog({
           <button onClick={onClose} className="px-4 py-2 text-sm text-gray-600 hover:text-gray-900">
             Cancel
           </button>
-          <button onClick={handleExport} className="px-4 py-2 text-sm bg-blue-500 text-white rounded hover:bg-blue-600">
+          <button
+            onClick={handleExport}
+            className="px-4 py-2 text-sm bg-blue-500 text-white rounded hover:bg-blue-600"
+          >
             Export
           </button>
         </div>

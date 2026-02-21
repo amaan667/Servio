@@ -111,7 +111,11 @@ export function ItemDetailsModal({
 
     if (!hasRequiredModifiers) {
       // Show error - required modifiers not selected
-      toast({ title: "Required Modifiers", description: "Please select all required modifiers before adding to cart.", variant: "destructive" });
+      toast({
+        title: "Required Modifiers",
+        description: "Please select all required modifiers before adding to cart.",
+        variant: "destructive",
+      });
       return;
     }
 

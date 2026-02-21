@@ -42,19 +42,22 @@ export function BulkImportWizard({
     { number: 4, title: "Import" },
   ];
 
-  const handleFileUpload = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
+  const handleFileUpload = useCallback(
+    (event: React.ChangeEvent<HTMLInputElement>) => {
+      const file = event.target.files?.[0];
+      if (!file) return;
 
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      const content = e.target?.result as string;
-      setCsvContent(content);
-      setStep(2);
-      onStepChange?.(2);
-    };
-    reader.readAsText(file);
-  }, [onStepChange]);
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const content = e.target?.result as string;
+        setCsvContent(content);
+        setStep(2);
+        onStepChange?.(2);
+      };
+      reader.readAsText(file);
+    },
+    [onStepChange]
+  );
 
   const handleColumnMappingChange = useCallback((csvColumn: string, field: string) => {
     setColumnMapping((prev) => ({ ...prev, [csvColumn]: field }));
@@ -147,31 +150,49 @@ export function BulkImportWizard({
         {steps.map((s, index) => (
           <React.Fragment key={s.number}>
             <div className="flex items-center">
-              <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
-                step >= s.number ? "bg-blue-500 text-white" : "bg-gray-200 text-gray-500"
-              }`}>
+              <div
+                className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
+                  step >= s.number ? "bg-blue-500 text-white" : "bg-gray-200 text-gray-500"
+                }`}
+              >
                 {s.number}
               </div>
-              <span className={`ml-2 text-sm ${step >= s.number ? "text-gray-900" : "text-gray-500"}`}>
+              <span
+                className={`ml-2 text-sm ${step >= s.number ? "text-gray-900" : "text-gray-500"}`}
+              >
                 {s.title}
               </span>
             </div>
             {index < steps.length - 1 && (
-              <div className={`flex-1 h-0.5 mx-4 ${step > s.number ? "bg-blue-500" : "bg-gray-200"}`} />
+              <div
+                className={`flex-1 h-0.5 mx-4 ${step > s.number ? "bg-blue-500" : "bg-gray-200"}`}
+              />
             )}
           </React.Fragment>
         ))}
       </div>
 
       {error && (
-        <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded text-sm text-red-700">{error}</div>
+        <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded text-sm text-red-700">
+          {error}
+        </div>
       )}
 
       {step === 1 && (
         <div className="text-center py-8">
           <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 mb-4">
-            <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+            <svg
+              className="mx-auto h-12 w-12 text-gray-400"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
+              />
             </svg>
             <p className="mt-2 text-sm text-gray-600">
               Upload a CSV file to import {entityType.replace("_", " ")}
@@ -226,7 +247,12 @@ export function BulkImportWizard({
             ))}
           </div>
           <div className="flex justify-between mt-6">
-            <button onClick={handleBack} className="px-4 py-2 text-sm text-gray-600 hover:text-gray-900">Back</button>
+            <button
+              onClick={handleBack}
+              className="px-4 py-2 text-sm text-gray-600 hover:text-gray-900"
+            >
+              Back
+            </button>
             <button
               onClick={handlePreview}
               disabled={isLoading}
@@ -258,7 +284,12 @@ export function BulkImportWizard({
             </div>
           )}
           <div className="flex justify-between">
-            <button onClick={handleBack} className="px-4 py-2 text-sm text-gray-600 hover:text-gray-900">Back</button>
+            <button
+              onClick={handleBack}
+              className="px-4 py-2 text-sm text-gray-600 hover:text-gray-900"
+            >
+              Back
+            </button>
             <button
               onClick={handleImport}
               disabled={isLoading}
@@ -272,14 +303,29 @@ export function BulkImportWizard({
 
       {step === 4 && (
         <div className="py-4 text-center">
-          <svg className="mx-auto h-16 w-16 text-green-500 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+          <svg
+            className="mx-auto h-16 w-16 text-green-500 mb-4"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+            />
           </svg>
           <h3 className="text-lg font-medium mb-2">Import Complete!</h3>
           <p className="text-sm text-gray-600 mb-4">
             Your {entityType.replace("_", " ")} have been imported successfully.
           </p>
-          <button onClick={handleCancel} className="px-4 py-2 text-sm bg-blue-500 text-white rounded hover:bg-blue-600">Done</button>
+          <button
+            onClick={handleCancel}
+            className="px-4 py-2 text-sm bg-blue-500 text-white rounded hover:bg-blue-600"
+          >
+            Done
+          </button>
         </div>
       )}
     </div>

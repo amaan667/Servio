@@ -278,11 +278,7 @@ export const tracer = new DistributedTracer();
  * Decorator for automatic tracing
  */
 export function Trace(name?: string) {
-  return function (
-    _target: unknown,
-    _propertyKey: string,
-    descriptor: PropertyDescriptor
-  ) {
+  return function (_target: unknown, _propertyKey: string, descriptor: PropertyDescriptor) {
     const originalMethod = descriptor.value;
 
     descriptor.value = async function (...args: unknown[]) {

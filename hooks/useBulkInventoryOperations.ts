@@ -21,29 +21,44 @@ export interface UseBulkInventoryOperationsReturn {
   result: BulkOperationResult | null;
   error: Error | null;
   cancel: () => void;
-  createItems: (items: Array<{
-    name: string;
-    sku?: string;
-    unit: string;
-    on_hand?: number;
-    cost_per_unit?: number;
-    par_level?: number;
-    reorder_level?: number;
-    supplier?: string;
-  }>, options?: { dryRun?: boolean }) => Promise<BulkOperationResult | null>;
-  updateItems: (updates: Array<{
-    id: string;
-    data: Record<string, unknown>;
-  }>, options?: { dryRun?: boolean; skipMissing?: boolean }) => Promise<BulkOperationResult | null>;
-  deleteItems: (ids: string[], options?: { dryRun?: boolean; skipMissing?: boolean }) => Promise<BulkOperationResult | null>;
+  createItems: (
+    items: Array<{
+      name: string;
+      sku?: string;
+      unit: string;
+      on_hand?: number;
+      cost_per_unit?: number;
+      par_level?: number;
+      reorder_level?: number;
+      supplier?: string;
+    }>,
+    options?: { dryRun?: boolean }
+  ) => Promise<BulkOperationResult | null>;
+  updateItems: (
+    updates: Array<{
+      id: string;
+      data: Record<string, unknown>;
+    }>,
+    options?: { dryRun?: boolean; skipMissing?: boolean }
+  ) => Promise<BulkOperationResult | null>;
+  deleteItems: (
+    ids: string[],
+    options?: { dryRun?: boolean; skipMissing?: boolean }
+  ) => Promise<BulkOperationResult | null>;
   reset: () => void;
 }
 
-export function useBulkInventoryOperations(options: UseBulkInventoryOperationsOptions): UseBulkInventoryOperationsReturn {
+export function useBulkInventoryOperations(
+  options: UseBulkInventoryOperationsOptions
+): UseBulkInventoryOperationsReturn {
   const { venueId, onSuccess, onError } = options;
 
   const [isLoading, setIsLoading] = useState(false);
-  const [progress, setProgress] = useState<{ completed: number; total: number; percent: number } | null>(null);
+  const [progress, setProgress] = useState<{
+    completed: number;
+    total: number;
+    percent: number;
+  } | null>(null);
   const [operationId, setOperationId] = useState<string | null>(null);
   const [result, setResult] = useState<BulkOperationResult | null>(null);
   const [error, setError] = useState<Error | null>(null);
@@ -118,7 +133,12 @@ export function useBulkInventoryOperations(options: UseBulkInventoryOperationsOp
         const response = await fetch("/api/bulk/inventory", {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ venueId, updates, dryRun: opts?.dryRun, skipMissing: opts?.skipMissing }),
+          body: JSON.stringify({
+            venueId,
+            updates,
+            dryRun: opts?.dryRun,
+            skipMissing: opts?.skipMissing,
+          }),
         });
 
         if (!response.ok) {
@@ -155,7 +175,12 @@ export function useBulkInventoryOperations(options: UseBulkInventoryOperationsOp
         const response = await fetch("/api/bulk/inventory", {
           method: "DELETE",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ venueId, ids, dryRun: opts?.dryRun, skipMissing: opts?.skipMissing }),
+          body: JSON.stringify({
+            venueId,
+            ids,
+            dryRun: opts?.dryRun,
+            skipMissing: opts?.skipMissing,
+          }),
         });
 
         if (!response.ok) {

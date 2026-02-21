@@ -81,9 +81,7 @@ export default function SettingsPageClient({ venueId, initialData }: SettingsPag
         if (venue?.organization_id) {
           const { data: orgData } = await supabase
             .from("organizations")
-            .select(
-              "id, subscription_tier, stripe_customer_id, subscription_status, trial_ends_at"
-            )
+            .select("id, subscription_tier, stripe_customer_id, subscription_status, trial_ends_at")
             .eq("id", venue.organization_id)
             .single();
           organization = orgData || null;

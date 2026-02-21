@@ -135,13 +135,12 @@ export function InventoryOverview({
   );
 
   // Use initial stats if available, otherwise calculate from ingredients
-  const lowStockCount = initialStats?.lowStockItems ?? ingredients.filter(
-    (ing) => ing.on_hand <= ing.reorder_level && ing.reorder_level > 0
-  ).length;
+  const lowStockCount =
+    initialStats?.lowStockItems ??
+    ingredients.filter((ing) => ing.on_hand <= ing.reorder_level && ing.reorder_level > 0).length;
 
-  const outOfStockCount = initialStats?.outOfStockItems ?? ingredients.filter(
-    (ing) => ing.on_hand <= 0
-  ).length;
+  const outOfStockCount =
+    initialStats?.outOfStockItems ?? ingredients.filter((ing) => ing.on_hand <= 0).length;
 
   return (
     <div className="space-y-4">

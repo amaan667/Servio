@@ -19,9 +19,8 @@ type SupabaseUser = { id: string; email?: string | null };
 const getUserMock =
   vi.fn<() => Promise<{ data: { user: SupabaseUser | null }; error: unknown | null }>>();
 
-const refreshSessionMock = vi.fn<
-  () => Promise<{ data: { session: null }; error: { message: string } | null }>
->();
+const refreshSessionMock =
+  vi.fn<() => Promise<{ data: { session: null }; error: { message: string } | null }>>();
 
 vi.mock("@supabase/ssr", () => ({
   createServerClient: vi.fn(() => ({

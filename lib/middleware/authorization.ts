@@ -5,10 +5,7 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import {
-  createSupabaseClient,
-  createServerSupabaseWithToken,
-} from "@/lib/supabase";
+import { createSupabaseClient, createServerSupabaseWithToken } from "@/lib/supabase";
 import { getAuthenticatedUser as getAuthUser } from "@/lib/supabase";
 import { normalizeVenueId } from "@/lib/utils/venueId";
 import { resolveVenueAccess } from "@/lib/auth/resolve-access";
@@ -237,7 +234,7 @@ export function withAuthorization(
 
       // Extract venueId from params or query; normalize for DB/context consistency
       const rawVenueId = params?.venueId || new URL(req.url).searchParams.get("venueId");
-      const venueId = rawVenueId ? normalizeVenueId(rawVenueId) ?? rawVenueId : null;
+      const venueId = rawVenueId ? (normalizeVenueId(rawVenueId) ?? rawVenueId) : null;
 
       if (!venueId) {
         return NextResponse.json(
@@ -292,7 +289,7 @@ export function withOptionalAuth(
 
       // Extract venueId; normalize for DB/context consistency
       const rawVenueId = params?.venueId || new URL(req.url).searchParams.get("venueId");
-      const venueId = rawVenueId ? normalizeVenueId(rawVenueId) ?? rawVenueId : null;
+      const venueId = rawVenueId ? (normalizeVenueId(rawVenueId) ?? rawVenueId) : null;
 
       if (!venueId) {
         return await handler(req, null);

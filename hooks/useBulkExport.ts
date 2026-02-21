@@ -66,7 +66,10 @@ export function useBulkExport(options: UseBulkExportOptions): UseBulkExportRetur
           downloadCSV({ filename, csv });
         } else if (format === "json" && data.data) {
           const json = JSON.stringify(data.data, null, 2);
-          const filename = generateTimestampedFilename(`${entityType}_export`).replace(".csv", ".json");
+          const filename = generateTimestampedFilename(`${entityType}_export`).replace(
+            ".csv",
+            ".json"
+          );
           downloadCSV({ filename, csv: json });
         }
 
@@ -130,14 +133,19 @@ function convertToCSV(data: Record<string, unknown>[]): string {
 
   const headers = Object.keys(data[0] as object);
   const rows = data.map((row) =>
-    headers.map((header) => {
-      const value = row[header];
-      if (value === null || value === undefined) return "";
-      if (typeof value === "string" && (value.includes(",") || value.includes('"') || value.includes("\n"))) {
-        return `"${value.replace(/"/g, '""')}"`;
-      }
-      return String(value);
-    }).join(",")
+    headers
+      .map((header) => {
+        const value = row[header];
+        if (value === null || value === undefined) return "";
+        if (
+          typeof value === "string" &&
+          (value.includes(",") || value.includes('"') || value.includes("\n"))
+        ) {
+          return `"${value.replace(/"/g, '""')}"`;
+        }
+        return String(value);
+      })
+      .join(",")
   );
 
   return [headers.join(","), ...rows].join("\n");

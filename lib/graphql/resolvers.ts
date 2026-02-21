@@ -3,7 +3,7 @@
  * Provides resolvers for GraphQL queries and mutations
  */
 
-import { createClient, SupabaseClient } from '@supabase/supabase-js';
+import { createClient, SupabaseClient } from "@supabase/supabase-js";
 
 /**
  * GraphQL Context
@@ -22,7 +22,7 @@ export async function createContext(req: Request): Promise<GraphQLContext> {
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
   if (!supabaseUrl || !supabaseAnonKey) {
-    throw new Error('Missing Supabase configuration');
+    throw new Error("Missing Supabase configuration");
   }
 
   const supabase = createClient(supabaseUrl, supabaseAnonKey, {
@@ -33,12 +33,14 @@ export async function createContext(req: Request): Promise<GraphQLContext> {
   });
 
   // Get user from authorization header
-  const authHeader = req.headers.get('authorization');
+  const authHeader = req.headers.get("authorization");
   let userId: string | undefined;
 
-  if (authHeader?.startsWith('Bearer ')) {
+  if (authHeader?.startsWith("Bearer ")) {
     const token = authHeader.substring(7);
-    const { data: { user } } = await supabase.auth.getUser(token);
+    const {
+      data: { user },
+    } = await supabase.auth.getUser(token);
     userId = user?.id;
   }
 
@@ -51,25 +53,25 @@ export async function createContext(req: Request): Promise<GraphQLContext> {
 export const queryResolvers = {
   // Venue queries
   venue: async (_: unknown, { id }: { id: string }, context: GraphQLContext) => {
-    const { data, error } = await context.supabase
-      .from('venues')
-      .select('*')
-      .eq('id', id)
-      .single();
+    const { data, error } = await context.supabase.from("venues").select("*").eq("id", id).single();
 
     if (error) throw error;
     return data;
   },
 
-  venues: async (_: unknown, { first = 10, after }: { first?: number; after?: string }, context: GraphQLContext) => {
+  venues: async (
+    _: unknown,
+    { first = 10, after }: { first?: number; after?: string },
+    context: GraphQLContext
+  ) => {
     let query = context.supabase
-      .from('venues')
-      .select('*')
-      .order('created_at', { ascending: false })
+      .from("venues")
+      .select("*")
+      .order("created_at", { ascending: false })
       .limit(first);
 
     if (after) {
-      query = query.gt('created_at', after);
+      query = query.gt("created_at", after);
     }
 
     const { data, error } = await query;
@@ -77,7 +79,7 @@ export const queryResolvers = {
     if (error) throw error;
 
     return {
-      edges: (data || []).map(venue => ({
+      edges: (data || []).map((venue) => ({
         node: venue,
         cursor: venue.created_at,
       })),
@@ -90,11 +92,15 @@ export const queryResolvers = {
     };
   },
 
-  searchVenues: async (_: unknown, { query, first = 10 }: { query: string; first?: number }, context: GraphQLContext) => {
+  searchVenues: async (
+    _: unknown,
+    { query, first = 10 }: { query: string; first?: number },
+    context: GraphQLContext
+  ) => {
     const { data, error } = await context.supabase
-      .from('venues')
-      .select('*')
-      .ilike('name', `%${query}%`)
+      .from("venues")
+      .select("*")
+      .ilike("name", `%${query}%`)
       .limit(first);
 
     if (error) throw error;
@@ -104,29 +110,38 @@ export const queryResolvers = {
   // Menu queries
   menuItem: async (_: unknown, { id }: { id: string }, context: GraphQLContext) => {
     const { data, error } = await context.supabase
-      .from('menu_items')
-      .select('*, menu_categories(*)')
-      .eq('id', id)
+      .from("menu_items")
+      .select("*, menu_categories(*)")
+      .eq("id", id)
       .single();
 
     if (error) throw error;
     return data;
   },
 
-  menuItems: async (_: unknown, { venueId, categoryId, first = 10, after }: { venueId: string; categoryId?: string; first?: number; after?: string }, context: GraphQLContext) => {
+  menuItems: async (
+    _: unknown,
+    {
+      venueId,
+      categoryId,
+      first = 10,
+      after,
+    }: { venueId: string; categoryId?: string; first?: number; after?: string },
+    context: GraphQLContext
+  ) => {
     let query = context.supabase
-      .from('menu_items')
-      .select('*, menu_categories(*)')
-      .eq('venue_id', venueId)
-      .order('created_at', { ascending: false })
+      .from("menu_items")
+      .select("*, menu_categories(*)")
+      .eq("venue_id", venueId)
+      .order("created_at", { ascending: false })
       .limit(first);
 
     if (categoryId) {
-      query = query.eq('category_id', categoryId);
+      query = query.eq("category_id", categoryId);
     }
 
     if (after) {
-      query = query.gt('created_at', after);
+      query = query.gt("created_at", after);
     }
 
     const { data, error } = await query;
@@ -134,7 +149,7 @@ export const queryResolvers = {
     if (error) throw error;
 
     return {
-      edges: (data || []).map(item => ({
+      edges: (data || []).map((item) => ({
         node: item,
         cursor: item.created_at,
       })),
@@ -149,10 +164,10 @@ export const queryResolvers = {
 
   menuCategories: async (_: unknown, { venueId }: { venueId: string }, context: GraphQLContext) => {
     const { data, error } = await context.supabase
-      .from('menu_categories')
-      .select('*')
-      .eq('venue_id', venueId)
-      .order('order', { ascending: true });
+      .from("menu_categories")
+      .select("*")
+      .eq("venue_id", venueId)
+      .order("order", { ascending: true });
 
     if (error) throw error;
     return data || [];
@@ -161,29 +176,38 @@ export const queryResolvers = {
   // Order queries
   order: async (_: unknown, { id }: { id: string }, context: GraphQLContext) => {
     const { data, error } = await context.supabase
-      .from('orders')
-      .select('*, order_items(*, menu_items(*))')
-      .eq('id', id)
+      .from("orders")
+      .select("*, order_items(*, menu_items(*))")
+      .eq("id", id)
       .single();
 
     if (error) throw error;
     return data;
   },
 
-  orders: async (_: unknown, { venueId, status, first = 10, after }: { venueId: string; status?: string; first?: number; after?: string }, context: GraphQLContext) => {
+  orders: async (
+    _: unknown,
+    {
+      venueId,
+      status,
+      first = 10,
+      after,
+    }: { venueId: string; status?: string; first?: number; after?: string },
+    context: GraphQLContext
+  ) => {
     let query = context.supabase
-      .from('orders')
-      .select('*, order_items(*, menu_items(*))')
-      .eq('venue_id', venueId)
-      .order('created_at', { ascending: false })
+      .from("orders")
+      .select("*, order_items(*, menu_items(*))")
+      .eq("venue_id", venueId)
+      .order("created_at", { ascending: false })
       .limit(first);
 
     if (status) {
-      query = query.eq('status', status);
+      query = query.eq("status", status);
     }
 
     if (after) {
-      query = query.gt('created_at', after);
+      query = query.gt("created_at", after);
     }
 
     const { data, error } = await query;
@@ -191,7 +215,7 @@ export const queryResolvers = {
     if (error) throw error;
 
     return {
-      edges: (data || []).map(order => ({
+      edges: (data || []).map((order) => ({
         node: order,
         cursor: order.created_at,
       })),
@@ -206,11 +230,11 @@ export const queryResolvers = {
 
   liveOrders: async (_: unknown, { venueId }: { venueId: string }, context: GraphQLContext) => {
     const { data, error } = await context.supabase
-      .from('orders')
-      .select('*, order_items(*, menu_items(*))')
-      .eq('venue_id', venueId)
-      .in('status', ['PENDING', 'CONFIRMED', 'PREPARING', 'READY'])
-      .order('created_at', { ascending: true });
+      .from("orders")
+      .select("*, order_items(*, menu_items(*))")
+      .eq("venue_id", venueId)
+      .in("status", ["PENDING", "CONFIRMED", "PREPARING", "READY"])
+      .order("created_at", { ascending: true });
 
     if (error) throw error;
     return data || [];
@@ -218,25 +242,25 @@ export const queryResolvers = {
 
   // Table queries
   table: async (_: unknown, { id }: { id: string }, context: GraphQLContext) => {
-    const { data, error } = await context.supabase
-      .from('tables')
-      .select('*')
-      .eq('id', id)
-      .single();
+    const { data, error } = await context.supabase.from("tables").select("*").eq("id", id).single();
 
     if (error) throw error;
     return data;
   },
 
-  tables: async (_: unknown, { venueId, status }: { venueId: string; status?: string }, context: GraphQLContext) => {
+  tables: async (
+    _: unknown,
+    { venueId, status }: { venueId: string; status?: string },
+    context: GraphQLContext
+  ) => {
     let query = context.supabase
-      .from('tables')
-      .select('*')
-      .eq('venue_id', venueId)
-      .order('name', { ascending: true });
+      .from("tables")
+      .select("*")
+      .eq("venue_id", venueId)
+      .order("name", { ascending: true });
 
     if (status) {
-      query = query.eq('status', status);
+      query = query.eq("status", status);
     }
 
     const { data, error } = await query;
@@ -247,11 +271,7 @@ export const queryResolvers = {
 
   // Staff queries
   staff: async (_: unknown, { id }: { id: string }, context: GraphQLContext) => {
-    const { data, error } = await context.supabase
-      .from('staff')
-      .select('*')
-      .eq('id', id)
-      .single();
+    const { data, error } = await context.supabase.from("staff").select("*").eq("id", id).single();
 
     if (error) throw error;
     return data;
@@ -259,10 +279,10 @@ export const queryResolvers = {
 
   staffList: async (_: unknown, { venueId }: { venueId: string }, context: GraphQLContext) => {
     const { data, error } = await context.supabase
-      .from('staff')
-      .select('*')
-      .eq('venue_id', venueId)
-      .order('created_at', { ascending: false });
+      .from("staff")
+      .select("*")
+      .eq("venue_id", venueId)
+      .order("created_at", { ascending: false });
 
     if (error) throw error;
     return data || [];
@@ -271,9 +291,9 @@ export const queryResolvers = {
   // Inventory queries
   inventoryItem: async (_: unknown, { id }: { id: string }, context: GraphQLContext) => {
     const { data, error } = await context.supabase
-      .from('inventory_items')
-      .select('*')
-      .eq('id', id)
+      .from("inventory_items")
+      .select("*")
+      .eq("id", id)
       .single();
 
     if (error) throw error;
@@ -282,25 +302,29 @@ export const queryResolvers = {
 
   inventoryItems: async (_: unknown, { venueId }: { venueId: string }, context: GraphQLContext) => {
     const { data, error } = await context.supabase
-      .from('inventory_items')
-      .select('*')
-      .eq('venue_id', venueId)
-      .order('name', { ascending: true });
+      .from("inventory_items")
+      .select("*")
+      .eq("venue_id", venueId)
+      .order("name", { ascending: true });
 
     if (error) throw error;
     return data || [];
   },
 
-  inventoryMovements: async (_: unknown, { venueId, itemId, first = 10 }: { venueId: string; itemId?: string; first?: number }, context: GraphQLContext) => {
+  inventoryMovements: async (
+    _: unknown,
+    { venueId, itemId, first = 10 }: { venueId: string; itemId?: string; first?: number },
+    context: GraphQLContext
+  ) => {
     let query = context.supabase
-      .from('inventory_movements')
-      .select('*')
-      .eq('venue_id', venueId)
-      .order('created_at', { ascending: false })
+      .from("inventory_movements")
+      .select("*")
+      .eq("venue_id", venueId)
+      .order("created_at", { ascending: false })
       .limit(first);
 
     if (itemId) {
-      query = query.eq('item_id', itemId);
+      query = query.eq("item_id", itemId);
     }
 
     const { data, error } = await query;
@@ -308,7 +332,7 @@ export const queryResolvers = {
     if (error) throw error;
 
     return {
-      edges: (data || []).map(movement => ({
+      edges: (data || []).map((movement) => ({
         node: movement,
         cursor: movement.created_at,
       })),
@@ -322,7 +346,11 @@ export const queryResolvers = {
   },
 
   // Analytics queries (placeholder implementations)
-  venueAnalytics: async (_: unknown, { venueId, period }: { venueId: string; period: string }, _context: GraphQLContext) => {
+  venueAnalytics: async (
+    _: unknown,
+    { venueId, period }: { venueId: string; period: string },
+    _context: GraphQLContext
+  ) => {
     // Placeholder - implement actual analytics calculation
     return {
       venueId,
@@ -336,7 +364,11 @@ export const queryResolvers = {
     };
   },
 
-  revenueAnalytics: async (_: unknown, { venueId, period }: { venueId: string; period: string }, _context: GraphQLContext) => {
+  revenueAnalytics: async (
+    _: unknown,
+    { venueId, period }: { venueId: string; period: string },
+    _context: GraphQLContext
+  ) => {
     // Placeholder - implement actual analytics calculation
     return {
       venueId,
@@ -348,7 +380,11 @@ export const queryResolvers = {
     };
   },
 
-  orderAnalytics: async (_: unknown, { venueId, period }: { venueId: string; period: string }, _context: GraphQLContext) => {
+  orderAnalytics: async (
+    _: unknown,
+    { venueId, period }: { venueId: string; period: string },
+    _context: GraphQLContext
+  ) => {
     // Placeholder - implement actual analytics calculation
     return {
       venueId,
@@ -367,22 +403,26 @@ export const queryResolvers = {
  */
 export const mutationResolvers = {
   // Venue mutations
-  createVenue: async (_: unknown, { input }: { input: Record<string, unknown> }, context: GraphQLContext) => {
-    const { data, error } = await context.supabase
-      .from('venues')
-      .insert(input)
-      .select()
-      .single();
+  createVenue: async (
+    _: unknown,
+    { input }: { input: Record<string, unknown> },
+    context: GraphQLContext
+  ) => {
+    const { data, error } = await context.supabase.from("venues").insert(input).select().single();
 
     if (error) throw error;
     return data;
   },
 
-  updateVenue: async (_: unknown, { id, input }: { id: string; input: Record<string, unknown> }, context: GraphQLContext) => {
+  updateVenue: async (
+    _: unknown,
+    { id, input }: { id: string; input: Record<string, unknown> },
+    context: GraphQLContext
+  ) => {
     const { data, error } = await context.supabase
-      .from('venues')
+      .from("venues")
       .update(input)
-      .eq('id', id)
+      .eq("id", id)
       .select()
       .single();
 
@@ -391,19 +431,20 @@ export const mutationResolvers = {
   },
 
   deleteVenue: async (_: unknown, { id }: { id: string }, context: GraphQLContext) => {
-    const { error } = await context.supabase
-      .from('venues')
-      .delete()
-      .eq('id', id);
+    const { error } = await context.supabase.from("venues").delete().eq("id", id);
 
     if (error) throw error;
     return true;
   },
 
   // Menu mutations
-  createMenuItem: async (_: unknown, { input }: { input: Record<string, unknown> }, context: GraphQLContext) => {
+  createMenuItem: async (
+    _: unknown,
+    { input }: { input: Record<string, unknown> },
+    context: GraphQLContext
+  ) => {
     const { data, error } = await context.supabase
-      .from('menu_items')
+      .from("menu_items")
       .insert(input)
       .select()
       .single();
@@ -412,11 +453,15 @@ export const mutationResolvers = {
     return data;
   },
 
-  updateMenuItem: async (_: unknown, { id, input }: { id: string; input: Record<string, unknown> }, context: GraphQLContext) => {
+  updateMenuItem: async (
+    _: unknown,
+    { id, input }: { id: string; input: Record<string, unknown> },
+    context: GraphQLContext
+  ) => {
     const { data, error } = await context.supabase
-      .from('menu_items')
+      .from("menu_items")
       .update(input)
-      .eq('id', id)
+      .eq("id", id)
       .select()
       .single();
 
@@ -425,32 +470,33 @@ export const mutationResolvers = {
   },
 
   deleteMenuItem: async (_: unknown, { id }: { id: string }, context: GraphQLContext) => {
-    const { error } = await context.supabase
-      .from('menu_items')
-      .delete()
-      .eq('id', id);
+    const { error } = await context.supabase.from("menu_items").delete().eq("id", id);
 
     if (error) throw error;
     return true;
   },
 
   // Order mutations
-  createOrder: async (_: unknown, { input }: { input: Record<string, unknown> }, context: GraphQLContext) => {
-    const { data, error } = await context.supabase
-      .from('orders')
-      .insert(input)
-      .select()
-      .single();
+  createOrder: async (
+    _: unknown,
+    { input }: { input: Record<string, unknown> },
+    context: GraphQLContext
+  ) => {
+    const { data, error } = await context.supabase.from("orders").insert(input).select().single();
 
     if (error) throw error;
     return data;
   },
 
-  updateOrder: async (_: unknown, { id, input }: { id: string; input: Record<string, unknown> }, context: GraphQLContext) => {
+  updateOrder: async (
+    _: unknown,
+    { id, input }: { id: string; input: Record<string, unknown> },
+    context: GraphQLContext
+  ) => {
     const { data, error } = await context.supabase
-      .from('orders')
+      .from("orders")
       .update(input)
-      .eq('id', id)
+      .eq("id", id)
       .select()
       .single();
 
@@ -458,11 +504,15 @@ export const mutationResolvers = {
     return data;
   },
 
-  updateOrderStatus: async (_: unknown, { id, status }: { id: string; status: string }, context: GraphQLContext) => {
+  updateOrderStatus: async (
+    _: unknown,
+    { id, status }: { id: string; status: string },
+    context: GraphQLContext
+  ) => {
     const { data, error } = await context.supabase
-      .from('orders')
+      .from("orders")
       .update({ status })
-      .eq('id', id)
+      .eq("id", id)
       .select()
       .single();
 
@@ -471,22 +521,26 @@ export const mutationResolvers = {
   },
 
   // Table mutations
-  createTable: async (_: unknown, { input }: { input: Record<string, unknown> }, context: GraphQLContext) => {
-    const { data, error } = await context.supabase
-      .from('tables')
-      .insert(input)
-      .select()
-      .single();
+  createTable: async (
+    _: unknown,
+    { input }: { input: Record<string, unknown> },
+    context: GraphQLContext
+  ) => {
+    const { data, error } = await context.supabase.from("tables").insert(input).select().single();
 
     if (error) throw error;
     return data;
   },
 
-  updateTable: async (_: unknown, { id, input }: { id: string; input: Record<string, unknown> }, context: GraphQLContext) => {
+  updateTable: async (
+    _: unknown,
+    { id, input }: { id: string; input: Record<string, unknown> },
+    context: GraphQLContext
+  ) => {
     const { data, error } = await context.supabase
-      .from('tables')
+      .from("tables")
       .update(input)
-      .eq('id', id)
+      .eq("id", id)
       .select()
       .single();
 
@@ -494,11 +548,15 @@ export const mutationResolvers = {
     return data;
   },
 
-  seatTable: async (_: unknown, { tableId, sessionId }: { tableId: string; sessionId: string }, context: GraphQLContext) => {
+  seatTable: async (
+    _: unknown,
+    { tableId, sessionId }: { tableId: string; sessionId: string },
+    context: GraphQLContext
+  ) => {
     const { data, error } = await context.supabase
-      .from('tables')
-      .update({ status: 'OCCUPIED', current_session: sessionId })
-      .eq('id', tableId)
+      .from("tables")
+      .update({ status: "OCCUPIED", current_session: sessionId })
+      .eq("id", tableId)
       .select()
       .single();
 
@@ -508,9 +566,9 @@ export const mutationResolvers = {
 
   clearTable: async (_: unknown, { tableId }: { tableId: string }, context: GraphQLContext) => {
     const { data, error } = await context.supabase
-      .from('tables')
-      .update({ status: 'AVAILABLE', current_session: null, current_order_id: null })
-      .eq('id', tableId)
+      .from("tables")
+      .update({ status: "AVAILABLE", current_session: null, current_order_id: null })
+      .eq("id", tableId)
       .select()
       .single();
 
@@ -519,22 +577,26 @@ export const mutationResolvers = {
   },
 
   // Staff mutations
-  createStaff: async (_: unknown, { input }: { input: Record<string, unknown> }, context: GraphQLContext) => {
-    const { data, error } = await context.supabase
-      .from('staff')
-      .insert(input)
-      .select()
-      .single();
+  createStaff: async (
+    _: unknown,
+    { input }: { input: Record<string, unknown> },
+    context: GraphQLContext
+  ) => {
+    const { data, error } = await context.supabase.from("staff").insert(input).select().single();
 
     if (error) throw error;
     return data;
   },
 
-  updateStaff: async (_: unknown, { id, input }: { id: string; input: Record<string, unknown> }, context: GraphQLContext) => {
+  updateStaff: async (
+    _: unknown,
+    { id, input }: { id: string; input: Record<string, unknown> },
+    context: GraphQLContext
+  ) => {
     const { data, error } = await context.supabase
-      .from('staff')
+      .from("staff")
       .update(input)
-      .eq('id', id)
+      .eq("id", id)
       .select()
       .single();
 
@@ -543,9 +605,13 @@ export const mutationResolvers = {
   },
 
   // Inventory mutations
-  createInventoryItem: async (_: unknown, { input }: { input: Record<string, unknown> }, context: GraphQLContext) => {
+  createInventoryItem: async (
+    _: unknown,
+    { input }: { input: Record<string, unknown> },
+    context: GraphQLContext
+  ) => {
     const { data, error } = await context.supabase
-      .from('inventory_items')
+      .from("inventory_items")
       .insert(input)
       .select()
       .single();
@@ -554,11 +620,15 @@ export const mutationResolvers = {
     return data;
   },
 
-  updateInventoryItem: async (_: unknown, { id, input }: { id: string; input: Record<string, unknown> }, context: GraphQLContext) => {
+  updateInventoryItem: async (
+    _: unknown,
+    { id, input }: { id: string; input: Record<string, unknown> },
+    context: GraphQLContext
+  ) => {
     const { data, error } = await context.supabase
-      .from('inventory_items')
+      .from("inventory_items")
       .update(input)
-      .eq('id', id)
+      .eq("id", id)
       .select()
       .single();
 
@@ -566,23 +636,27 @@ export const mutationResolvers = {
     return data;
   },
 
-  adjustStock: async (_: unknown, { itemId, quantity, reason }: { itemId: string; quantity: number; reason: string }, context: GraphQLContext) => {
+  adjustStock: async (
+    _: unknown,
+    { itemId, quantity, reason }: { itemId: string; quantity: number; reason: string },
+    context: GraphQLContext
+  ) => {
     // Get current item
     const { data: item } = await context.supabase
-      .from('inventory_items')
-      .select('*')
-      .eq('id', itemId)
+      .from("inventory_items")
+      .select("*")
+      .eq("id", itemId)
       .single();
 
-    if (!item) throw new Error('Item not found');
+    if (!item) throw new Error("Item not found");
 
     // Create movement record
     const { data: movement, error: movementError } = await context.supabase
-      .from('inventory_movements')
+      .from("inventory_movements")
       .insert({
         item_id: itemId,
         venue_id: item.venue_id,
-        type: 'ADJUSTMENT',
+        type: "ADJUSTMENT",
         quantity,
         reason,
       })
@@ -593,9 +667,9 @@ export const mutationResolvers = {
 
     // Update item quantity
     const { data: updatedItem, error: updateError } = await context.supabase
-      .from('inventory_items')
+      .from("inventory_items")
       .update({ quantity: item.quantity + quantity })
-      .eq('id', itemId)
+      .eq("id", itemId)
       .select()
       .single();
 
@@ -610,13 +684,17 @@ export const mutationResolvers = {
  */
 export const subscriptionResolvers = {
   orderUpdated: {
-    subscribe: (_: unknown, { venueId: _venueId }: { venueId: string }, _context: GraphQLContext) => {
+    subscribe: (
+      _: unknown,
+      { venueId: _venueId }: { venueId: string },
+      _context: GraphQLContext
+    ) => {
       // Placeholder - implement actual subscription using Supabase realtime
       return {
         async *[Symbol.asyncIterator]() {
           // Yield updates as they come in
           while (true) {
-            await new Promise<void>(resolve => setTimeout(resolve, 1000));
+            await new Promise<void>((resolve) => setTimeout(resolve, 1000));
             // In production, this would use Supabase realtime subscriptions
             yield undefined;
           }
@@ -626,12 +704,16 @@ export const subscriptionResolvers = {
   },
 
   tableUpdated: {
-    subscribe: (_: unknown, { venueId: _venueId }: { venueId: string }, _context: GraphQLContext) => {
+    subscribe: (
+      _: unknown,
+      { venueId: _venueId }: { venueId: string },
+      _context: GraphQLContext
+    ) => {
       // Placeholder - implement actual subscription using Supabase realtime
       return {
         async *[Symbol.asyncIterator]() {
           while (true) {
-            await new Promise<void>(resolve => setTimeout(resolve, 1000));
+            await new Promise<void>((resolve) => setTimeout(resolve, 1000));
             yield undefined;
           }
         },
@@ -640,12 +722,16 @@ export const subscriptionResolvers = {
   },
 
   inventoryUpdated: {
-    subscribe: (_: unknown, { venueId: _venueId }: { venueId: string }, _context: GraphQLContext) => {
+    subscribe: (
+      _: unknown,
+      { venueId: _venueId }: { venueId: string },
+      _context: GraphQLContext
+    ) => {
       // Placeholder - implement actual subscription using Supabase realtime
       return {
         async *[Symbol.asyncIterator]() {
           while (true) {
-            await new Promise<void>(resolve => setTimeout(resolve, 1000));
+            await new Promise<void>((resolve) => setTimeout(resolve, 1000));
             yield undefined;
           }
         },
@@ -654,12 +740,16 @@ export const subscriptionResolvers = {
   },
 
   liveOrders: {
-    subscribe: (_: unknown, { venueId: _venueId }: { venueId: string }, _context: GraphQLContext) => {
+    subscribe: (
+      _: unknown,
+      { venueId: _venueId }: { venueId: string },
+      _context: GraphQLContext
+    ) => {
       // Placeholder - implement actual subscription using Supabase realtime
       return {
         async *[Symbol.asyncIterator]() {
           while (true) {
-            await new Promise<void>(resolve => setTimeout(resolve, 1000));
+            await new Promise<void>((resolve) => setTimeout(resolve, 1000));
             yield undefined;
           }
         },

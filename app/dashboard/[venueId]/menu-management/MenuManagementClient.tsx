@@ -248,7 +248,10 @@ export default function MenuManagementClient({
 
   const handleDelete = async (item: MenuItem) => {
     const confirmDelete = confirm(`Are you sure you want to delete "${item.name}"?`);
-    if (!confirmDelete) { toast({ description: "Delete cancelled" }); return; }
+    if (!confirmDelete) {
+      toast({ description: "Delete cancelled" });
+      return;
+    }
 
     try {
       const supabase = createClient();
@@ -345,8 +348,13 @@ export default function MenuManagementClient({
   const clearAllMenu = async () => {
     // CRITICAL LOG: Clear menu button clicked
 
-    const confirmClear = confirm("Are you sure you want to clear the entire menu? This action cannot be undone.");
-    if (!confirmClear) { toast({ description: "Clear cancelled" }); return; }
+    const confirmClear = confirm(
+      "Are you sure you want to clear the entire menu? This action cannot be undone."
+    );
+    if (!confirmClear) {
+      toast({ description: "Clear cancelled" });
+      return;
+    }
 
     try {
       setIsClearing(true);
@@ -619,7 +627,9 @@ export default function MenuManagementClient({
                                                           <div className="w-16 h-16 flex-shrink-0 cursor-pointer">
                                                             {item.image_url ? (
                                                               <img
-                                                                src={getMenuImageDisplayUrl(item.image_url)}
+                                                                src={getMenuImageDisplayUrl(
+                                                                  item.image_url
+                                                                )}
                                                                 alt={item.name}
                                                                 className="w-full h-full object-cover rounded border border-gray-200 hover:ring-2 hover:ring-purple-500 transition-all"
                                                                 onError={(e) => {
@@ -642,7 +652,9 @@ export default function MenuManagementClient({
                                                             side="right"
                                                           >
                                                             <img
-                                                              src={getMenuImageDisplayUrl(item.image_url)}
+                                                              src={getMenuImageDisplayUrl(
+                                                                item.image_url
+                                                              )}
                                                               alt={item.name}
                                                               className="w-full h-auto rounded-lg"
                                                             />

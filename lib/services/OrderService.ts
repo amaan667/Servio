@@ -16,17 +16,9 @@ import { trackOrderError } from "@/lib/monitoring/error-tracking";
 import { logger } from "@/lib/monitoring/structured-logger";
 
 // Import constants and types
-import {
-  OrderStatus,
-  PaymentStatus,
-  PaymentMode,
-  OrderDefaults,
-} from "@/lib/orders/constants";
+import { OrderStatus, PaymentStatus, PaymentMode, OrderDefaults } from "@/lib/orders/constants";
 import { validateCreateOrderInput } from "@/lib/orders/validation";
-import {
-  wrapSupabaseError,
-  wrapNotFoundError,
-} from "@/lib/orders/errors";
+import { wrapSupabaseError, wrapNotFoundError } from "@/lib/orders/errors";
 
 export interface OrderItem {
   menu_item_id: string | null;
@@ -90,10 +82,7 @@ export class OrderService extends BaseService {
   /**
    * Determine fulfillment type from source
    */
-  private getFulfillmentType(
-    source?: string,
-    explicitType?: string
-  ): string {
+  private getFulfillmentType(source?: string, explicitType?: string): string {
     if (explicitType) return explicitType;
     return source === "counter" ? "counter" : "table";
   }
@@ -117,18 +106,16 @@ export class OrderService extends BaseService {
    * Get orders with caching
    */
   async getOrders(venueId: string, filters?: OrderFilters): Promise<Order[]> {
-    const cacheKey = this.getCacheKey(
-      "orders:list",
-      venueId,
-      JSON.stringify(filters)
-    );
+    const cacheKey = this.getCacheKey("orders:list", venueId, JSON.stringify(filters));
 
-    return this.withCache(cacheKey, async () => {
-      const supabase = await createSupabaseClient();
-      let query = supabase
-        .from("orders")
-        .select(
-          `
+    return this.withCache(
+      cacheKey,
+      async () => {
+        const supabase = await createSupabaseClient();
+        let query = supabase
+          .from("orders")
+          .select(
+            `
           *,
           tables!left (
             id,
@@ -136,43 +123,45 @@ export class OrderService extends BaseService {
             area
           )
         `
-        )
-        .eq("venue_id", venueId)
-        .order("created_at", { ascending: false });
+          )
+          .eq("venue_id", venueId)
+          .order("created_at", { ascending: false });
 
-      // Apply filters
-      if (filters?.status) {
-        query = query.eq("order_status", filters.status);
-      }
+        // Apply filters
+        if (filters?.status) {
+          query = query.eq("order_status", filters.status);
+        }
 
-      if (filters?.paymentStatus && filters.paymentStatus.length > 0) {
-        query = query.in("payment_status", filters.paymentStatus);
-      }
+        if (filters?.paymentStatus && filters.paymentStatus.length > 0) {
+          query = query.in("payment_status", filters.paymentStatus);
+        }
 
-      if (filters?.tableId) {
-        query = query.eq("table_id", filters.tableId);
-      }
+        if (filters?.tableId) {
+          query = query.eq("table_id", filters.tableId);
+        }
 
-      if (filters?.sessionId) {
-        query = query.eq("session_id", filters.sessionId);
-      }
+        if (filters?.sessionId) {
+          query = query.eq("session_id", filters.sessionId);
+        }
 
-      if (filters?.startDate) {
-        query = query.gte("created_at", filters.startDate);
-      }
+        if (filters?.startDate) {
+          query = query.gte("created_at", filters.startDate);
+        }
 
-      if (filters?.endDate) {
-        query = query.lte("created_at", filters.endDate);
-      }
+        if (filters?.endDate) {
+          query = query.lte("created_at", filters.endDate);
+        }
 
-      if (filters?.limit) {
-        query = query.limit(filters.limit);
-      }
+        if (filters?.limit) {
+          query = query.limit(filters.limit);
+        }
 
-      const { data, error } = await query;
-      if (error) throw error;
-      return (data as unknown as Order[]) || [];
-    }, 60);
+        const { data, error } = await query;
+        if (error) throw error;
+        return (data as unknown as Order[]) || [];
+      },
+      60
+    );
   }
 
   /**
@@ -288,10 +277,7 @@ export class OrderService extends BaseService {
     const supabase = await createSupabaseClient();
 
     // Determine fulfillment_type from source if not provided
-    const fulfillmentType = this.getFulfillmentType(
-      orderData.source,
-      orderData.fulfillment_type
-    );
+    const fulfillmentType = this.getFulfillmentType(orderData.source, orderData.fulfillment_type);
 
     // Standardize table number
     const tableNumber =
@@ -319,13 +305,9 @@ export class OrderService extends BaseService {
       payment_mode: paymentMode,
       source: validatedData.source || OrderDefaults.SOURCE,
       fulfillment_type: fulfillmentType,
-      counter_label:
-        fulfillmentType === "counter"
-          ? (orderData.counter_label ?? null)
-          : null,
+      counter_label: fulfillmentType === "counter" ? (orderData.counter_label ?? null) : null,
       qr_type: orderData.qr_type ?? null,
-      requires_collection:
-        orderData.requires_collection ?? OrderDefaults.REQUIRES_COLLECTION,
+      requires_collection: orderData.requires_collection ?? OrderDefaults.REQUIRES_COLLECTION,
     };
 
     // Direct insert - don't use .single() as it fails when no rows returned
@@ -358,11 +340,7 @@ export class OrderService extends BaseService {
   /**
    * Update order status with standardized error handling
    */
-  async updateOrderStatus(
-    orderId: string,
-    venueId: string,
-    status: string
-  ): Promise<Order> {
+  async updateOrderStatus(orderId: string, venueId: string, status: string): Promise<Order> {
     const supabase = await createSupabaseClient();
     const { data, error } = await supabase
       .from("orders")
@@ -579,9 +557,7 @@ export class OrderService extends BaseService {
     if (!orders || orders.length === 0) return 0;
 
     // 2. Filter out already COMPLETED orders
-    const ordersToComplete = orders.filter(
-      (o) => o.order_status !== OrderStatus.COMPLETED
-    );
+    const ordersToComplete = orders.filter((o) => o.order_status !== OrderStatus.COMPLETED);
 
     if (ordersToComplete.length === 0) {
       return 0;

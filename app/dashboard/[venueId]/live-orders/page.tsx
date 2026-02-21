@@ -17,7 +17,7 @@ async function fetchLiveOrders(venueId: string): Promise<Order[]> {
   const supabase = createAdminClient();
   const todayWindowData = todayWindowForLocal();
   const todayStart = todayWindowData.startUtcISO || new Date().toISOString();
-  
+
   // Fetch live orders (active statuses within today's window)
   const { data: orders, error } = await supabase
     .from("orders")
@@ -28,7 +28,7 @@ async function fetchLiveOrders(venueId: string): Promise<Order[]> {
     .in("payment_status", ["PAID", "UNPAID"])
     .order("created_at", { ascending: false })
     .limit(100);
-  
+
   if (error) {
     logger.error("Failed to fetch live orders for SSR", {
       venueId,
@@ -37,7 +37,7 @@ async function fetchLiveOrders(venueId: string): Promise<Order[]> {
     });
     return [];
   }
-  
+
   return (orders || []) as unknown as Order[];
 }
 
@@ -49,7 +49,7 @@ function calculateLiveOrderStats(orders: Order[]): LiveOrderStats {
     serving: 0,
     totalRevenue: 0,
   };
-  
+
   for (const order of orders) {
     // Count by status
     switch (order.order_status) {
@@ -67,13 +67,13 @@ function calculateLiveOrderStats(orders: Order[]): LiveOrderStats {
         stats.serving++;
         break;
     }
-    
+
     // Add to revenue (only paid orders)
     if (order.payment_status === "PAID") {
       stats.totalRevenue += order.total_amount || 0;
     }
   }
-  
+
   return stats;
 }
 
@@ -89,11 +89,11 @@ export default async function LiveOrdersPage({ params }: { params: { venueId: st
 
   try {
     initialOrders = await fetchLiveOrders(venueId);
-    
+
     if (initialOrders.length > 0) {
       initialStats = calculateLiveOrderStats(initialOrders);
     }
-    
+
     logger.info("SSR live orders fetched successfully", {
       venueId,
       orderCount: initialOrders.length,

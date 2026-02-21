@@ -33,8 +33,9 @@ export const POST = withUnifiedAuth(
       const id = idFromBody || idFromQuery;
 
       const normalizedVenueId = normalizeVenueId(context.venueId) ?? context.venueId;
-      const rawVenueId =
-        normalizedVenueId.startsWith("venue-") ? normalizedVenueId.slice(6) : normalizedVenueId;
+      const rawVenueId = normalizedVenueId.startsWith("venue-")
+        ? normalizedVenueId.slice(6)
+        : normalizedVenueId;
 
       if (!id) {
         return apiErrors.badRequest("id required");

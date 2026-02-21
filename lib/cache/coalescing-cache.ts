@@ -49,7 +49,7 @@ export class CacheCoalescer<T = unknown> {
     }
 
     if (!effectiveFetcher) {
-      throw new Error('No fetcher provided');
+      throw new Error("No fetcher provided");
     }
 
     const promise = effectiveFetcher(key).then((data) => {

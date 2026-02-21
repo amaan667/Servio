@@ -16,39 +16,43 @@ import { logger } from "@/lib/monitoring/structured-logger";
 const bulkInventoryCreateSchema = z.object({
   venueId: z.string().optional(),
   venue_id: z.string().optional(),
-  items: z.array(
-    z.object({
-      name: z.string().min(1),
-      sku: z.string().optional(),
-      unit: z.string().min(1),
-      on_hand: z.number().min(0).optional(),
-      cost_per_unit: z.number().min(0).optional(),
-      par_level: z.number().min(0).optional(),
-      reorder_level: z.number().min(0).optional(),
-      supplier: z.string().optional(),
-    })
-  ).min(1),
+  items: z
+    .array(
+      z.object({
+        name: z.string().min(1),
+        sku: z.string().optional(),
+        unit: z.string().min(1),
+        on_hand: z.number().min(0).optional(),
+        cost_per_unit: z.number().min(0).optional(),
+        par_level: z.number().min(0).optional(),
+        reorder_level: z.number().min(0).optional(),
+        supplier: z.string().optional(),
+      })
+    )
+    .min(1),
   dryRun: z.boolean().optional(),
 });
 
 const bulkInventoryUpdateSchema = z.object({
   venueId: z.string().optional(),
   venue_id: z.string().optional(),
-  updates: z.array(
-    z.object({
-      id: z.string(),
-      data: z.object({
-        name: z.string().optional(),
-        sku: z.string().optional(),
-        unit: z.string().optional(),
-        on_hand: z.number().min(0).optional(),
-        cost_per_unit: z.number().min(0).optional(),
-        par_level: z.number().min(0).optional(),
-        reorder_level: z.number().min(0).optional(),
-        supplier: z.string().optional(),
-      }),
-    })
-  ).min(1),
+  updates: z
+    .array(
+      z.object({
+        id: z.string(),
+        data: z.object({
+          name: z.string().optional(),
+          sku: z.string().optional(),
+          unit: z.string().optional(),
+          on_hand: z.number().min(0).optional(),
+          cost_per_unit: z.number().min(0).optional(),
+          par_level: z.number().min(0).optional(),
+          reorder_level: z.number().min(0).optional(),
+          supplier: z.string().optional(),
+        }),
+      })
+    )
+    .min(1),
   dryRun: z.boolean().optional(),
   skipMissing: z.boolean().optional(),
 });

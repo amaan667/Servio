@@ -156,7 +156,10 @@ export class BulkImportService {
     const analysis: ColumnAnalysis[] = [];
 
     headers.forEach((header) => {
-      const sampleValues = rows.slice(0, 10).map((row) => row.data[header]).filter((v): v is string => Boolean(v));
+      const sampleValues = rows
+        .slice(0, 10)
+        .map((row) => row.data[header])
+        .filter((v): v is string => Boolean(v));
       const detectedType = this.detectValueType(sampleValues);
       const suggestedField = this.suggestFieldMapping(header, detectedType);
 
@@ -172,7 +175,9 @@ export class BulkImportService {
     return analysis;
   }
 
-  private detectValueType(values: string[]): "string" | "number" | "boolean" | "date" | "email" | "unknown" {
+  private detectValueType(
+    values: string[]
+  ): "string" | "number" | "boolean" | "date" | "email" | "unknown" {
     if (values.length === 0) return "string";
 
     const validValues = values.filter(Boolean);
@@ -209,7 +214,10 @@ export class BulkImportService {
       return "name";
     }
 
-    if (["price", "cost", "amount", "rate"].some((p) => normalized.includes(p)) && detectedType === "number") {
+    if (
+      ["price", "cost", "amount", "rate"].some((p) => normalized.includes(p)) &&
+      detectedType === "number"
+    ) {
       return "price";
     }
 
@@ -221,7 +229,10 @@ export class BulkImportService {
       return "description";
     }
 
-    if (["quantity", "qty", "count", "amount"].some((p) => normalized.includes(p)) && detectedType === "number") {
+    if (
+      ["quantity", "qty", "count", "amount"].some((p) => normalized.includes(p)) &&
+      detectedType === "number"
+    ) {
       return "quantity";
     }
 
@@ -323,11 +334,15 @@ export class BulkImportService {
       orders: z.object({
         customer_name: z.string().min(1, "Customer name is required"),
         customer_phone: z.string().optional(),
-        items: z.array(z.object({
-          name: z.string(),
-          quantity: z.number(),
-          price: z.number(),
-        })).optional(),
+        items: z
+          .array(
+            z.object({
+              name: z.string(),
+              quantity: z.number(),
+              price: z.number(),
+            })
+          )
+          .optional(),
         total_amount: z.number().min(0).optional(),
       }),
       tables: z.object({
@@ -432,10 +447,28 @@ export class BulkImportService {
         entityType: "menu_items",
         description: "Template for importing menu items with name, price, and category",
         columns: [
-          { field: "name_en", header: "Name", required: true, type: "string", description: "Item name in English" },
-          { field: "name_ar", header: "Arabic Name", required: false, type: "string", description: "Item name in Arabic" },
+          {
+            field: "name_en",
+            header: "Name",
+            required: true,
+            type: "string",
+            description: "Item name in English",
+          },
+          {
+            field: "name_ar",
+            header: "Arabic Name",
+            required: false,
+            type: "string",
+            description: "Item name in Arabic",
+          },
           { field: "description_en", header: "Description", required: false, type: "string" },
-          { field: "price", header: "Price", required: true, type: "number", validation: { min: 0 } },
+          {
+            field: "price",
+            header: "Price",
+            required: true,
+            type: "number",
+            validation: { min: 0 },
+          },
           { field: "category", header: "Category", required: false, type: "string" },
           { field: "is_available", header: "Available", required: false, type: "boolean" },
         ],
@@ -451,15 +484,53 @@ export class BulkImportService {
         columns: [
           { field: "name", header: "Name", required: true, type: "string" },
           { field: "sku", header: "SKU", required: false, type: "string" },
-          { field: "unit", header: "Unit", required: true, type: "string", options: ["kg", "lbs", "oz", "g", "l", "ml", "pcs"] },
-          { field: "on_hand", header: "On Hand", required: false, type: "number", validation: { min: 0 } },
-          { field: "cost_per_unit", header: "Cost Per Unit", required: false, type: "number", validation: { min: 0 } },
-          { field: "par_level", header: "Par Level", required: false, type: "number", validation: { min: 0 } },
+          {
+            field: "unit",
+            header: "Unit",
+            required: true,
+            type: "string",
+            options: ["kg", "lbs", "oz", "g", "l", "ml", "pcs"],
+          },
+          {
+            field: "on_hand",
+            header: "On Hand",
+            required: false,
+            type: "number",
+            validation: { min: 0 },
+          },
+          {
+            field: "cost_per_unit",
+            header: "Cost Per Unit",
+            required: false,
+            type: "number",
+            validation: { min: 0 },
+          },
+          {
+            field: "par_level",
+            header: "Par Level",
+            required: false,
+            type: "number",
+            validation: { min: 0 },
+          },
           { field: "supplier", header: "Supplier", required: false, type: "string" },
         ],
         sampleData: [
-          { name: "Tomatoes", sku: "TOM-001", unit: "kg", on_hand: 50, cost_per_unit: 2.5, par_level: 100 },
-          { name: "Olive Oil", sku: "OIL-001", unit: "l", on_hand: 10, cost_per_unit: 15, par_level: 20 },
+          {
+            name: "Tomatoes",
+            sku: "TOM-001",
+            unit: "kg",
+            on_hand: 50,
+            cost_per_unit: 2.5,
+            par_level: 100,
+          },
+          {
+            name: "Olive Oil",
+            sku: "OIL-001",
+            unit: "l",
+            on_hand: 10,
+            cost_per_unit: 15,
+            par_level: 20,
+          },
         ],
       },
       tables: {
@@ -469,8 +540,20 @@ export class BulkImportService {
         columns: [
           { field: "table_number", header: "Table Number", required: true, type: "string" },
           { field: "label", header: "Label", required: false, type: "string" },
-          { field: "seat_count", header: "Seat Count", required: false, type: "number", validation: { min: 1, max: 20 } },
-          { field: "status", header: "Status", required: false, type: "string", options: ["available", "occupied", "reserved"] },
+          {
+            field: "seat_count",
+            header: "Seat Count",
+            required: false,
+            type: "number",
+            validation: { min: 1, max: 20 },
+          },
+          {
+            field: "status",
+            header: "Status",
+            required: false,
+            type: "string",
+            options: ["available", "occupied", "reserved"],
+          },
         ],
         sampleData: [
           { table_number: "1", label: "Window Seat", seat_count: 2, status: "available" },
@@ -486,11 +569,13 @@ export class BulkImportService {
     const template = this.generateTemplate(entityType);
     const headers = template.columns.map((col) => col.header);
     const rows = template.sampleData.map((data) =>
-      template.columns.map((col) => {
-        const value = data[col.field as keyof typeof data];
-        if (typeof value === "boolean") return value ? "true" : "false";
-        return String(value || "");
-      }).join(",")
+      template.columns
+        .map((col) => {
+          const value = data[col.field as keyof typeof data];
+          if (typeof value === "boolean") return value ? "true" : "false";
+          return String(value || "");
+        })
+        .join(",")
     );
 
     return [headers.join(","), ...rows].join("\n");

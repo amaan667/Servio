@@ -567,7 +567,7 @@ export default function LiveOrdersClient({
                         )}
                       </div>
                     ))}
-                    
+
                     {/* Load More Button for History */}
                     {pagination.historyHasMore && (
                       <div className="flex justify-center mt-6">

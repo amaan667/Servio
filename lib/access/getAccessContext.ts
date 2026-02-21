@@ -14,10 +14,7 @@ import {
   type FeatureKey,
   hasFeatureAccess,
 } from "@/lib/tier-limits";
-import {
-  createServerSupabaseReadOnly,
-  createServerSupabaseWithToken,
-} from "@/lib/supabase";
+import { createServerSupabaseReadOnly, createServerSupabaseWithToken } from "@/lib/supabase";
 import { normalizeVenueId } from "@/lib/utils/venueId";
 
 /**
@@ -28,7 +25,7 @@ import { normalizeVenueId } from "@/lib/utils/venueId";
 export const getAccessContext = cache(
   async (venueId?: string | null): Promise<AccessContext | null> => {
     let user: { id: string } | null = null;
-    
+
     try {
       // Use shared server Supabase helper so ALL server-side auth (middleware + RPC)
       // goes through a single, consistent configuration and cookie handling path.
@@ -125,9 +122,7 @@ export async function getAccessContextWithRequest(
     if (!context.user_id || !context.role) return null;
 
     const tier = (context.tier?.toLowerCase().trim() || "starter") as Tier;
-    const validTier = ["starter", "pro", "enterprise"].includes(tier)
-      ? tier
-      : ("starter" as Tier);
+    const validTier = ["starter", "pro", "enterprise"].includes(tier) ? tier : ("starter" as Tier);
 
     return {
       ...context,

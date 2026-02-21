@@ -52,7 +52,7 @@ export function useOrderMenu(venueSlug: string, isDemo: boolean) {
 
     // Prevent duplicate fetches
     if (loadingRef.current) return;
-    
+
     loadingRef.current = true;
     // Only set loading true if we don't have cached data
     const cached = safeGetItem(sessionStorage, `menu_${venueSlug}`);
@@ -81,7 +81,7 @@ export function useOrderMenu(venueSlug: string, isDemo: boolean) {
 
     try {
       const apiUrl = `${window.location.origin}/api/menu/${venueSlug}`;
-      
+
       // 15s timeout
       const controller = new AbortController();
       fetchTimeoutRef.current = setTimeout(() => controller.abort(), 15000);
@@ -123,7 +123,11 @@ export function useOrderMenu(venueSlug: string, isDemo: boolean) {
         safeSetItem(sessionStorage, `menu_${venueSlug}`, JSON.stringify(normalized));
         safeSetItem(sessionStorage, `venue_name_${venueSlug}`, payloadVenueName);
         if (Array.isArray(payload.categoryOrder)) {
-          safeSetItem(sessionStorage, `categories_${venueSlug}`, JSON.stringify(payload.categoryOrder));
+          safeSetItem(
+            sessionStorage,
+            `categories_${venueSlug}`,
+            JSON.stringify(payload.categoryOrder)
+          );
         }
         if (Array.isArray(payload.pdfImages) && payload.pdfImages.length > 0) {
           safeSetItem(sessionStorage, `pdf_images_${venueSlug}`, JSON.stringify(payload.pdfImages));
@@ -153,12 +157,12 @@ export function useOrderMenu(venueSlug: string, isDemo: boolean) {
       }
     } catch (error) {
       clearTimeout(fetchTimeoutRef.current!);
-      
+
       // Retry up to 3 times
       if (retryCountRef.current < 3) {
         retryCountRef.current++;
         loadingRef.current = false;
-        await new Promise(resolve => setTimeout(resolve, 1000 * retryCountRef.current));
+        await new Promise((resolve) => setTimeout(resolve, 1000 * retryCountRef.current));
         return loadMenuItems();
       }
 

@@ -3,7 +3,15 @@
  * Global context for managing realtime state across the application
  */
 
-import React, { createContext, useContext, useEffect, useState, useCallback, useRef, ReactNode } from "react";
+import React, {
+  createContext,
+  useContext,
+  useEffect,
+  useState,
+  useCallback,
+  useRef,
+  ReactNode,
+} from "react";
 import { subscriptionManager, SubscriptionManager } from "@/lib/realtime/subscription-manager";
 import type { ConnectionState, RealtimeEvent, SubscriptionEntry } from "@/lib/realtime/types";
 import { logger } from "@/lib/monitoring/structured-logger";
@@ -16,15 +24,15 @@ interface RealtimeContextValue {
   // Connection state
   connectionState: ConnectionState;
   isConnected: boolean;
-  
+
   // Active subscriptions
   subscriptions: SubscriptionEntry[];
   subscriptionCount: number;
-  
+
   // Event bus
   publish: (event: RealtimeEvent) => void;
   subscribe: (eventType: string, callback: (event: RealtimeEvent) => void) => () => void;
-  
+
   // Utility
   getChannelName: (venueId: string, entityType: string, entityId?: string) => string;
 }
@@ -45,9 +53,9 @@ const RealtimeContext = createContext<RealtimeContextValue | null>(null);
 // ============================================================================
 
 export function RealtimeProvider({ children }: RealtimeProviderProps) {
-  const [connectionState, setConnectionState] = useState<ConnectionState>('disconnected');
+  const [connectionState, setConnectionState] = useState<ConnectionState>("disconnected");
   const [subscriptions, setSubscriptions] = useState<SubscriptionEntry[]>([]);
-  
+
   const eventHandlersRef = useRef<Map<string, Set<(event: RealtimeEvent) => void>>>(new Map());
   const eventIdRef = useRef(0);
   const mountedRef = useRef(true);
@@ -103,9 +111,9 @@ export function RealtimeProvider({ children }: RealtimeProviderProps) {
         try {
           handler(event);
         } catch (err) {
-          logger.error('[RealtimeContext] Error in event handler', { 
-            eventType: event.type, 
-            error: err 
+          logger.error("[RealtimeContext] Error in event handler", {
+            eventType: event.type,
+            error: err,
           });
         }
       }
@@ -155,7 +163,7 @@ export function RealtimeProvider({ children }: RealtimeProviderProps) {
 
   const value: RealtimeContextValue = {
     connectionState,
-    isConnected: connectionState === 'connected',
+    isConnected: connectionState === "connected",
     subscriptions,
     subscriptionCount: subscriptions.length,
     publish,
@@ -163,11 +171,7 @@ export function RealtimeProvider({ children }: RealtimeProviderProps) {
     getChannelName,
   };
 
-  return (
-    <RealtimeContext.Provider value={value}>
-      {children}
-    </RealtimeContext.Provider>
-  );
+  return <RealtimeContext.Provider value={value}>{children}</RealtimeContext.Provider>;
 }
 
 // ============================================================================
@@ -180,11 +184,11 @@ export function RealtimeProvider({ children }: RealtimeProviderProps) {
  */
 export function useRealtime(): RealtimeContextValue {
   const context = useContext(RealtimeContext);
-  
+
   if (!context) {
-    throw new Error('useRealtime must be used within a RealtimeProvider');
+    throw new Error("useRealtime must be used within a RealtimeProvider");
   }
-  
+
   return context;
 }
 
@@ -196,9 +200,9 @@ export function useRealtime(): RealtimeContextValue {
  * Publish an order change event
  */
 export function publishOrderChange(
-  venueId: string, 
-  orderId: string, 
-  action: 'insert' | 'update' | 'delete',
+  venueId: string,
+  orderId: string,
+  action: "insert" | "update" | "delete",
   data?: unknown
 ) {
   const event: RealtimeEvent = {
@@ -207,9 +211,9 @@ export function publishOrderChange(
     venueId,
     timestamp: Date.now(),
     payload: { orderId, action, data },
-    source: 'realtime',
+    source: "realtime",
   };
-  
+
   // This would be called through context's publish method
   return event;
 }
@@ -218,9 +222,9 @@ export function publishOrderChange(
  * Publish a table change event
  */
 export function publishTableChange(
-  venueId: string, 
-  tableId: string, 
-  action: 'insert' | 'update' | 'delete',
+  venueId: string,
+  tableId: string,
+  action: "insert" | "update" | "delete",
   data?: unknown
 ) {
   const event: RealtimeEvent = {
@@ -229,9 +233,9 @@ export function publishTableChange(
     venueId,
     timestamp: Date.now(),
     payload: { tableId, action, data },
-    source: 'realtime',
+    source: "realtime",
   };
-  
+
   return event;
 }
 
@@ -239,9 +243,9 @@ export function publishTableChange(
  * Publish an inventory alert event
  */
 export function publishInventoryAlert(
-  venueId: string, 
-  itemId: string, 
-  alertType: 'low_stock' | 'out_of_stock' | 'restocked',
+  venueId: string,
+  itemId: string,
+  alertType: "low_stock" | "out_of_stock" | "restocked",
   data?: unknown
 ) {
   const event: RealtimeEvent = {
@@ -250,9 +254,9 @@ export function publishInventoryAlert(
     venueId,
     timestamp: Date.now(),
     payload: { itemId, alertType, data },
-    source: 'realtime',
+    source: "realtime",
   };
-  
+
   return event;
 }
 

@@ -33,10 +33,7 @@ export class QueryOptimizer {
   /**
    * Analyze a query for performance issues
    */
-  async analyzeQuery(
-    query: string,
-    execute: () => Promise<unknown>
-  ): Promise<QueryAnalysis> {
+  async analyzeQuery(query: string, execute: () => Promise<unknown>): Promise<QueryAnalysis> {
     const startTime = performance.now();
     const result = await execute();
     const duration = performance.now() - startTime;
@@ -66,9 +63,7 @@ export class QueryOptimizer {
     // Check for missing indexes
     const missingIndexes = this.detectMissingIndexes(query);
     if (missingIndexes.length > 0) {
-      analysis.recommendations.push(
-        `Consider adding indexes on: ${missingIndexes.join(", ")}`
-      );
+      analysis.recommendations.push(`Consider adding indexes on: ${missingIndexes.join(", ")}`);
       analysis.indexesUsed = missingIndexes;
     }
 
@@ -232,11 +227,7 @@ export class QueryOptimizer {
   /**
    * Create index recommendation SQL
    */
-  createIndexSql(
-    tableName: string,
-    columnName: string,
-    unique: boolean = false
-  ): string {
+  createIndexSql(tableName: string, columnName: string, unique: boolean = false): string {
     const indexName = `idx_${tableName}_${columnName}`;
     const uniqueClause = unique ? "UNIQUE " : "";
 
@@ -256,9 +247,7 @@ ON ${tableName} (${columnName});
   }> {
     // Get row count estimate
     const supabase = await this.getClient();
-    const { count } = await supabase
-      .from(tableName)
-      .select("*", { count: "exact", head: true });
+    const { count } = await supabase.from(tableName).select("*", { count: "exact", head: true });
 
     const estimatedRowCount = count || 0;
 
@@ -308,9 +297,7 @@ ON ${tableName} (${columnName});
       }
 
       if (cost > 100000) {
-        recommendations.push(
-          "Query cost is very high. This query may timeout in production."
-        );
+        recommendations.push("Query cost is very high. This query may timeout in production.");
       }
 
       return { plan, cost, recommendations };
@@ -372,11 +359,7 @@ export const queryOptimizer = new QueryOptimizer();
  * Decorator for automatic query analysis
  */
 export function AnalyzeQuery(_tableName?: string) {
-  return function (
-    _target: unknown,
-    _propertyKey: string,
-    descriptor: PropertyDescriptor
-  ) {
+  return function (_target: unknown, _propertyKey: string, descriptor: PropertyDescriptor) {
     const originalMethod = descriptor.value;
 
     descriptor.value = async function (...args: unknown[]) {

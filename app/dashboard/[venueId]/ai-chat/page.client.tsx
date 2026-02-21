@@ -90,7 +90,9 @@ export default function AIChatClientPage({
                 >
                   <div className="flex justify-between items-start">
                     <div>
-                      <h3 className="font-medium">{conversation.title || "Untitled Conversation"}</h3>
+                      <h3 className="font-medium">
+                        {conversation.title || "Untitled Conversation"}
+                      </h3>
                       <p className="text-sm text-muted-foreground">
                         {new Date(conversation.created_at).toLocaleDateString()} at{" "}
                         {new Date(conversation.created_at).toLocaleTimeString()}

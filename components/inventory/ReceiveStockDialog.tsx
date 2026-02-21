@@ -44,7 +44,11 @@ export function ReceiveStockDialog({
       const costValue = parseFloat(costPerUnit);
 
       if (isNaN(quantityValue) || quantityValue <= 0) {
-        toast({ title: "Invalid Input", description: "Please enter a valid quantity", variant: "destructive" });
+        toast({
+          title: "Invalid Input",
+          description: "Please enter a valid quantity",
+          variant: "destructive",
+        });
         return;
       }
 

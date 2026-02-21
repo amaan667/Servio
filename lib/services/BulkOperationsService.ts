@@ -124,7 +124,9 @@ export class BulkOperationsService extends BaseService {
       case "bulk_create":
         return input.items?.length || 0;
       case "bulk_import":
-        return (input as BulkImportInput).items?.length || (input as BulkImportInput).rows?.length || 0;
+        return (
+          (input as BulkImportInput).items?.length || (input as BulkImportInput).rows?.length || 0
+        );
       case "bulk_update":
         return input.updates?.length || 0;
       case "bulk_delete":
@@ -138,11 +140,7 @@ export class BulkOperationsService extends BaseService {
    * Execute bulk operation based on type
    */
   async executeBulkOperation<T extends GenericRecord = GenericRecord>(
-    input:
-      | BulkCreateInput<T>
-      | BulkUpdateInput<T>
-      | BulkDeleteInput
-      | BulkImportInput<T>
+    input: BulkCreateInput<T> | BulkUpdateInput<T> | BulkDeleteInput | BulkImportInput<T>
   ): Promise<BulkOperationResult<T>> {
     this.operationId = generateOperationId();
     this.startTime = Date.now();
@@ -169,7 +167,10 @@ export class BulkOperationsService extends BaseService {
           result = await this.bulkUpdate(input as BulkUpdateInput<T>, config);
           break;
         case "bulk_delete":
-          result = await this.bulkDelete(input as BulkDeleteInput, config) as BulkOperationResult<T>;
+          result = (await this.bulkDelete(
+            input as BulkDeleteInput,
+            config
+          )) as BulkOperationResult<T>;
           break;
         default:
           throw new Error(`Unsupported bulk operation type`);
@@ -242,11 +243,7 @@ export class BulkOperationsService extends BaseService {
             });
             successful++;
           } else {
-            const { data, error } = await supabase
-              .from(entityType)
-              .insert(item)
-              .select()
-              .single();
+            const { data, error } = await supabase.from(entityType).insert(item).select().single();
 
             if (error) {
               results.push({
@@ -576,7 +573,11 @@ export class BulkOperationsService extends BaseService {
         if (!itemRecord.name && !(itemRecord as Record<string, unknown>).name_en) {
           errors.push({ field: "name", message: "Menu item name is required" });
         }
-        if (itemRecord.price !== undefined && typeof itemRecord.price === "number" && itemRecord.price < 0) {
+        if (
+          itemRecord.price !== undefined &&
+          typeof itemRecord.price === "number" &&
+          itemRecord.price < 0
+        ) {
           errors.push({ field: "price", message: "Price cannot be negative" });
         }
         break;
@@ -594,7 +595,11 @@ export class BulkOperationsService extends BaseService {
         if (!itemRecord.customer_name) {
           errors.push({ field: "customer_name", message: "Customer name is required" });
         }
-        if (!itemRecord.items || !Array.isArray(itemRecord.items) || itemRecord.items.length === 0) {
+        if (
+          !itemRecord.items ||
+          !Array.isArray(itemRecord.items) ||
+          itemRecord.items.length === 0
+        ) {
           errors.push({ field: "items", message: "Order must have at least one item" });
         }
         break;
@@ -603,7 +608,11 @@ export class BulkOperationsService extends BaseService {
         if (!itemRecord.table_number) {
           errors.push({ field: "table_number", message: "Table number is required" });
         }
-        if (itemRecord.seat_count !== undefined && typeof itemRecord.seat_count === "number" && itemRecord.seat_count < 0) {
+        if (
+          itemRecord.seat_count !== undefined &&
+          typeof itemRecord.seat_count === "number" &&
+          itemRecord.seat_count < 0
+        ) {
           errors.push({ field: "seat_count", message: "Seat count cannot be negative" });
         }
         break;

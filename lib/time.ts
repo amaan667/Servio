@@ -41,7 +41,7 @@ export function addDaysISO(dateYYYYMMDD: string, days: number): string {
 // Get today's window in the device's local timezone
 export function todayWindowForLocal() {
   const now = DateTime.local();
-  
+
   const start = now.startOf("day");
   const end = start.plus({ days: 1 });
 
@@ -59,7 +59,7 @@ export function todayWindowForTZ(tz?: string) {
   if (!tz) {
     return todayWindowForLocal();
   }
-  
+
   const zone = tz;
   const now = DateTime.now().setZone(zone);
 

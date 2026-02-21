@@ -1,17 +1,7 @@
 "use client";
 
-import {
-  createContext,
-  useContext,
-  useState,
-  useCallback,
-  type ReactNode,
-} from "react";
-import {
-  type LocaleInfo,
-  detectBrowserLocale,
-  getLocaleForCountry,
-} from "@/lib/locale";
+import { createContext, useContext, useState, useCallback, type ReactNode } from "react";
+import { type LocaleInfo, detectBrowserLocale, getLocaleForCountry } from "@/lib/locale";
 
 type LocaleState = LocaleInfo & {
   /** Apply venue locale (called when venue is loaded in dashboard). */
@@ -117,7 +107,11 @@ export function useLocale(): LocaleState {
       ...defaultLocale,
       setFromVenue: () => {},
       formatCurrency: (amount: number, currencyOverride?: string) =>
-        formatCurrencyImpl(amount, currencyOverride ?? defaultLocale.currency, defaultLocale.locale),
+        formatCurrencyImpl(
+          amount,
+          currencyOverride ?? defaultLocale.currency,
+          defaultLocale.locale
+        ),
       formatDate: (date: Date | string, options?: Intl.DateTimeFormatOptions) => {
         const d = typeof date === "string" ? new Date(date) : date;
         return d.toLocaleDateString(defaultLocale.locale, {

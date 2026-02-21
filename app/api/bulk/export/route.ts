@@ -42,7 +42,16 @@ const handlePost = async (req: NextRequest): Promise<NextResponse> => {
           created_at: item.created_at,
           updated_at: item.updated_at,
         }));
-        fields = ["id", "name", "description", "price", "category", "is_available", "created_at", "updated_at"];
+        fields = [
+          "id",
+          "name",
+          "description",
+          "price",
+          "category",
+          "is_available",
+          "created_at",
+          "updated_at",
+        ];
         break;
       }
 
@@ -60,7 +69,18 @@ const handlePost = async (req: NextRequest): Promise<NextResponse> => {
           supplier: item.supplier,
           updated_at: item.updated_at,
         }));
-        fields = ["id", "name", "sku", "unit", "on_hand", "min_stock", "cost_per_unit", "category", "supplier", "updated_at"];
+        fields = [
+          "id",
+          "name",
+          "sku",
+          "unit",
+          "on_hand",
+          "min_stock",
+          "cost_per_unit",
+          "category",
+          "supplier",
+          "updated_at",
+        ];
         break;
       }
 
@@ -78,7 +98,18 @@ const handlePost = async (req: NextRequest): Promise<NextResponse> => {
           created_at: order.created_at,
           updated_at: order.updated_at,
         }));
-        fields = ["id", "table_number", "customer_name", "customer_phone", "total_amount", "order_status", "payment_status", "source", "created_at", "updated_at"];
+        fields = [
+          "id",
+          "table_number",
+          "customer_name",
+          "customer_phone",
+          "total_amount",
+          "order_status",
+          "payment_status",
+          "source",
+          "created_at",
+          "updated_at",
+        ];
         break;
       }
 
@@ -95,7 +126,17 @@ const handlePost = async (req: NextRequest): Promise<NextResponse> => {
           created_at: table.created_at,
           updated_at: table.updated_at,
         }));
-        fields = ["id", "table_number", "label", "section", "seat_count", "status", "is_active", "created_at", "updated_at"];
+        fields = [
+          "id",
+          "table_number",
+          "label",
+          "section",
+          "seat_count",
+          "status",
+          "is_active",
+          "created_at",
+          "updated_at",
+        ];
         break;
       }
 
@@ -124,7 +165,11 @@ const handlePost = async (req: NextRequest): Promise<NextResponse> => {
           .map((field) => {
             const value = row[field];
             const stringValue = String(value ?? "");
-            if (stringValue.includes(",") || stringValue.includes('"') || stringValue.includes("\n")) {
+            if (
+              stringValue.includes(",") ||
+              stringValue.includes('"') ||
+              stringValue.includes("\n")
+            ) {
               return `"${stringValue.replace(/"/g, '""')}"`;
             }
             return stringValue;

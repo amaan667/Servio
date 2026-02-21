@@ -3,8 +3,8 @@
  * Provides GraphQL endpoint for complex queries
  */
 
-import { NextRequest, NextResponse } from 'next/server';
-import { createClient, SupabaseClient } from '@supabase/supabase-js';
+import { NextRequest, NextResponse } from "next/server";
+import { createClient, SupabaseClient } from "@supabase/supabase-js";
 
 /**
  * GraphQL API Handler
@@ -19,10 +19,7 @@ export async function POST(request: NextRequest) {
     const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
     if (!supabaseUrl || !supabaseAnonKey) {
-      return NextResponse.json(
-        { error: 'Server configuration error' },
-        { status: 500 }
-      );
+      return NextResponse.json({ error: "Server configuration error" }, { status: 500 });
     }
 
     const supabase = createClient(supabaseUrl, supabaseAnonKey, {
@@ -33,12 +30,14 @@ export async function POST(request: NextRequest) {
     });
 
     // Get user from authorization header
-    const authHeader = request.headers.get('authorization');
+    const authHeader = request.headers.get("authorization");
     let userId: string | undefined;
 
-    if (authHeader?.startsWith('Bearer ')) {
+    if (authHeader?.startsWith("Bearer ")) {
       const token = authHeader.substring(7);
-      const { data: { user } } = await supabase.auth.getUser(token);
+      const {
+        data: { user },
+      } = await supabase.auth.getUser(token);
       userId = user?.id;
     }
 
@@ -53,9 +52,9 @@ export async function POST(request: NextRequest) {
       {
         errors: [
           {
-            message: error instanceof Error ? error.message : 'Unknown error',
+            message: error instanceof Error ? error.message : "Unknown error",
             extensions: {
-              code: 'INTERNAL_SERVER_ERROR',
+              code: "INTERNAL_SERVER_ERROR",
             },
           },
         ],
@@ -78,8 +77,8 @@ async function executeGraphQL(
   // In production, use a proper GraphQL server like Apollo Server
 
   // Parse the query to determine operation type
-  const isMutation = query.trim().startsWith('mutation');
-  const isQuery = query.trim().startsWith('query');
+  const isMutation = query.trim().startsWith("mutation");
+  const isQuery = query.trim().startsWith("query");
 
   if (isQuery) {
     // Handle queries
@@ -107,7 +106,7 @@ async function executeGraphQL(
   return {
     errors: [
       {
-        message: 'Invalid GraphQL query',
+        message: "Invalid GraphQL query",
       },
     ],
   };
@@ -120,9 +119,9 @@ export async function OPTIONS() {
   return new NextResponse(null, {
     status: 204,
     headers: {
-      'Access-Control-Allow-Origin': '*',
-      'Access-Control-Allow-Methods': 'POST, OPTIONS',
-      'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+      "Access-Control-Allow-Origin": "*",
+      "Access-Control-Allow-Methods": "POST, OPTIONS",
+      "Access-Control-Allow-Headers": "Content-Type, Authorization",
     },
   });
 }

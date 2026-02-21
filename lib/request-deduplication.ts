@@ -3,7 +3,7 @@
  * Prevents duplicate in-flight requests
  */
 
-import { logger } from '@/lib/monitoring/structured-logger';
+import { logger } from "@/lib/monitoring/structured-logger";
 
 interface PendingRequest {
   promise: Promise<unknown>;
@@ -25,10 +25,7 @@ export class RequestDeduplicator {
   /**
    * Execute a request with deduplication
    */
-  async execute<T>(
-    key: string,
-    requestFn: () => Promise<T>
-  ): Promise<T> {
+  async execute<T>(key: string, requestFn: () => Promise<T>): Promise<T> {
     // Check if there's already a pending request with the same key
     const existing = this.pendingRequests.get(key);
 
@@ -36,7 +33,7 @@ export class RequestDeduplicator {
       // Check if the pending request is still valid
       const age = Date.now() - existing.timestamp;
       if (age < this.ttl) {
-        logger.debug('Deduplicating request', { key, age });
+        logger.debug("Deduplicating request", { key, age });
         return existing.promise as Promise<T>;
       } else {
         // Remove expired pending request
@@ -122,10 +119,7 @@ export function getRequestDeduplicator(): RequestDeduplicator {
 /**
  * Execute a deduplicated request
  */
-export async function deduplicatedRequest<T>(
-  key: string,
-  requestFn: () => Promise<T>
-): Promise<T> {
+export async function deduplicatedRequest<T>(key: string, requestFn: () => Promise<T>): Promise<T> {
   const deduplicator = getRequestDeduplicator();
   return deduplicator.execute(key, requestFn);
 }
@@ -133,9 +127,7 @@ export async function deduplicatedRequest<T>(
 /**
  * Create a deduplicated fetch wrapper
  */
-export function createDeduplicatedFetch(
-  baseFetch: typeof fetch = fetch
-): typeof fetch {
+export function createDeduplicatedFetch(baseFetch: typeof fetch = fetch): typeof fetch {
   const deduplicator = new RequestDeduplicator();
 
   return async (input: RequestInfo | URL, init?: RequestInit) => {
@@ -150,12 +142,13 @@ export function createDeduplicatedFetch(
  * Create cache key from request
  */
 function createCacheKey(input: RequestInfo | URL, init?: RequestInit): string {
-  const url = typeof input === 'string' ? input : input instanceof URL ? input.toString() : input.url;
-  const method = init?.method || 'GET';
-  const body = init?.body ? JSON.stringify(init.body) : '';
+  const url =
+    typeof input === "string" ? input : input instanceof URL ? input.toString() : input.url;
+  const method = init?.method || "GET";
+  const body = init?.body ? JSON.stringify(init.body) : "";
 
   // Only deduplicate GET requests by default
-  if (method !== 'GET') {
+  if (method !== "GET") {
     return `${method}:${url}:${Date.now()}`;
   }
 
@@ -190,4 +183,4 @@ export function useRequestDeduplication() {
 }
 
 // Import React dynamically to avoid issues
-import React from 'react';
+import React from "react";

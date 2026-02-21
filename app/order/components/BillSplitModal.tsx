@@ -142,12 +142,22 @@ export function BillSplitModal({
   const handleComplete = () => {
     const validSplits = splits.filter((split) => split.items.length > 0);
     if (validSplits.length === 0) {
-      toast({ title: "Invalid Split", description: "Please assign items to at least one person.", variant: "destructive" });
+      toast({
+        title: "Invalid Split",
+        description: "Please assign items to at least one person.",
+        variant: "destructive",
+      });
       return;
     }
 
     if (Math.abs(getRemainingAmount()) > 0.01) {
-      toast({ title: "Invalid Split", description: "Please assign all items to splits. Remaining amount: £" + getRemainingAmount().toFixed(2), variant: "destructive" });
+      toast({
+        title: "Invalid Split",
+        description:
+          "Please assign all items to splits. Remaining amount: £" +
+          getRemainingAmount().toFixed(2),
+        variant: "destructive",
+      });
       return;
     }
 

@@ -16,7 +16,14 @@ interface UseRevenueAnalyticsOptions {
 }
 
 export function useRevenueAnalytics(options: UseRevenueAnalyticsOptions) {
-  const { venueId, preset = "last_30_days", startDate, endDate, autoFetch = true, refetchInterval } = options;
+  const {
+    venueId,
+    preset = "last_30_days",
+    startDate,
+    endDate,
+    autoFetch = true,
+    refetchInterval,
+  } = options;
 
   const filters: Partial<AnalyticsFilters> = {
     venueId,

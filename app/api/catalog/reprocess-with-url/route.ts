@@ -84,12 +84,19 @@ export const POST = withUnifiedAuth(
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 120000);
 
+        const authHeader = req.headers.get("authorization");
+        const cookieHeader = req.headers.get("cookie");
+        const headers: Record<string, string> = {
+          "Content-Type": "application/json",
+          ...(authHeader && { Authorization: authHeader }),
+          ...(cookieHeader && { Cookie: cookieHeader }),
+        };
         let scrapeResponse;
         try {
           scrapeResponse = await fetch(`${baseUrl}/api/scrape-menu`, {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ url: menuUrl }),
+            headers,
+            body: JSON.stringify({ url: menuUrl, venueId }),
             signal: controller.signal,
           });
           clearTimeout(timeoutId);

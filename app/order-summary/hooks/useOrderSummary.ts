@@ -106,9 +106,10 @@ export function useOrderSummary() {
     try {
       // Transform cart items to canonical /api/orders format
       const items = orderData.cart.map((item) => ({
-        menu_item_id: item.id && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(item.id)
-          ? item.id
-          : null,
+        menu_item_id:
+          item.id && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(item.id)
+            ? item.id
+            : null,
         item_name: item.name,
         quantity: item.quantity,
         price: item.price,

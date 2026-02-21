@@ -511,7 +511,8 @@ export function useCancelReservation() {
       qc.invalidateQueries({ queryKey: ["reservations"] });
       qc.invalidateQueries({ queryKey: ["tables", "counters"] });
       qc.invalidateQueries({ queryKey: ["tables", "grid"] });
-      const vId = "venueId" in variables && typeof variables.venueId === "string" ? variables.venueId : null;
+      const vId =
+        "venueId" in variables && typeof variables.venueId === "string" ? variables.venueId : null;
       if (vId && typeof window !== "undefined") {
         import("@/lib/cache/count-cache").then(({ invalidateCountsForVenue }) =>
           invalidateCountsForVenue(vId)
@@ -663,14 +664,15 @@ export function useDeleteTable(venueId: string) {
       // Try normal delete first
       let url = `/api/tables/${tableId}`;
       let response = await apiClient.delete(url);
-      
+
       // If 400 error with active reservations and force=true not already set, retry with force
       if (!response.ok && force === false) {
         const errorData = await response.json();
-        
+
         // Check if error is about active reservations
-        const hasActiveReservations = errorData?.error?.includes?.("active reservations") || 
-                                       errorData?.hasActiveReservations === true;
+        const hasActiveReservations =
+          errorData?.error?.includes?.("active reservations") ||
+          errorData?.hasActiveReservations === true;
         if (hasActiveReservations) {
           // Retry with force=true
           url = `/api/tables/${tableId}?force=true`;

@@ -11,7 +11,6 @@
 import { extractMenuFromImage, cropPageImageToDataUrl } from "./gptVisionMenuParser";
 import { extractMenuFromWebsite } from "./webMenuExtractor";
 
-
 interface MenuItem {
   name: string;
   description?: string;

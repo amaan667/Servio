@@ -6,7 +6,12 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { supabaseBrowser as createClient } from "@/lib/supabase";
 import { subscriptionManager, SubscriptionManager } from "@/lib/realtime/subscription-manager";
-import type { RealtimeInventoryItem, PostgresPayload, ConnectionState, SubscriptionStatus } from "@/lib/realtime/types";
+import type {
+  RealtimeInventoryItem,
+  PostgresPayload,
+  ConnectionState,
+  SubscriptionStatus,
+} from "@/lib/realtime/types";
 
 // ============================================================================
 // Types
@@ -36,20 +41,22 @@ interface UseRealtimeInventoryReturn {
 // Hook Implementation
 // ============================================================================
 
-export function useRealtimeInventory(options: UseRealtimeInventoryOptions): UseRealtimeInventoryReturn {
-  const { 
-    venueId, 
+export function useRealtimeInventory(
+  options: UseRealtimeInventoryOptions
+): UseRealtimeInventoryReturn {
+  const {
+    venueId,
     lowStockThreshold = 10,
-    onInventoryChange, 
+    onInventoryChange,
     onLowStockAlert,
-    enabled = true 
+    enabled = true,
   } = options;
 
   const [items, setItems] = useState<RealtimeInventoryItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isError, setIsError] = useState(false);
   const [error, setError] = useState<Error | null>(null);
-  const [connectionState, setConnectionState] = useState<ConnectionState>('disconnected');
+  const [connectionState, setConnectionState] = useState<ConnectionState>("disconnected");
 
   const channelRef = useRef<string | null>(null);
   const mountedRef = useRef(true);
@@ -99,7 +106,7 @@ export function useRealtimeInventory(options: UseRealtimeInventoryOptions): UseR
       }
 
       if (mountedRef.current) {
-        setItems(inventoryData as RealtimeInventoryItem[] || []);
+        setItems((inventoryData as RealtimeInventoryItem[]) || []);
       }
     } catch (err) {
       const error = err instanceof Error ? err : new Error(String(err));
@@ -123,8 +130,8 @@ export function useRealtimeInventory(options: UseRealtimeInventoryOptions): UseR
       return;
     }
 
-    const channelName = SubscriptionManager.generateChannelName(venueId, 'inventory');
-    
+    const channelName = SubscriptionManager.generateChannelName(venueId, "inventory");
+
     if (channelRef.current === channelName) {
       return;
     }
@@ -137,16 +144,22 @@ export function useRealtimeInventory(options: UseRealtimeInventoryOptions): UseR
         channelName,
         postgres: [
           {
-            schema: 'public',
-            table: 'inventory_items',
-            event: '*',
-            filters: [{ column: 'venue_id', operator: 'eq', value: venueId }],
+            schema: "public",
+            table: "inventory_items",
+            event: "*",
+            filters: [{ column: "venue_id", operator: "eq", value: venueId }],
           },
         ],
       },
       onStatusChange: (status: SubscriptionStatus) => {
         if (mountedRef.current) {
-          setConnectionState(status === 'SUBSCRIBED' ? 'connected' : status === 'CHANNEL_ERROR' ? 'error' : 'connecting');
+          setConnectionState(
+            status === "SUBSCRIBED"
+              ? "connected"
+              : status === "CHANNEL_ERROR"
+                ? "error"
+                : "connecting"
+          );
         }
       },
       onEvent: (payload: unknown) => {
@@ -160,7 +173,10 @@ export function useRealtimeInventory(options: UseRealtimeInventoryOptions): UseR
         }
 
         // Check for low stock alert on INSERT or UPDATE
-        if (onLowStockAlert && (inventoryPayload.eventType === 'INSERT' || inventoryPayload.eventType === 'UPDATE')) {
+        if (
+          onLowStockAlert &&
+          (inventoryPayload.eventType === "INSERT" || inventoryPayload.eventType === "UPDATE")
+        ) {
           if (inventoryPayload.new) {
             const threshold = inventoryPayload.new.min_quantity ?? lowStockThreshold;
             if (inventoryPayload.new.quantity <= threshold) {
@@ -174,13 +190,13 @@ export function useRealtimeInventory(options: UseRealtimeInventoryOptions): UseR
           const newItems = [...prevItems];
 
           switch (inventoryPayload.eventType) {
-            case 'INSERT':
+            case "INSERT":
               if (inventoryPayload.new) {
                 newItems.push(inventoryPayload.new);
               }
               break;
 
-            case 'UPDATE':
+            case "UPDATE":
               if (inventoryPayload.new) {
                 const index = newItems.findIndex((i) => i.id === inventoryPayload.new!.id);
                 if (index >= 0) {
@@ -191,7 +207,7 @@ export function useRealtimeInventory(options: UseRealtimeInventoryOptions): UseR
               }
               break;
 
-            case 'DELETE':
+            case "DELETE":
               if (inventoryPayload.old) {
                 const index = newItems.findIndex((i) => i.id === inventoryPayload.old!.id);
                 if (index >= 0) {

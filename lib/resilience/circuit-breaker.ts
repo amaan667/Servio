@@ -3,7 +3,7 @@
 // Prevents cascading failures when external services are down
 // ============================================================================
 
-export type CircuitState = 'CLOSED' | 'OPEN' | 'HALF_OPEN';
+export type CircuitState = "CLOSED" | "OPEN" | "HALF_OPEN";
 
 export interface CircuitBreakerConfig {
   failureThreshold: number; // Number of failures before opening
@@ -42,7 +42,7 @@ export const DEFAULT_CIRCUIT_BREAKER_CONFIG: CircuitBreakerConfig = {
 };
 
 export class CircuitBreaker {
-  private state: CircuitState = 'CLOSED';
+  private state: CircuitState = "CLOSED";
   private failureCount = 0;
   private successCount = 0;
   private lastFailureTime: number | null = null;
@@ -66,9 +66,9 @@ export class CircuitBreaker {
     this.totalRequests++;
 
     // Check if we should allow the request based on state
-    if (this.state === 'OPEN') {
+    if (this.state === "OPEN") {
       if (this.nextAttemptTime && Date.now() >= this.nextAttemptTime) {
-        this.state = 'HALF_OPEN';
+        this.state = "HALF_OPEN";
         this.successCount = 0;
         this.failureCount = 0;
       } else {
@@ -87,7 +87,7 @@ export class CircuitBreaker {
     try {
       const result = await fn();
       this.recordSuccess();
-      
+
       return {
         success: true,
         data: result,
@@ -96,7 +96,7 @@ export class CircuitBreaker {
       };
     } catch (error) {
       this.recordFailure();
-      
+
       if (fallback) {
         try {
           const fallbackResult = await fallback();
@@ -132,7 +132,7 @@ export class CircuitBreaker {
     this.lastSuccessTime = Date.now();
     this.successCount++;
 
-    if (this.state === 'HALF_OPEN' && this.successCount >= this.config.successThreshold) {
+    if (this.state === "HALF_OPEN" && this.successCount >= this.config.successThreshold) {
       this.close();
     }
   }
@@ -146,7 +146,7 @@ export class CircuitBreaker {
     this.recentFailures.push(Date.now());
 
     // Check if we should open the circuit
-    if (this.state === 'CLOSED' || this.state === 'HALF_OPEN') {
+    if (this.state === "CLOSED" || this.state === "HALF_OPEN") {
       if (this.shouldOpen()) {
         this.open();
       }
@@ -168,31 +168,31 @@ export class CircuitBreaker {
     const windowedTotal = this.config.volumeThreshold; // Approximation
     const failureRate = windowedFailures.length / windowedTotal;
 
-    return failureRate >= (this.config.failureThreshold / this.config.volumeThreshold);
+    return failureRate >= this.config.failureThreshold / this.config.volumeThreshold;
   }
 
   /**
    * Open the circuit (fail fast)
    */
   private open(): void {
-    this.state = 'OPEN';
+    this.state = "OPEN";
     this.nextAttemptTime = Date.now() + this.config.timeout;
-    
+
     // Emit event (could integrate with monitoring)
-    this.emitStateChange('OPEN');
+    this.emitStateChange("OPEN");
   }
 
   /**
    * Close the circuit (allow requests)
    */
   private close(): void {
-    this.state = 'CLOSED';
+    this.state = "CLOSED";
     this.failureCount = 0;
     this.successCount = 0;
     this.recentFailures = [];
     this.nextAttemptTime = null;
-    
-    this.emitStateChange('CLOSED');
+
+    this.emitStateChange("CLOSED");
   }
 
   /**
@@ -216,7 +216,7 @@ export class CircuitBreaker {
    */
   getMetrics(): CircuitBreakerMetrics {
     this.cleanupOldFailures();
-    
+
     return {
       state: this.state,
       failureCount: this.failureCount,
@@ -234,9 +234,9 @@ export class CircuitBreaker {
    */
   forceState(state: CircuitState): void {
     this.state = state;
-    if (state === 'OPEN') {
+    if (state === "OPEN") {
       this.nextAttemptTime = Date.now() + this.config.timeout;
-    } else if (state === 'CLOSED') {
+    } else if (state === "CLOSED") {
       this.failureCount = 0;
       this.successCount = 0;
       this.recentFailures = [];
@@ -248,7 +248,7 @@ export class CircuitBreaker {
    * Reset the circuit breaker
    */
   reset(): void {
-    this.state = 'CLOSED';
+    this.state = "CLOSED";
     this.failureCount = 0;
     this.successCount = 0;
     this.lastFailureTime = null;
@@ -290,10 +290,7 @@ export class CircuitBreakerRegistryImpl implements CircuitBreakerRegistry {
       return existing;
     }
 
-    const breaker = new CircuitBreaker(
-      name,
-      config ?? this.defaultConfig
-    );
+    const breaker = new CircuitBreaker(name, config ?? this.defaultConfig);
     this.breakers.set(name, breaker);
     return breaker;
   }
@@ -320,28 +317,28 @@ export const circuitBreakerRegistry = new CircuitBreakerRegistryImpl();
 
 // Pre-configured circuit breakers for common services
 export const SERVICE_CIRCUIT_BREAKERS = {
-  STRIPE: circuitBreakerRegistry.register('stripe', {
+  STRIPE: circuitBreakerRegistry.register("stripe", {
     failureThreshold: 3,
     successThreshold: 2,
     timeout: 60000, // 1 minute for payments
     volumeThreshold: 5,
     windowMs: 120000,
   }),
-  SUPABASE: circuitBreakerRegistry.register('supabase', {
+  SUPABASE: circuitBreakerRegistry.register("supabase", {
     failureThreshold: 10,
     successThreshold: 5,
     timeout: 30000,
     volumeThreshold: 20,
     windowMs: 60000,
   }),
-  OPENAI: circuitBreakerRegistry.register('openai', {
+  OPENAI: circuitBreakerRegistry.register("openai", {
     failureThreshold: 5,
     successThreshold: 3,
     timeout: 60000,
     volumeThreshold: 10,
     windowMs: 120000,
   }),
-  REDIS: circuitBreakerRegistry.register('redis', {
+  REDIS: circuitBreakerRegistry.register("redis", {
     failureThreshold: 3,
     successThreshold: 2,
     timeout: 10000,
@@ -370,10 +367,7 @@ export function withCircuitBreaker(
   ): PropertyDescriptor {
     const originalMethod = descriptor.value;
 
-    descriptor.value = async function (
-      this: unknown,
-      ...args: unknown[]
-    ): Promise<unknown> {
+    descriptor.value = async function (this: unknown, ...args: unknown[]): Promise<unknown> {
       return breaker.execute(
         () => originalMethod.apply(this, args),
         fallback as () => Promise<unknown>

@@ -176,7 +176,13 @@ const DashboardClient = React.memo(function DashboardClient({
   }, [venue, user, router]);
 
   // Hooks must be called unconditionally - can't be in try-catch
-  const dashboardData = useDashboardData(venueId, venueTz || "", venue, initialCounts, initialStats);
+  const dashboardData = useDashboardData(
+    venueId,
+    venueTz || "",
+    venue,
+    initialCounts,
+    initialStats
+  );
 
   // Simple display values - use client state which is synced from server data
   // The useDashboardData hook ensures initialCounts/initialStats are used immediately

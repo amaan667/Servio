@@ -171,12 +171,7 @@ export const jobHelpers = {
 
   /** Get job status */
   async getJobStatus(queueName: string, jobId: string) {
-    const q =
-      queueName === "email"
-        ? emailQueue
-        : queueName === "ai-tasks"
-          ? aiQueue
-          : pdfQueue;
+    const q = queueName === "email" ? emailQueue : queueName === "ai-tasks" ? aiQueue : pdfQueue;
     if (!q) return null;
     const job = await q.getJob(jobId);
     if (!job) return null;

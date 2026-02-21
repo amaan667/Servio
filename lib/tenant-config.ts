@@ -3,22 +3,22 @@
  * Provides tenant-specific configuration management
  */
 
-import { createClient } from '@supabase/supabase-js';
-import { logger } from '@/lib/monitoring/structured-logger';
+import { createClient } from "@supabase/supabase-js";
+import { logger } from "@/lib/monitoring/structured-logger";
 
 export interface TenantConfig {
   id: string;
   tenantId: string;
   key: string;
   value: unknown;
-  type: 'string' | 'number' | 'boolean' | 'json' | 'array';
+  type: "string" | "number" | "boolean" | "json" | "array";
   category: string;
   description?: string;
   isPublic: boolean;
   isEditable: boolean;
   defaultValue?: unknown;
   validation?: {
-    type?: 'string' | 'number' | 'boolean' | 'email' | 'url' | 'enum';
+    type?: "string" | "number" | "boolean" | "email" | "url" | "enum";
     min?: number;
     max?: number;
     pattern?: string;
@@ -48,7 +48,7 @@ export class TenantConfigManager {
     const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
     if (!supabaseUrl || !supabaseServiceKey) {
-      throw new Error('Missing Supabase configuration');
+      throw new Error("Missing Supabase configuration");
     }
 
     this.supabase = createClient(supabaseUrl, supabaseServiceKey, {
@@ -65,17 +65,17 @@ export class TenantConfigManager {
   async getConfig(tenantId: string, key: string): Promise<unknown | null> {
     try {
       const { data, error } = await this.supabase
-        .from('tenant_configs')
-        .select('value')
-        .eq('tenant_id', tenantId)
-        .eq('key', key)
+        .from("tenant_configs")
+        .select("value")
+        .eq("tenant_id", tenantId)
+        .eq("key", key)
         .single();
 
       if (error) throw error;
 
       return (data as { value: unknown } | null)?.value ?? null;
     } catch (error) {
-      logger.error('Failed to get tenant config', { tenantId, key, error });
+      logger.error("Failed to get tenant config", { tenantId, key, error });
       return null;
     }
   }
@@ -86,9 +86,9 @@ export class TenantConfigManager {
   async getAllConfigs(tenantId: string): Promise<Record<string, unknown>> {
     try {
       const { data, error } = await this.supabase
-        .from('tenant_configs')
-        .select('key, value')
-        .eq('tenant_id', tenantId);
+        .from("tenant_configs")
+        .select("key, value")
+        .eq("tenant_id", tenantId);
 
       if (error) throw error;
 
@@ -99,7 +99,7 @@ export class TenantConfigManager {
 
       return configs;
     } catch (error) {
-      logger.error('Failed to get all tenant configs', { tenantId, error });
+      logger.error("Failed to get all tenant configs", { tenantId, error });
       return {};
     }
   }
@@ -114,28 +114,29 @@ export class TenantConfigManager {
       if (configDef) {
         const validation = this.validateValue(value, configDef);
         if (!validation.valid) {
-          throw new Error(validation.error || 'Invalid value');
+          throw new Error(validation.error || "Invalid value");
         }
       }
 
       // Upsert configuration
-      const { error } = await this.supabase
-        .from('tenant_configs')
-        .upsert({
+      const { error } = await this.supabase.from("tenant_configs").upsert(
+        {
           tenant_id: tenantId,
           key,
           value,
           updated_at: new Date().toISOString(),
-        } as never, {
-          onConflict: 'tenant_id,key',
-        });
+        } as never,
+        {
+          onConflict: "tenant_id,key",
+        }
+      );
 
       if (error) throw error;
 
-      logger.info('Tenant config updated', { tenantId, key });
+      logger.info("Tenant config updated", { tenantId, key });
       return true;
     } catch (error) {
-      logger.error('Failed to set tenant config', { tenantId, key, error });
+      logger.error("Failed to set tenant config", { tenantId, key, error });
       return false;
     }
   }
@@ -152,18 +153,16 @@ export class TenantConfigManager {
         updated_at: new Date().toISOString(),
       }));
 
-      const { error } = await this.supabase
-        .from('tenant_configs')
-        .upsert(records as never, {
-          onConflict: 'tenant_id,key',
-        });
+      const { error } = await this.supabase.from("tenant_configs").upsert(records as never, {
+        onConflict: "tenant_id,key",
+      });
 
       if (error) throw error;
 
-      logger.info('Tenant configs updated', { tenantId, count: Object.keys(configs).length });
+      logger.info("Tenant configs updated", { tenantId, count: Object.keys(configs).length });
       return true;
     } catch (error) {
-      logger.error('Failed to set tenant configs', { tenantId, error });
+      logger.error("Failed to set tenant configs", { tenantId, error });
       return false;
     }
   }
@@ -174,17 +173,17 @@ export class TenantConfigManager {
   async deleteConfig(tenantId: string, key: string): Promise<boolean> {
     try {
       const { error } = await this.supabase
-        .from('tenant_configs')
+        .from("tenant_configs")
         .delete()
-        .eq('tenant_id', tenantId)
-        .eq('key', key);
+        .eq("tenant_id", tenantId)
+        .eq("key", key);
 
       if (error) throw error;
 
-      logger.info('Tenant config deleted', { tenantId, key });
+      logger.info("Tenant config deleted", { tenantId, key });
       return true;
     } catch (error) {
-      logger.error('Failed to delete tenant config', { tenantId, key, error });
+      logger.error("Failed to delete tenant config", { tenantId, key, error });
       return false;
     }
   }
@@ -196,12 +195,12 @@ export class TenantConfigManager {
     try {
       const configDef = await this.getConfigDefinition(key);
       if (!configDef || configDef.defaultValue === undefined) {
-        throw new Error('No default value for this configuration');
+        throw new Error("No default value for this configuration");
       }
 
       return this.setConfig(tenantId, key, configDef.defaultValue);
     } catch (error) {
-      logger.error('Failed to reset tenant config', { tenantId, key, error });
+      logger.error("Failed to reset tenant config", { tenantId, key, error });
       return false;
     }
   }
@@ -212,16 +211,16 @@ export class TenantConfigManager {
   async getConfigDefinition(key: string): Promise<TenantConfig | null> {
     try {
       const { data, error } = await this.supabase
-        .from('tenant_config_definitions')
-        .select('*')
-        .eq('key', key)
+        .from("tenant_config_definitions")
+        .select("*")
+        .eq("key", key)
         .single();
 
       if (error) throw error;
 
       return data || null;
     } catch (error) {
-      logger.error('Failed to get config definition', { key, error });
+      logger.error("Failed to get config definition", { key, error });
       return null;
     }
   }
@@ -232,15 +231,15 @@ export class TenantConfigManager {
   async getAllConfigDefinitions(): Promise<TenantConfig[]> {
     try {
       const { data, error } = await this.supabase
-        .from('tenant_config_definitions')
-        .select('*')
-        .order('category, order', { ascending: true });
+        .from("tenant_config_definitions")
+        .select("*")
+        .order("category, order", { ascending: true });
 
       if (error) throw error;
 
       return data || [];
     } catch (error) {
-      logger.error('Failed to get all config definitions', { error });
+      logger.error("Failed to get all config definitions", { error });
       return [];
     }
   }
@@ -251,16 +250,16 @@ export class TenantConfigManager {
   async getConfigDefinitionsByCategory(category: string): Promise<TenantConfig[]> {
     try {
       const { data, error } = await this.supabase
-        .from('tenant_config_definitions')
-        .select('*')
-        .eq('category', category)
-        .order('order', { ascending: true });
+        .from("tenant_config_definitions")
+        .select("*")
+        .eq("category", category)
+        .order("order", { ascending: true });
 
       if (error) throw error;
 
       return data || [];
     } catch (error) {
-      logger.error('Failed to get config definitions by category', { category, error });
+      logger.error("Failed to get config definitions by category", { category, error });
       return [];
     }
   }
@@ -271,15 +270,15 @@ export class TenantConfigManager {
   async getConfigCategories(): Promise<TenantConfigCategory[]> {
     try {
       const { data, error } = await this.supabase
-        .from('tenant_config_categories')
-        .select('*')
-        .order('order', { ascending: true });
+        .from("tenant_config_categories")
+        .select("*")
+        .order("order", { ascending: true });
 
       if (error) throw error;
 
       return data || [];
     } catch (error) {
-      logger.error('Failed to get config categories', { error });
+      logger.error("Failed to get config categories", { error });
       return [];
     }
   }
@@ -287,7 +286,10 @@ export class TenantConfigManager {
   /**
    * Validate configuration value
    */
-  private validateValue(value: unknown, configDef: TenantConfig): { valid: boolean; error?: string } {
+  private validateValue(
+    value: unknown,
+    configDef: TenantConfig
+  ): { valid: boolean; error?: string } {
     if (!configDef.validation) {
       return { valid: true };
     }
@@ -297,18 +299,18 @@ export class TenantConfigManager {
 
     // Type validation
     switch (validation.type) {
-      case 'string':
-        if (typeof val !== 'string') {
-          return { valid: false, error: 'Value must be a string' };
+      case "string":
+        if (typeof val !== "string") {
+          return { valid: false, error: "Value must be a string" };
         }
         if (validation.pattern && !new RegExp(validation.pattern).test(val as string)) {
-          return { valid: false, error: 'Value does not match required pattern' };
+          return { valid: false, error: "Value does not match required pattern" };
         }
         break;
 
-      case 'number':
-        if (typeof val !== 'number') {
-          return { valid: false, error: 'Value must be a number' };
+      case "number":
+        if (typeof val !== "number") {
+          return { valid: false, error: "Value must be a number" };
         }
         if (validation.min !== undefined && (val as number) < validation.min) {
           return { valid: false, error: `Value must be at least ${validation.min}` };
@@ -318,37 +320,37 @@ export class TenantConfigManager {
         }
         break;
 
-      case 'boolean':
-        if (typeof val !== 'boolean') {
-          return { valid: false, error: 'Value must be a boolean' };
+      case "boolean":
+        if (typeof val !== "boolean") {
+          return { valid: false, error: "Value must be a boolean" };
         }
         break;
 
-      case 'email':
+      case "email":
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
         if (!emailRegex.test(val as string)) {
-          return { valid: false, error: 'Value must be a valid email address' };
+          return { valid: false, error: "Value must be a valid email address" };
         }
         break;
 
-      case 'url':
+      case "url":
         try {
           new URL(val as string);
         } catch {
-          return { valid: false, error: 'Value must be a valid URL' };
+          return { valid: false, error: "Value must be a valid URL" };
         }
         break;
 
-      case 'enum':
+      case "enum":
         if (validation.enum && !validation.enum.includes(val)) {
-          return { valid: false, error: `Value must be one of: ${validation.enum.join(', ')}` };
+          return { valid: false, error: `Value must be one of: ${validation.enum.join(", ")}` };
         }
         break;
     }
 
     // Required validation
-    if (validation.required && (val === undefined || val === null || val === '')) {
-      return { valid: false, error: 'Value is required' };
+    if (validation.required && (val === undefined || val === null || val === "")) {
+      return { valid: false, error: "Value is required" };
     }
 
     return { valid: true };
@@ -372,28 +374,33 @@ export class TenantConfigManager {
   /**
    * Get configuration audit log
    */
-  async getConfigAuditLog(tenantId: string, limit: number = 100): Promise<Array<{
-    id: string;
-    tenantId: string;
-    key: string;
-    oldValue: unknown;
-    newValue: unknown;
-    changedBy: string;
-    changedAt: string;
-  }>> {
+  async getConfigAuditLog(
+    tenantId: string,
+    limit: number = 100
+  ): Promise<
+    Array<{
+      id: string;
+      tenantId: string;
+      key: string;
+      oldValue: unknown;
+      newValue: unknown;
+      changedBy: string;
+      changedAt: string;
+    }>
+  > {
     try {
       const { data, error } = await this.supabase
-        .from('tenant_config_audit_log')
-        .select('*')
-        .eq('tenant_id', tenantId)
-        .order('changed_at', { ascending: false })
+        .from("tenant_config_audit_log")
+        .select("*")
+        .eq("tenant_id", tenantId)
+        .order("changed_at", { ascending: false })
         .limit(limit);
 
       if (error) throw error;
 
       return data || [];
     } catch (error) {
-      logger.error('Failed to get config audit log', { tenantId, error });
+      logger.error("Failed to get config audit log", { tenantId, error });
       return [];
     }
   }
@@ -423,7 +430,11 @@ export async function getTenantConfig(tenantId: string, key: string): Promise<un
 /**
  * Set tenant configuration value
  */
-export async function setTenantConfig(tenantId: string, key: string, value: unknown): Promise<boolean> {
+export async function setTenantConfig(
+  tenantId: string,
+  key: string,
+  value: unknown
+): Promise<boolean> {
   const manager = getTenantConfigManager();
   return manager.setConfig(tenantId, key, value);
 }

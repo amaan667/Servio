@@ -24,7 +24,11 @@ interface ReservationsPanelProps {
   onActionComplete?: () => void;
 }
 
-export function ReservationsPanel({ venueId, reservations, onActionComplete }: ReservationsPanelProps) {
+export function ReservationsPanel({
+  venueId,
+  reservations,
+  onActionComplete,
+}: ReservationsPanelProps) {
   const [isLoading, setIsLoading] = useState<string | null>(null);
   const checkInReservation = useCheckInReservation();
   const cancelReservation = useCancelReservation();

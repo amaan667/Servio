@@ -19,7 +19,10 @@ export const dynamic = "force-dynamic";
  * Schedule: every 5 minutes via Railway cron or external scheduler
  */
 export async function POST(req: NextRequest) {
-  const expectedSecret = env("CRON_SECRET") || "default-cron-secret";
+  const expectedSecret = env("CRON_SECRET");
+  if (!expectedSecret || expectedSecret.length < 16) {
+    return apiErrors.unauthorized("CRON_SECRET not configured");
+  }
   const authHeader = req.headers.get("authorization");
   if (authHeader !== `Bearer ${expectedSecret}`) {
     return apiErrors.unauthorized("Unauthorized");

@@ -307,13 +307,16 @@ export class MenuService extends BaseService {
           if (categoryOrder && categoryOrder.length > 0) {
             const categorySet = new Set(categoryOrder);
             // Sort categories according to category_order
-            const orderedCategories = categoryOrder.filter(cat => 
+            const orderedCategories = categoryOrder.filter((cat) =>
               returnedItems.some((item: MenuItem) => item.category === cat)
             );
             // Get remaining categories not in category_order
-            const remainingCategories = [...new Set(returnedItems
-              .map((item: MenuItem) => item.category)
-              .filter(cat => !categorySet.has(cat)))
+            const remainingCategories = [
+              ...new Set(
+                returnedItems
+                  .map((item: MenuItem) => item.category)
+                  .filter((cat) => !categorySet.has(cat))
+              ),
             ];
             const finalCategoryOrder = [...orderedCategories, ...remainingCategories];
 
@@ -337,7 +340,10 @@ export class MenuService extends BaseService {
               .eq("venue_id", venueId);
             if (corrections?.length) {
               const { applyCorrections: apply } = await import("@/lib/menu-corrections");
-              returnedItems = apply(returnedItems as { id: string; name: string; [k: string]: unknown }[], corrections);
+              returnedItems = apply(
+                returnedItems as { id: string; name: string; [k: string]: unknown }[],
+                corrections
+              );
             }
           } catch (correctionsError) {
             // Corrections are optional - public users may not have RLS access

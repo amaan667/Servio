@@ -178,8 +178,7 @@ export interface BulkOperationInput {
 /**
  * Bulk create input
  */
-export interface BulkCreateInput<T = Record<string, unknown>>
-  extends BulkOperationInput {
+export interface BulkCreateInput<T = Record<string, unknown>> extends BulkOperationInput {
   type: "bulk_create";
   /** Items to create */
   items: T[];
@@ -190,8 +189,7 @@ export interface BulkCreateInput<T = Record<string, unknown>>
 /**
  * Bulk update input
  */
-export interface BulkUpdateInput<T = Record<string, unknown>>
-  extends BulkOperationInput {
+export interface BulkUpdateInput<T = Record<string, unknown>> extends BulkOperationInput {
   type: "bulk_update";
   /** Updates to apply - map of ID to updates */
   updates: Array<{ id: string; data: T }>;
@@ -215,8 +213,7 @@ export interface BulkDeleteInput extends BulkOperationInput {
 /**
  * Bulk import input
  */
-export interface BulkImportInput<T = Record<string, unknown>>
-  extends BulkOperationInput {
+export interface BulkImportInput<T = Record<string, unknown>> extends BulkOperationInput {
   type: "bulk_import";
   /** Import data rows */
   rows: T[];

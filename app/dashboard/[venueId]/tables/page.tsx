@@ -67,27 +67,29 @@ async function fetchTablesData(venueId: string): Promise<TablesPageData | null> 
     // Calculate statistics
     let occupied = 0;
     let reserved = 0;
-    const sessionTableIds = new Set((tableSessions || []).map((s: Record<string, unknown>) => s.table_id));
-    const reservationTableIds = new Set((reservations || []).map((r: Record<string, unknown>) => r.table_id));
+    const sessionTableIds = new Set(
+      (tableSessions || []).map((s: Record<string, unknown>) => s.table_id)
+    );
+    const reservationTableIds = new Set(
+      (reservations || []).map((r: Record<string, unknown>) => r.table_id)
+    );
 
     for (const table of activeTables) {
       const tableId = (table as Record<string, unknown>).id as string;
-      
+
       // Check if table has an OCCUPIED session
       const session = (tableSessions || []).find(
         (s: Record<string, unknown>) => s.table_id === tableId && s.status === "OCCUPIED"
       );
-      
+
       // Check if table has an active reservation (within time window)
-      const reservation = (reservations || []).find(
-        (r: Record<string, unknown>) => {
-          const rTableId = r.table_id as string;
-          const startAt = new Date(r.start_at as string);
-          const endAt = new Date(r.end_at as string);
-          const leadTime = new Date(startAt.getTime() - 30 * 60 * 1000); // 30 min lead time
-          return rTableId === tableId && now >= leadTime && now <= endAt;
-        }
-      );
+      const reservation = (reservations || []).find((r: Record<string, unknown>) => {
+        const rTableId = r.table_id as string;
+        const startAt = new Date(r.start_at as string);
+        const endAt = new Date(r.end_at as string);
+        const leadTime = new Date(startAt.getTime() - 30 * 60 * 1000); // 30 min lead time
+        return rTableId === tableId && now >= leadTime && now <= endAt;
+      });
 
       if (session) {
         occupied++;

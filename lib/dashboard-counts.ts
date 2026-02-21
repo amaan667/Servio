@@ -34,55 +34,46 @@ export async function getDashboardCounts(
   const now = new Date();
   const liveStart = new Date(now.getTime() - liveWindowMins * 60 * 1000);
 
-  const [
-    tablesRes,
-    sessionsRes,
-    reservationsRes,
-    ordersTodayRes,
-    ordersLiveRes,
-    ordersHistoryRes,
-  ] = await Promise.all([
-    supabase
-      .from("tables")
-      .select("id, is_active")
-      .eq("venue_id", normalizedVenueId),
-    supabase
-      .from("table_sessions")
-      .select("id")
-      .eq("venue_id", normalizedVenueId)
-      .eq("status", "OCCUPIED")
-      .is("closed_at", null),
-    supabase
-      .from("reservations")
-      .select("id")
-      .eq("venue_id", normalizedVenueId)
-      .eq("status", "BOOKED")
-      .lte("start_at", now.toISOString())
-      .gte("end_at", now.toISOString()),
-    supabase
-      .from("orders")
-      .select("id, created_at")
-      .eq("venue_id", normalizedVenueId)
-      .gte("created_at", window.startUtcISO)
-      .lt("created_at", window.endUtcISO)
-      .neq("order_status", "CANCELLED")
-      .neq("order_status", "REFUNDED"),
-    supabase
-      .from("orders")
-      .select("id")
-      .eq("venue_id", normalizedVenueId)
-      .gte("created_at", liveStart.toISOString())
-      .lte("created_at", now.toISOString())
-      .neq("order_status", "CANCELLED")
-      .neq("order_status", "REFUNDED"),
-    supabase
-      .from("orders")
-      .select("id", { count: "exact", head: true })
-      .eq("venue_id", normalizedVenueId)
-      .lt("created_at", window.startUtcISO)
-      .neq("order_status", "CANCELLED")
-      .neq("order_status", "REFUNDED"),
-  ]);
+  const [tablesRes, sessionsRes, reservationsRes, ordersTodayRes, ordersLiveRes, ordersHistoryRes] =
+    await Promise.all([
+      supabase.from("tables").select("id, is_active").eq("venue_id", normalizedVenueId),
+      supabase
+        .from("table_sessions")
+        .select("id")
+        .eq("venue_id", normalizedVenueId)
+        .eq("status", "OCCUPIED")
+        .is("closed_at", null),
+      supabase
+        .from("reservations")
+        .select("id")
+        .eq("venue_id", normalizedVenueId)
+        .eq("status", "BOOKED")
+        .lte("start_at", now.toISOString())
+        .gte("end_at", now.toISOString()),
+      supabase
+        .from("orders")
+        .select("id, created_at")
+        .eq("venue_id", normalizedVenueId)
+        .gte("created_at", window.startUtcISO)
+        .lt("created_at", window.endUtcISO)
+        .neq("order_status", "CANCELLED")
+        .neq("order_status", "REFUNDED"),
+      supabase
+        .from("orders")
+        .select("id")
+        .eq("venue_id", normalizedVenueId)
+        .gte("created_at", liveStart.toISOString())
+        .lte("created_at", now.toISOString())
+        .neq("order_status", "CANCELLED")
+        .neq("order_status", "REFUNDED"),
+      supabase
+        .from("orders")
+        .select("id", { count: "exact", head: true })
+        .eq("venue_id", normalizedVenueId)
+        .lt("created_at", window.startUtcISO)
+        .neq("order_status", "CANCELLED")
+        .neq("order_status", "REFUNDED"),
+    ]);
 
   const allTables = tablesRes.data ?? [];
   const activeTables = allTables.filter((t) => t.is_active === true);

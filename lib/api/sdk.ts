@@ -89,8 +89,8 @@ export class ServioSDK {
   constructor(config: ServioSDKConfig) {
     this.config = {
       ...config,
-      baseUrl: config.baseUrl || 'https://api.servio.app',
-      version: config.version || 'v1',
+      baseUrl: config.baseUrl || "https://api.servio.app",
+      version: config.version || "v1",
       timeout: config.timeout || 10000,
     };
 
@@ -100,15 +100,12 @@ export class ServioSDK {
   /**
    * Make API request
    */
-  private async request<T>(
-    endpoint: string,
-    options: RequestInit = {}
-  ): Promise<APIResponse<T>> {
+  private async request<T>(endpoint: string, options: RequestInit = {}): Promise<APIResponse<T>> {
     const url = `${this.baseUrl}${endpoint}`;
     const headers: HeadersInit = {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${this.config.apiKey}`,
-      'X-API-Version': this.config.version!,
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${this.config.apiKey}`,
+      "X-API-Version": this.config.version!,
     };
 
     const controller = new AbortController();
@@ -129,7 +126,7 @@ export class ServioSDK {
         return {
           success: false,
           error: data.error || {
-            message: data.message || 'Request failed',
+            message: data.message || "Request failed",
             code: response.status.toString(),
           },
         };
@@ -145,7 +142,7 @@ export class ServioSDK {
       return {
         success: false,
         error: {
-          message: error instanceof Error ? error.message : 'Network error',
+          message: error instanceof Error ? error.message : "Network error",
         },
       };
     }
@@ -163,8 +160,8 @@ export class ServioSDK {
    */
   async listVenues(params?: { limit?: number; offset?: number }): Promise<APIResponse<Venue[]>> {
     const queryParams = new URLSearchParams();
-    if (params?.limit) queryParams.append('limit', params.limit.toString());
-    if (params?.offset) queryParams.append('offset', params.offset.toString());
+    if (params?.limit) queryParams.append("limit", params.limit.toString());
+    if (params?.offset) queryParams.append("offset", params.offset.toString());
 
     return this.request<Venue[]>(`/venues?${queryParams.toString()}`);
   }
@@ -172,10 +169,13 @@ export class ServioSDK {
   /**
    * Get menu items for a venue
    */
-  async getMenuItems(venueId: string, params?: { categoryId?: string; limit?: number }): Promise<APIResponse<MenuItem[]>> {
+  async getMenuItems(
+    venueId: string,
+    params?: { categoryId?: string; limit?: number }
+  ): Promise<APIResponse<MenuItem[]>> {
     const queryParams = new URLSearchParams();
-    if (params?.categoryId) queryParams.append('categoryId', params.categoryId);
-    if (params?.limit) queryParams.append('limit', params.limit.toString());
+    if (params?.categoryId) queryParams.append("categoryId", params.categoryId);
+    if (params?.limit) queryParams.append("limit", params.limit.toString());
 
     return this.request<MenuItem[]>(`/venues/${venueId}/menu?${queryParams.toString()}`);
   }
@@ -196,8 +196,8 @@ export class ServioSDK {
     sessionId?: string;
     items: Array<{ menuItemId: string; quantity: number; specialInstructions?: string }>;
   }): Promise<APIResponse<Order>> {
-    return this.request<Order>('/orders', {
-      method: 'POST',
+    return this.request<Order>("/orders", {
+      method: "POST",
       body: JSON.stringify(order),
     });
   }
@@ -214,7 +214,7 @@ export class ServioSDK {
    */
   async updateOrder(orderId: string, updates: Partial<Order>): Promise<APIResponse<Order>> {
     return this.request<Order>(`/orders/${orderId}`, {
-      method: 'PATCH',
+      method: "PATCH",
       body: JSON.stringify(updates),
     });
   }
@@ -224,7 +224,7 @@ export class ServioSDK {
    */
   async updateOrderStatus(orderId: string, status: string): Promise<APIResponse<Order>> {
     return this.request<Order>(`/orders/${orderId}/status`, {
-      method: 'PUT',
+      method: "PUT",
       body: JSON.stringify({ status }),
     });
   }
@@ -248,7 +248,7 @@ export class ServioSDK {
    */
   async seatTable(tableId: string, sessionId: string): Promise<APIResponse<Table>> {
     return this.request<Table>(`/tables/${tableId}/seat`, {
-      method: 'POST',
+      method: "POST",
       body: JSON.stringify({ sessionId }),
     });
   }
@@ -258,28 +258,28 @@ export class ServioSDK {
    */
   async clearTable(tableId: string): Promise<APIResponse<Table>> {
     return this.request<Table>(`/tables/${tableId}/clear`, {
-      method: 'POST',
+      method: "POST",
     });
   }
 
   /**
    * Get venue analytics
    */
-  async getVenueAnalytics(venueId: string, period: string = '7d'): Promise<APIResponse<unknown>> {
+  async getVenueAnalytics(venueId: string, period: string = "7d"): Promise<APIResponse<unknown>> {
     return this.request<unknown>(`/venues/${venueId}/analytics?period=${period}`);
   }
 
   /**
    * Get revenue analytics
    */
-  async getRevenueAnalytics(venueId: string, period: string = '7d'): Promise<APIResponse<unknown>> {
+  async getRevenueAnalytics(venueId: string, period: string = "7d"): Promise<APIResponse<unknown>> {
     return this.request<unknown>(`/venues/${venueId}/analytics/revenue?period=${period}`);
   }
 
   /**
    * Get order analytics
    */
-  async getOrderAnalytics(venueId: string, period: string = '7d'): Promise<APIResponse<unknown>> {
+  async getOrderAnalytics(venueId: string, period: string = "7d"): Promise<APIResponse<unknown>> {
     return this.request<unknown>(`/venues/${venueId}/analytics/orders?period=${period}`);
   }
 
@@ -288,8 +288,8 @@ export class ServioSDK {
    */
   async searchVenues(query: string, params?: { limit?: number }): Promise<APIResponse<Venue[]>> {
     const queryParams = new URLSearchParams();
-    queryParams.append('q', query);
-    if (params?.limit) queryParams.append('limit', params.limit.toString());
+    queryParams.append("q", query);
+    if (params?.limit) queryParams.append("limit", params.limit.toString());
 
     return this.request<Venue[]>(`/venues/search?${queryParams.toString()}`);
   }
@@ -297,8 +297,12 @@ export class ServioSDK {
   /**
    * Get public menu for a venue
    */
-  async getPublicMenu(venueId: string): Promise<APIResponse<{ categories: unknown[]; items: MenuItem[] }>> {
-    return this.request<{ categories: unknown[]; items: MenuItem[] }>(`/public/venues/${venueId}/menu`);
+  async getPublicMenu(
+    venueId: string
+  ): Promise<APIResponse<{ categories: unknown[]; items: MenuItem[] }>> {
+    return this.request<{ categories: unknown[]; items: MenuItem[] }>(
+      `/public/venues/${venueId}/menu`
+    );
   }
 
   /**
@@ -312,7 +316,7 @@ export class ServioSDK {
    * Validate API key
    */
   async validateApiKey(): Promise<APIResponse<{ valid: boolean; userId?: string }>> {
-    return this.request<{ valid: boolean; userId?: string }>('/auth/validate');
+    return this.request<{ valid: boolean; userId?: string }>("/auth/validate");
   }
 
   /**
@@ -320,8 +324,8 @@ export class ServioSDK {
    */
   async getUsage(params?: { startDate?: string; endDate?: string }): Promise<APIResponse<unknown>> {
     const queryParams = new URLSearchParams();
-    if (params?.startDate) queryParams.append('startDate', params.startDate);
-    if (params?.endDate) queryParams.append('endDate', params.endDate);
+    if (params?.startDate) queryParams.append("startDate", params.startDate);
+    if (params?.endDate) queryParams.append("endDate", params.endDate);
 
     return this.request<unknown>(`/usage?${queryParams.toString()}`);
   }
@@ -330,7 +334,7 @@ export class ServioSDK {
    * Get API rate limits
    */
   async getRateLimits(): Promise<APIResponse<{ limit: number; remaining: number; reset: string }>> {
-    return this.request<{ limit: number; remaining: number; reset: string }>('/rate-limits');
+    return this.request<{ limit: number; remaining: number; reset: string }>("/rate-limits");
   }
 }
 
@@ -344,7 +348,7 @@ export function createServioSDK(config: ServioSDKConfig): ServioSDK {
 /**
  * Default export for browser usage
  */
-if (typeof window !== 'undefined') {
+if (typeof window !== "undefined") {
   const win = window as unknown as Record<string, unknown>;
   win.ServioSDK = ServioSDK;
   win.createServioSDK = createServioSDK;

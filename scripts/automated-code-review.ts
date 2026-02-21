@@ -5,15 +5,15 @@
  * Performs automated code analysis and reviews
  */
 
-import * as fs from 'fs';
-import * as path from 'path';
-import { execSync } from 'child_process';
+import * as fs from "fs";
+import * as path from "path";
+import { execSync } from "child_process";
 
 interface ReviewIssue {
   file: string;
   line: number;
   column: number;
-  severity: 'error' | 'warning' | 'info';
+  severity: "error" | "warning" | "info";
   message: string;
   rule: string;
 }
@@ -42,26 +42,26 @@ export class CodeReviewer {
 
   constructor(config: Partial<ReviewConfig> = {}) {
     this.config = {
-      includePatterns: ['**/*.{ts,tsx,js,jsx}'],
+      includePatterns: ["**/*.{ts,tsx,js,jsx}"],
       excludePatterns: [
-        '**/node_modules/**',
-        '**/.next/**',
-        '**/dist/**',
-        '**/build/**',
-        '**/*.test.{ts,tsx,js,jsx}',
-        '**/*.spec.{ts,tsx,js,jsx}',
+        "**/node_modules/**",
+        "**/.next/**",
+        "**/dist/**",
+        "**/build/**",
+        "**/*.test.{ts,tsx,js,jsx}",
+        "**/*.spec.{ts,tsx,js,jsx}",
       ],
       rules: [
-        'no-console',
-        'no-debugger',
-        'no-var',
-        'prefer-const',
-        'no-unused-vars',
-        'no-duplicate-imports',
-        'max-line-length',
-        'max-complexity',
-        'prefer-arrow-functions',
-        'no-magic-numbers',
+        "no-console",
+        "no-debugger",
+        "no-var",
+        "prefer-const",
+        "no-unused-vars",
+        "no-duplicate-imports",
+        "max-line-length",
+        "max-complexity",
+        "prefer-arrow-functions",
+        "no-magic-numbers",
       ],
       ...config,
     };
@@ -118,8 +118,8 @@ export class CodeReviewer {
    * Check if file should be excluded
    */
   private shouldExclude(filePath: string): boolean {
-    return this.config.excludePatterns.some(pattern => {
-      const regex = new RegExp(pattern.replace(/\*\*/g, '.*'));
+    return this.config.excludePatterns.some((pattern) => {
+      const regex = new RegExp(pattern.replace(/\*\*/g, ".*"));
       return regex.test(filePath);
     });
   }
@@ -128,8 +128,8 @@ export class CodeReviewer {
    * Check if file should be included
    */
   private shouldInclude(filePath: string): boolean {
-    return this.config.includePatterns.some(pattern => {
-      const regex = new RegExp(pattern.replace(/\*\*/g, '.*'));
+    return this.config.includePatterns.some((pattern) => {
+      const regex = new RegExp(pattern.replace(/\*\*/g, ".*"));
       return regex.test(filePath);
     });
   }
@@ -138,8 +138,8 @@ export class CodeReviewer {
    * Review a single file
    */
   async reviewFile(filePath: string): Promise<ReviewResult> {
-    const content = fs.readFileSync(filePath, 'utf-8');
-    const lines = content.split('\n');
+    const content = fs.readFileSync(filePath, "utf-8");
+    const lines = content.split("\n");
     const issues: ReviewIssue[] = [];
 
     // Run ESLint
@@ -172,8 +172,8 @@ export class CodeReviewer {
 
     try {
       const output = execSync(`npx eslint "${filePath}" --format json`, {
-        encoding: 'utf-8',
-        stdio: ['pipe', 'pipe', 'pipe'],
+        encoding: "utf-8",
+        stdio: ["pipe", "pipe", "pipe"],
       });
 
       const results = JSON.parse(output);
@@ -184,7 +184,8 @@ export class CodeReviewer {
             file: filePath,
             line: message.line,
             column: message.column,
-            severity: message.severity === 2 ? 'error' : message.severity === 1 ? 'warning' : 'info',
+            severity:
+              message.severity === 2 ? "error" : message.severity === 1 ? "warning" : "info",
             message: message.message,
             rule: message.ruleId,
           });
@@ -205,12 +206,12 @@ export class CodeReviewer {
 
     try {
       const output = execSync(`npx tsc --noEmit "${filePath}"`, {
-        encoding: 'utf-8',
-        stdio: ['pipe', 'pipe', 'pipe'],
+        encoding: "utf-8",
+        stdio: ["pipe", "pipe", "pipe"],
       });
 
       // Parse TypeScript errors
-      const lines = output.split('\n');
+      const lines = output.split("\n");
       for (const line of lines) {
         const match = line.match(/(.+)\((\d+),(\d+)\):\s+error\s+TS\d+:\s+(.+)/);
         if (match) {
@@ -218,9 +219,9 @@ export class CodeReviewer {
             file: filePath,
             line: parseInt(match[2], 10),
             column: parseInt(match[3], 10),
-            severity: 'error',
+            severity: "error",
             message: match[4],
-            rule: 'typescript',
+            rule: "typescript",
           });
         }
       }
@@ -239,43 +240,43 @@ export class CodeReviewer {
 
     for (const rule of this.config.rules) {
       switch (rule) {
-        case 'no-console':
+        case "no-console":
           issues.push(...this.checkNoConsole(filePath, lines));
           break;
 
-        case 'no-debugger':
+        case "no-debugger":
           issues.push(...this.checkNoDebugger(filePath, lines));
           break;
 
-        case 'no-var':
+        case "no-var":
           issues.push(...this.checkNoVar(filePath, lines));
           break;
 
-        case 'prefer-const':
+        case "prefer-const":
           issues.push(...this.checkPreferConst(filePath, lines));
           break;
 
-        case 'no-unused-vars':
+        case "no-unused-vars":
           issues.push(...this.checkNoUnusedVars(filePath, content));
           break;
 
-        case 'no-duplicate-imports':
+        case "no-duplicate-imports":
           issues.push(...this.checkNoDuplicateImports(filePath, content));
           break;
 
-        case 'max-line-length':
+        case "max-line-length":
           issues.push(...this.checkMaxLineLength(filePath, lines, 120));
           break;
 
-        case 'max-complexity':
+        case "max-complexity":
           issues.push(...this.checkMaxComplexity(filePath, content, 10));
           break;
 
-        case 'prefer-arrow-functions':
+        case "prefer-arrow-functions":
           issues.push(...this.checkPreferArrowFunctions(filePath, content));
           break;
 
-        case 'no-magic-numbers':
+        case "no-magic-numbers":
           issues.push(...this.checkNoMagicNumbers(filePath, lines));
           break;
       }
@@ -291,14 +292,18 @@ export class CodeReviewer {
     const issues: ReviewIssue[] = [];
 
     lines.forEach((line, index) => {
-      if (line.includes('console.log') || line.includes('console.error') || line.includes('console.warn')) {
+      if (
+        line.includes("console.log") ||
+        line.includes("console.error") ||
+        line.includes("console.warn")
+      ) {
         issues.push({
           file: filePath,
           line: index + 1,
           column: 0,
-          severity: 'warning',
-          message: 'Remove console statement before production',
-          rule: 'no-console',
+          severity: "warning",
+          message: "Remove console statement before production",
+          rule: "no-console",
         });
       }
     });
@@ -313,14 +318,14 @@ export class CodeReviewer {
     const issues: ReviewIssue[] = [];
 
     lines.forEach((line, index) => {
-      if (line.includes('debugger')) {
+      if (line.includes("debugger")) {
         issues.push({
           file: filePath,
           line: index + 1,
           column: 0,
-          severity: 'error',
-          message: 'Remove debugger statement',
-          rule: 'no-debugger',
+          severity: "error",
+          message: "Remove debugger statement",
+          rule: "no-debugger",
         });
       }
     });
@@ -340,9 +345,9 @@ export class CodeReviewer {
           file: filePath,
           line: index + 1,
           column: 0,
-          severity: 'warning',
-          message: 'Use let or const instead of var',
-          rule: 'no-var',
+          severity: "warning",
+          message: "Use let or const instead of var",
+          rule: "no-var",
         });
       }
     });
@@ -362,9 +367,9 @@ export class CodeReviewer {
           file: filePath,
           line: index + 1,
           column: 0,
-          severity: 'info',
-          message: 'Consider using const if the variable is not reassigned',
-          rule: 'prefer-const',
+          severity: "info",
+          message: "Consider using const if the variable is not reassigned",
+          rule: "prefer-const",
         });
       }
     });
@@ -384,9 +389,9 @@ export class CodeReviewer {
     const matches = content.match(unusedPattern) || [];
 
     // Check if variables are used
-    matches.forEach(match => {
-      const varName = match.replace(/(?:const|let|var)\s+(\w+)\s*=/, '$1');
-      const usageRegex = new RegExp(`\\b${varName}\\b`, 'g');
+    matches.forEach((match) => {
+      const varName = match.replace(/(?:const|let|var)\s+(\w+)\s*=/, "$1");
+      const usageRegex = new RegExp(`\\b${varName}\\b`, "g");
       const usageCount = (content.match(usageRegex) || []).length;
 
       if (usageCount === 1) {
@@ -394,9 +399,9 @@ export class CodeReviewer {
           file: filePath,
           line: 0,
           column: 0,
-          severity: 'warning',
+          severity: "warning",
           message: `Variable '${varName}' is declared but never used`,
-          rule: 'no-unused-vars',
+          rule: "no-unused-vars",
         });
       }
     });
@@ -414,7 +419,7 @@ export class CodeReviewer {
     const imports: string[] = [];
     const importLines: number[] = [];
 
-    content.split('\n').forEach((line, index) => {
+    content.split("\n").forEach((line, index) => {
       const matches = line.match(importPattern);
       if (matches) {
         const importPath = matches[1];
@@ -423,9 +428,9 @@ export class CodeReviewer {
             file: filePath,
             line: index + 1,
             column: 0,
-            severity: 'warning',
+            severity: "warning",
             message: `Duplicate import: ${importPath}`,
-            rule: 'no-duplicate-imports',
+            rule: "no-duplicate-imports",
           });
         } else {
           imports.push(importPath);
@@ -449,9 +454,9 @@ export class CodeReviewer {
           file: filePath,
           line: index + 1,
           column: maxLength,
-          severity: 'warning',
+          severity: "warning",
           message: `Line exceeds ${maxLength} characters (${line.length} characters)`,
-          rule: 'max-line-length',
+          rule: "max-line-length",
         });
       }
     });
@@ -462,7 +467,11 @@ export class CodeReviewer {
   /**
    * Check for max complexity
    */
-  private checkMaxComplexity(filePath: string, content: string, maxComplexity: number): ReviewIssue[] {
+  private checkMaxComplexity(
+    filePath: string,
+    content: string,
+    maxComplexity: number
+  ): ReviewIssue[] {
     const issues: ReviewIssue[] = [];
 
     // Simplified complexity check
@@ -470,7 +479,7 @@ export class CodeReviewer {
     const functionPattern = /function\s+\w+\s*\([^)]*\)\s*{([^}]*(?:{[^}]*})*[^}]*)}/g;
     const matches = content.match(functionPattern) || [];
 
-    matches.forEach(match => {
+    matches.forEach((match) => {
       const functionBody = match;
       const complexity = this.calculateComplexity(functionBody);
 
@@ -479,9 +488,9 @@ export class CodeReviewer {
           file: filePath,
           line: 0,
           column: 0,
-          severity: 'warning',
+          severity: "warning",
           message: `Function complexity (${complexity}) exceeds maximum (${maxComplexity})`,
-          rule: 'max-complexity',
+          rule: "max-complexity",
         });
       }
     });
@@ -526,14 +535,14 @@ export class CodeReviewer {
     const functionPattern = /function\s*\(\s*\w+\s*\)\s*{/g;
     const matches = content.match(functionPattern) || [];
 
-    matches.forEach(match => {
+    matches.forEach((match) => {
       issues.push({
         file: filePath,
         line: 0,
         column: 0,
-        severity: 'info',
-        message: 'Consider using arrow function for better readability',
-        rule: 'prefer-arrow-functions',
+        severity: "info",
+        message: "Consider using arrow function for better readability",
+        rule: "prefer-arrow-functions",
       });
     });
 
@@ -551,14 +560,14 @@ export class CodeReviewer {
       const numberPattern = /(?<![a-zA-Z0-9])(?!0|1|-1)(\d+)(?![a-zA-Z0-9])/g;
       const matches = line.match(numberPattern) || [];
 
-      matches.forEach(match => {
+      matches.forEach((match) => {
         issues.push({
           file: filePath,
           line: index + 1,
           column: 0,
-          severity: 'info',
+          severity: "info",
           message: `Magic number '${match}' detected. Consider using a named constant.`,
-          rule: 'no-magic-numbers',
+          rule: "no-magic-numbers",
         });
       });
     });
@@ -569,8 +578,8 @@ export class CodeReviewer {
   /**
    * Calculate code metrics
    */
-  private calculateMetrics(content: string, lines: string[]): ReviewResult['metrics'] {
-    const linesOfCode = lines.filter(line => line.trim() !== '').length;
+  private calculateMetrics(content: string, lines: string[]): ReviewResult["metrics"] {
+    const linesOfCode = lines.filter((line) => line.trim() !== "").length;
     const complexity = this.calculateComplexity(content);
     const maintainabilityIndex = Math.max(0, 171 - 5.2 * Math.log(complexity) - 0.23 * complexity);
 
@@ -585,16 +594,25 @@ export class CodeReviewer {
    * Generate review report
    */
   generateReport(results: ReviewResult[]): string {
-    let report = '# Automated Code Review Report\n\n';
+    let report = "# Automated Code Review Report\n\n";
     report += `Generated: ${new Date().toISOString()}\n\n`;
 
     // Summary
     const totalIssues = results.reduce((sum, r) => sum + r.issues.length, 0);
-    const errors = results.reduce((sum, r) => sum + r.issues.filter(i => i.severity === 'error').length, 0);
-    const warnings = results.reduce((sum, r) => sum + r.issues.filter(i => i.severity === 'warning').length, 0);
-    const infos = results.reduce((sum, r) => sum + r.issues.filter(i => i.severity === 'info').length, 0);
+    const errors = results.reduce(
+      (sum, r) => sum + r.issues.filter((i) => i.severity === "error").length,
+      0
+    );
+    const warnings = results.reduce(
+      (sum, r) => sum + r.issues.filter((i) => i.severity === "warning").length,
+      0
+    );
+    const infos = results.reduce(
+      (sum, r) => sum + r.issues.filter((i) => i.severity === "info").length,
+      0
+    );
 
-    report += '## Summary\n\n';
+    report += "## Summary\n\n";
     report += `- Total Files: ${results.length}\n`;
     report += `- Total Issues: ${totalIssues}\n`;
     report += `- Errors: ${errors}\n`;
@@ -602,20 +620,21 @@ export class CodeReviewer {
     report += `- Info: ${infos}\n\n`;
 
     // Issues by file
-    report += '## Issues by File\n\n';
+    report += "## Issues by File\n\n";
     for (const result of results) {
       if (result.issues.length > 0) {
         report += `### ${result.file}\n\n`;
         for (const issue of result.issues) {
-          const icon = issue.severity === 'error' ? '❌' : issue.severity === 'warning' ? '⚠️' : 'ℹ️';
+          const icon =
+            issue.severity === "error" ? "❌" : issue.severity === "warning" ? "⚠️" : "ℹ️";
           report += `${icon} Line ${issue.line}: ${issue.message} (${issue.rule})\n`;
         }
-        report += '\n';
+        report += "\n";
       }
     }
 
     // Metrics
-    report += '## Metrics\n\n';
+    report += "## Metrics\n\n";
     for (const result of results) {
       report += `### ${result.file}\n\n`;
       report += `- Lines of Code: ${result.metrics.linesOfCode}\n`;
@@ -635,17 +654,17 @@ async function main() {
   const reviewer = new CodeReviewer();
 
   switch (command) {
-    case 'review':
-      console.log('Running automated code review...\n');
+    case "review":
+      console.log("Running automated code review...\n");
       const results = await reviewer.review();
       const report = reviewer.generateReport(results);
       console.log(report);
       break;
 
-    case 'check':
+    case "check":
       const filePath = args[1];
       if (!filePath) {
-        console.log('Usage: tsx scripts/automated-code-review.ts check <file>');
+        console.log("Usage: tsx scripts/automated-code-review.ts check <file>");
         process.exit(1);
       }
       const result = await reviewer.reviewFile(filePath);
@@ -653,16 +672,16 @@ async function main() {
       break;
 
     default:
-      console.log('Usage: tsx scripts/automated-code-review.ts <command>');
-      console.log('');
-      console.log('Commands:');
-      console.log('  review  Run full code review');
-      console.log('  check   Check a specific file');
+      console.log("Usage: tsx scripts/automated-code-review.ts <command>");
+      console.log("");
+      console.log("Commands:");
+      console.log("  review  Run full code review");
+      console.log("  check   Check a specific file");
       process.exit(1);
   }
 }
 
-main().catch(error => {
-  console.error('Code review failed:', error);
+main().catch((error) => {
+  console.error("Code review failed:", error);
   process.exit(1);
 });

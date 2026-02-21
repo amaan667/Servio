@@ -127,7 +127,11 @@ export function TopItemsChart({
                 return null;
               }}
             />
-            <Bar dataKey={metric} name={metric === "quantity" ? "Quantity Sold" : "Revenue"} radius={[0, 4, 4, 0]}>
+            <Bar
+              dataKey={metric}
+              name={metric === "quantity" ? "Quantity Sold" : "Revenue"}
+              radius={[0, 4, 4, 0]}
+            >
               {sortedData.map((_entry, index) => (
                 <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
               ))}
@@ -170,7 +174,9 @@ export function SimpleTopItems({
               return (
                 <div className="bg-white p-2 border rounded shadow text-sm">
                   <p className="font-medium">{itemData.name}</p>
-                  <p>{metric === "revenue" ? `$${itemData.revenue.toFixed(2)}` : itemData.quantity}</p>
+                  <p>
+                    {metric === "revenue" ? `$${itemData.revenue.toFixed(2)}` : itemData.quantity}
+                  </p>
                 </div>
               );
             }

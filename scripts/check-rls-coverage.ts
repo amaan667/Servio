@@ -16,9 +16,7 @@ const DATABASE_TYPES_FILE = path.join(ROOT, "types", "database.ts");
 function getTablesFromDatabaseInterface(): string[] {
   const content = fs.readFileSync(DATABASE_TYPES_FILE, "utf-8");
   // Extract the Tables: { ... } block from the Database interface
-  const tablesBlockMatch = content.match(
-    /Tables:\s*\{([\s\S]*?)\};\s*Views:/
-  );
+  const tablesBlockMatch = content.match(/Tables:\s*\{([\s\S]*?)\};\s*Views:/);
   if (!tablesBlockMatch) {
     console.error("Could not find Tables block in Database interface");
     process.exit(1);
@@ -63,12 +61,8 @@ function main() {
   const interfaceTables = getTablesFromDatabaseInterface();
   const rlsTables = getTablesWithRLSInMigrations();
 
-  console.log(
-    `Tables in Database interface: ${interfaceTables.length}`
-  );
-  console.log(
-    `Tables with RLS in migrations: ${rlsTables.size}`
-  );
+  console.log(`Tables in Database interface: ${interfaceTables.length}`);
+  console.log(`Tables with RLS in migrations: ${rlsTables.size}`);
   console.log();
 
   const missing: string[] = [];
@@ -83,9 +77,7 @@ function main() {
   }
 
   // Also report tables with RLS that aren't in the interface (migration-only tables)
-  const extraRLS = [...rlsTables].filter(
-    (t) => !interfaceTables.includes(t)
-  );
+  const extraRLS = [...rlsTables].filter((t) => !interfaceTables.includes(t));
 
   for (const table of covered) {
     console.log(`  ✅ ${table}`);
@@ -103,9 +95,7 @@ function main() {
   }
 
   console.log();
-  console.log(
-    `Coverage: ${covered.length}/${interfaceTables.length} tables have RLS`
-  );
+  console.log(`Coverage: ${covered.length}/${interfaceTables.length} tables have RLS`);
 
   if (missing.length > 0) {
     console.error(

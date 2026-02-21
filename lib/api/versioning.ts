@@ -66,7 +66,9 @@ export function getApiVersionFromRequest(req: NextRequest): ApiVersion {
  * Check if version is deprecated
  */
 export function isVersionDeprecated(version: ApiVersion): boolean {
-  return DEPRECATED_API_VERSIONS.includes(version) || API_VERSION_INFO[version]?.deprecated || false;
+  return (
+    DEPRECATED_API_VERSIONS.includes(version) || API_VERSION_INFO[version]?.deprecated || false
+  );
 }
 
 /**
@@ -141,7 +143,9 @@ export function createUnsupportedVersionResponse(requestedVersion: string): Next
 /**
  * Middleware for API versioning
  */
-export function withApiVersioning(handler: (req: NextRequest, version: ApiVersion) => Promise<NextResponse>) {
+export function withApiVersioning(
+  handler: (req: NextRequest, version: ApiVersion) => Promise<NextResponse>
+) {
   return async (req: NextRequest) => {
     const version = getApiVersionFromRequest(req);
 
@@ -156,7 +160,8 @@ export function withApiVersioning(handler: (req: NextRequest, version: ApiVersio
       const headers = createVersionHeaders(version);
 
       // Add deprecation warning header
-      (headers as Record<string, string>)["Warning"] = `299 - "Deprecated API Version" - "${version}" is deprecated and will be removed on ${versionInfo?.sunsetDate || "TBD"}`;
+      (headers as Record<string, string>)["Warning"] =
+        `299 - "Deprecated API Version" - "${version}" is deprecated and will be removed on ${versionInfo?.sunsetDate || "TBD"}`;
 
       return NextResponse.json(
         {
@@ -186,7 +191,10 @@ export function withApiVersioning(handler: (req: NextRequest, version: ApiVersio
 /**
  * Get versioned route path
  */
-export function getVersionedPath(basePath: string, version: ApiVersion = CURRENT_API_VERSION): string {
+export function getVersionedPath(
+  basePath: string,
+  version: ApiVersion = CURRENT_API_VERSION
+): string {
   return `/api/${version}${basePath}`;
 }
 

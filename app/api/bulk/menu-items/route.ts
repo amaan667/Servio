@@ -15,27 +15,9 @@ import { logger } from "@/lib/monitoring/structured-logger";
 const bulkMenuCreateSchema = z.object({
   venueId: z.string().optional(),
   venue_id: z.string().optional(),
-  items: z.array(
-    z.object({
-      name_en: z.string().optional(),
-      name_ar: z.string().optional(),
-      description_en: z.string().optional(),
-      description_ar: z.string().optional(),
-      price: z.number().min(0).optional(),
-      category: z.string().optional(),
-      is_available: z.boolean().optional(),
-    })
-  ).min(1),
-  dryRun: z.boolean().optional(),
-});
-
-const bulkMenuUpdateSchema = z.object({
-  venueId: z.string().optional(),
-  venue_id: z.string().optional(),
-  updates: z.array(
-    z.object({
-      id: z.string(),
-      data: z.object({
+  items: z
+    .array(
+      z.object({
         name_en: z.string().optional(),
         name_ar: z.string().optional(),
         description_en: z.string().optional(),
@@ -43,9 +25,31 @@ const bulkMenuUpdateSchema = z.object({
         price: z.number().min(0).optional(),
         category: z.string().optional(),
         is_available: z.boolean().optional(),
-      }),
-    })
-  ).min(1),
+      })
+    )
+    .min(1),
+  dryRun: z.boolean().optional(),
+});
+
+const bulkMenuUpdateSchema = z.object({
+  venueId: z.string().optional(),
+  venue_id: z.string().optional(),
+  updates: z
+    .array(
+      z.object({
+        id: z.string(),
+        data: z.object({
+          name_en: z.string().optional(),
+          name_ar: z.string().optional(),
+          description_en: z.string().optional(),
+          description_ar: z.string().optional(),
+          price: z.number().min(0).optional(),
+          category: z.string().optional(),
+          is_available: z.boolean().optional(),
+        }),
+      })
+    )
+    .min(1),
   dryRun: z.boolean().optional(),
   skipMissing: z.boolean().optional(),
 });
@@ -113,10 +117,7 @@ export const POST = createUnifiedHandler(
       if (isZodError(error)) {
         return handleZodError(error);
       }
-      return apiErrors.internal(
-        "Bulk menu create failed",
-        isDevelopment() ? error : undefined
-      );
+      return apiErrors.internal("Bulk menu create failed", isDevelopment() ? error : undefined);
     }
   },
   {
@@ -182,10 +183,7 @@ export const PUT = createUnifiedHandler(
       if (isZodError(error)) {
         return handleZodError(error);
       }
-      return apiErrors.internal(
-        "Bulk menu update failed",
-        isDevelopment() ? error : undefined
-      );
+      return apiErrors.internal("Bulk menu update failed", isDevelopment() ? error : undefined);
     }
   },
   {
@@ -251,10 +249,7 @@ export const DELETE = createUnifiedHandler(
       if (isZodError(error)) {
         return handleZodError(error);
       }
-      return apiErrors.internal(
-        "Bulk menu delete failed",
-        isDevelopment() ? error : undefined
-      );
+      return apiErrors.internal("Bulk menu delete failed", isDevelopment() ? error : undefined);
     }
   },
   {

@@ -127,9 +127,7 @@ export const getAuthContext = cache(async (venueId: string): Promise<AuthContext
     if (hUserId) {
       const resolved = await resolveVenueAccess(hUserId, normalized);
       if (resolved && resolved.role && resolved.tier) {
-        const tier = VALID_TIERS.has(resolved.tier)
-          ? (resolved.tier as AuthTier)
-          : "starter";
+        const tier = VALID_TIERS.has(resolved.tier) ? (resolved.tier as AuthTier) : "starter";
         return {
           userId: resolved.userId,
           email: hEmail ?? null,
@@ -154,9 +152,7 @@ export const getAuthContext = cache(async (venueId: string): Promise<AuthContext
     if (user) {
       const resolved = await resolveVenueAccess(user.id, normalized);
       if (resolved && resolved.role && resolved.tier) {
-        const tier = VALID_TIERS.has(resolved.tier)
-          ? (resolved.tier as AuthTier)
-          : "starter";
+        const tier = VALID_TIERS.has(resolved.tier) ? (resolved.tier as AuthTier) : "starter";
         return {
           userId: resolved.userId,
           email: user.email ?? null,

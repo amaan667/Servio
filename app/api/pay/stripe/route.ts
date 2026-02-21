@@ -16,8 +16,8 @@ export const POST = createUnifiedHandler(
     };
 
     // Verify payment intent with Stripe API
-    const stripe = require('stripe')(env("STRIPE_SECRET_KEY"));
-    
+    const stripe = require("stripe")(env("STRIPE_SECRET_KEY"));
+
     let paymentSuccess = false;
     let paymentError = null;
 
@@ -25,11 +25,11 @@ export const POST = createUnifiedHandler(
       // Verify payment intent status
       if (payment_intent_id) {
         const paymentIntent = await stripe.paymentIntents.retrieve(payment_intent_id);
-        
-        paymentSuccess = paymentIntent.status === 'succeeded';
-        
+
+        paymentSuccess = paymentIntent.status === "succeeded";
+
         if (!paymentSuccess) {
-          paymentError = `Payment ${paymentIntent.status}: ${paymentIntent.last_payment_error?.message || 'Unknown error'}`;
+          paymentError = `Payment ${paymentIntent.status}: ${paymentIntent.last_payment_error?.message || "Unknown error"}`;
         }
       }
     } catch (stripeError) {
@@ -70,7 +70,11 @@ export const POST = createUnifiedHandler(
       .single();
 
     if (updateError || !order) {
-      throw new Error(isDevelopment() ? updateError?.message || "Database update failed" : "Failed to process payment");
+      throw new Error(
+        isDevelopment()
+          ? updateError?.message || "Database update failed"
+          : "Failed to process payment"
+      );
     }
 
     return {

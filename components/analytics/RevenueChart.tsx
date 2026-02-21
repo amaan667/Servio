@@ -98,12 +98,7 @@ export function RevenueChart({
               </linearGradient>
             </defs>
             <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
-            <XAxis
-              dataKey="date"
-              tickFormatter={formatDate}
-              stroke="#888888"
-              fontSize={12}
-            />
+            <XAxis dataKey="date" tickFormatter={formatDate} stroke="#888888" fontSize={12} />
             <YAxis
               yAxisId="revenue"
               tickFormatter={formatCurrency}
@@ -111,12 +106,7 @@ export function RevenueChart({
               fontSize={12}
             />
             {showOrders && (
-              <YAxis
-                yAxisId="orders"
-                orientation="right"
-                stroke="#82ca9d"
-                fontSize={12}
-              />
+              <YAxis yAxisId="orders" orientation="right" stroke="#82ca9d" fontSize={12} />
             )}
             <Tooltip
               content={({ active, payload, label }) => {
@@ -129,8 +119,8 @@ export function RevenueChart({
                           {entry.dataKey === "revenue"
                             ? `Revenue: ${formatCurrency(Number(entry.value) || 0)}`
                             : entry.dataKey === "orders"
-                            ? `Orders: ${entry.value}`
-                            : `AOV: ${formatCurrency(Number(entry.value) || 0)}`}
+                              ? `Orders: ${entry.value}`
+                              : `AOV: ${formatCurrency(Number(entry.value) || 0)}`}
                         </p>
                       ))}
                     </div>
@@ -210,13 +200,7 @@ export function SimpleRevenueChart({
             return null;
           }}
         />
-        <Line
-          type="monotone"
-          dataKey="revenue"
-          stroke="#8884d8"
-          strokeWidth={2}
-          dot={false}
-        />
+        <Line type="monotone" dataKey="revenue" stroke="#8884d8" strokeWidth={2} dot={false} />
       </LineChart>
     </ResponsiveContainer>
   );

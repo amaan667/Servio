@@ -46,12 +46,7 @@ export const cspConfig = {
   ] as string[],
 
   // Font sources
-  fontSrc: [
-    "'self'",
-    "data:",
-    "https://fonts.gstatic.com",
-    "https://cdn.jsdelivr.net",
-  ] as string[],
+  fontSrc: ["'self'", "data:", "https://fonts.gstatic.com", "https://cdn.jsdelivr.net"] as string[],
 
   // Object sources (should be empty for most apps)
   objectSrc: ["'none'"] as string[],
@@ -60,11 +55,7 @@ export const cspConfig = {
   mediaSrc: ["'self'", "blob:", "https://*.supabase.co"] as string[],
 
   // Frame sources (for embeds)
-  frameSrc: [
-    "'self'",
-    "https://js.stripe.com",
-    "https://hooks.stripe.com",
-  ] as string[],
+  frameSrc: ["'self'", "https://js.stripe.com", "https://hooks.stripe.com"] as string[],
 
   // Connect sources (for API calls)
   connectSrc: [
@@ -167,9 +158,10 @@ export const securityHeaders = {
   // Strict Transport Security (HSTS) - enable in production
   // Note: This should be set with a relatively short max-age initially
   // and increased after confirming everything works
-  "Strict-Transport-Security": process.env.NODE_ENV === "production"
-    ? "max-age=31536000; includeSubDomains; preload"
-    : "max-age=0",
+  "Strict-Transport-Security":
+    process.env.NODE_ENV === "production"
+      ? "max-age=31536000; includeSubDomains; preload"
+      : "max-age=0",
 
   // Content Security Policy
   "Content-Security-Policy": buildCSP(),
@@ -253,9 +245,7 @@ export function validateCSPConfig(): { valid: boolean; errors: string[] } {
   }
 
   if (cspConfig.scriptSrc.includes("'unsafe-eval'")) {
-    errors.push(
-      "Warning: 'unsafe-eval' in script-src allows eval(). This is a security risk."
-    );
+    errors.push("Warning: 'unsafe-eval' in script-src allows eval(). This is a security risk.");
   }
 
   if (cspConfig.objectSrc.includes("*")) {
@@ -263,15 +253,12 @@ export function validateCSPConfig(): { valid: boolean; errors: string[] } {
   }
 
   if (cspConfig.defaultSrc.includes("'unsafe-inline'")) {
-    errors.push(
-      "Warning: 'unsafe-inline' in default-src weakens CSP protection."
-    );
+    errors.push("Warning: 'unsafe-inline' in default-src weakens CSP protection.");
   }
 
   // Check for wildcard overuse
   const wildcardPattern = /\*/g;
-  const wildcardCount =
-    JSON.stringify(cspConfig).match(wildcardPattern)?.length || 0;
+  const wildcardCount = JSON.stringify(cspConfig).match(wildcardPattern)?.length || 0;
 
   if (wildcardCount > 3) {
     errors.push(

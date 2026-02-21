@@ -6,7 +6,12 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { supabaseBrowser as createClient } from "@/lib/supabase";
 import { subscriptionManager, SubscriptionManager } from "@/lib/realtime/subscription-manager";
-import type { RealtimeOrder, PostgresPayload, ConnectionState, SubscriptionStatus } from "@/lib/realtime/types";
+import type {
+  RealtimeOrder,
+  PostgresPayload,
+  ConnectionState,
+  SubscriptionStatus,
+} from "@/lib/realtime/types";
 
 // ============================================================================
 // Types
@@ -41,7 +46,7 @@ export function useRealtimeOrders(options: UseRealtimeOrdersOptions): UseRealtim
   const [isLoading, setIsLoading] = useState(true);
   const [isError, setIsError] = useState(false);
   const [error, setError] = useState<Error | null>(null);
-  const [connectionState, setConnectionState] = useState<ConnectionState>('disconnected');
+  const [connectionState, setConnectionState] = useState<ConnectionState>("disconnected");
 
   const dataRef = useRef<RealtimeOrder[]>([]);
   const channelRef = useRef<string | null>(null);
@@ -143,8 +148,8 @@ export function useRealtimeOrders(options: UseRealtimeOrdersOptions): UseRealtim
       return;
     }
 
-    const channelName = SubscriptionManager.generateChannelName(venueId, 'orders');
-    
+    const channelName = SubscriptionManager.generateChannelName(venueId, "orders");
+
     // Don't re-subscribe if already subscribed
     if (channelRef.current === channelName) {
       return;
@@ -159,16 +164,22 @@ export function useRealtimeOrders(options: UseRealtimeOrdersOptions): UseRealtim
         channelName,
         postgres: [
           {
-            schema: 'public',
-            table: 'orders',
-            event: '*',
-            filters: [{ column: 'venue_id', operator: 'eq', value: venueId }],
+            schema: "public",
+            table: "orders",
+            event: "*",
+            filters: [{ column: "venue_id", operator: "eq", value: venueId }],
           },
         ],
       },
       onStatusChange: (status: SubscriptionStatus) => {
         if (mountedRef.current) {
-          setConnectionState(status === 'SUBSCRIBED' ? 'connected' : status === 'CHANNEL_ERROR' ? 'error' : 'connecting');
+          setConnectionState(
+            status === "SUBSCRIBED"
+              ? "connected"
+              : status === "CHANNEL_ERROR"
+                ? "error"
+                : "connecting"
+          );
         }
       },
       onEvent: (payload: unknown) => {
@@ -186,14 +197,14 @@ export function useRealtimeOrders(options: UseRealtimeOrdersOptions): UseRealtim
           const newData = [...prevData];
 
           switch (orderPayload.eventType) {
-            case 'INSERT':
+            case "INSERT":
               if (orderPayload.new) {
                 const newOrder = transformNewOrder(orderPayload.new);
                 newData.unshift(newOrder);
               }
               break;
 
-            case 'UPDATE':
+            case "UPDATE":
               if (orderPayload.new) {
                 const updatedOrder = orderPayload.new;
                 const index = newData.findIndex((o) => o.id === updatedOrder.id);
@@ -206,7 +217,7 @@ export function useRealtimeOrders(options: UseRealtimeOrdersOptions): UseRealtim
               }
               break;
 
-            case 'DELETE':
+            case "DELETE":
               if (orderPayload.old) {
                 const deletedId = orderPayload.old.id;
                 const index = newData.findIndex((o) => o.id === deletedId);

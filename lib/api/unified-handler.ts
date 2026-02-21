@@ -19,11 +19,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { ZodSchema, ZodError } from "zod";
 import { apiErrors, success, handleZodError, ApiResponse } from "./standard-response";
-import {
-  getApiVersionFromRequest,
-  createVersionHeaders,
-  type ApiVersion,
-} from "./versioning";
+import { getApiVersionFromRequest, createVersionHeaders, type ApiVersion } from "./versioning";
 import { normalizeVenueId } from "@/lib/utils/venueId";
 import {
   getAuthUserFromRequest,
@@ -32,8 +28,13 @@ import {
   hasRole,
   isOwner,
 } from "@/lib/auth/unified-auth";
-import { rateLimit, RATE_LIMITS, getClientIdentifier, type RateLimitConfig } from "@/lib/rate-limit";
-import { checkIdempotency, storeIdempotency } from "@/lib/db/idempotency";
+import {
+  rateLimit,
+  RATE_LIMITS,
+  getClientIdentifier,
+  type RateLimitConfig,
+} from "@/lib/rate-limit";
+import { tryClaimIdempotencyKey, updateIdempotencyResult } from "@/lib/db/idempotency";
 import { performanceTracker } from "@/lib/monitoring/performance-tracker";
 import { logger } from "@/lib/monitoring/structured-logger";
 import { startTransaction } from "@/lib/monitoring/apm";
@@ -116,8 +117,7 @@ export function createUnifiedHandler<TBody = unknown, TResponse = unknown>(
       const rlConfig = options.rateLimit || RATE_LIMITS.GENERAL;
       const customIdentifier = options.rateLimitIdentifier?.(req);
       const userId = req.headers.get("x-user-id");
-      const identifier =
-        customIdentifier ?? userId ?? getClientIdentifier(req);
+      const identifier = customIdentifier ?? userId ?? getClientIdentifier(req);
       const configWithId = { ...rlConfig, identifier };
       const rlResult = await rateLimit(req, configWithId);
       if (!rlResult.success) {
@@ -245,43 +245,10 @@ export function createUnifiedHandler<TBody = unknown, TResponse = unknown>(
           ) as unknown as NextResponse<ApiResponse<TResponse>>;
         }
 
-        // Check if tier/role headers are already set (from middleware for dashboard routes)
-        // If not, we need to call RPC to get them (for API routes)
-        let tier = req.headers.get("x-user-tier");
-        let role = req.headers.get("x-user-role");
-        const headerVenueId = req.headers.get("x-venue-id");
-
-        // If tier/role headers missing, call RPC (for API routes that middleware didn't process).
-        // Use getAccessContextWithRequest so Bearer token is used when cookies aren't sent.
-        if (!tier || !role || headerVenueId !== venueId) {
-          const { getAccessContextWithRequest } = await import(
-            "@/lib/access/getAccessContext"
-          );
-          const accessContext = await getAccessContextWithRequest(venueId, req);
-
-          if (
-            !accessContext ||
-            accessContext.user_id !== user.id ||
-            accessContext.venue_id !== venueId
-          ) {
-            perf.end();
-            return apiErrors.forbidden(
-              "Access denied to this venue",
-              undefined,
-              requestId
-            ) as unknown as NextResponse<ApiResponse<TResponse>>;
-          }
-
-          tier = accessContext.tier;
-          role = accessContext.role;
-
-          // Set headers for downstream use
-          req.headers.set("x-user-tier", tier);
-          req.headers.set("x-user-role", role);
-          req.headers.set("x-venue-id", venueId);
-        }
-
-        // Verify venue access (pass request so Bearer token is used when cookies empty)
+        // Single venue-access check. verifyVenueAccess has 3 fallback paths:
+        // 1. Cookie-based Supabase client → RPC
+        // 2. Bearer token Supabase client → RPC
+        // 3. Admin client → direct DB queries (resolveVenueAccess, always works)
         const access = await verifyVenueAccess(venueId, user.id, req);
 
         if (!access) {
@@ -292,6 +259,11 @@ export function createUnifiedHandler<TBody = unknown, TResponse = unknown>(
             requestId
           ) as unknown as NextResponse<ApiResponse<TResponse>>;
         }
+
+        // Set headers for downstream use
+        req.headers.set("x-user-tier", access.tier);
+        req.headers.set("x-user-role", access.role);
+        req.headers.set("x-venue-id", venueId);
 
         // Feature check
         if (options.requireFeature) {
@@ -382,13 +354,13 @@ export function createUnifiedHandler<TBody = unknown, TResponse = unknown>(
         }
       }
 
-      // 8. Idempotency
+      // 8. Idempotency (atomic claim to prevent race conditions)
       const idempotencyKey = req.headers.get("x-idempotency-key");
       if (idempotencyKey) {
-        const existing = await checkIdempotency(idempotencyKey);
-        if (existing.exists) {
+        const claim = await tryClaimIdempotencyKey(idempotencyKey, "", 3600);
+        if (!claim.claimed) {
           perf.end();
-          return success(existing.response.response_data as TResponse, {
+          return success(claim.response.response_data as TResponse, {
             timestamp: new Date().toISOString(),
             requestId,
             duration: Date.now() - startTime,
@@ -417,9 +389,9 @@ export function createUnifiedHandler<TBody = unknown, TResponse = unknown>(
 
       const responseData = options.autoCase && result ? keysToCamel(result) : result;
 
-      // 10. Store Idempotency
+      // 10. Store Idempotency (update claimed key with result)
       if (idempotencyKey) {
-        await storeIdempotency(idempotencyKey, "", responseData, 200);
+        await updateIdempotencyResult(idempotencyKey, responseData, 200);
       }
 
       const duration = Date.now() - startTime;

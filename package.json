@@ -2,7 +2,6 @@
   "name": "servio-mvp",
   "version": "0.1.6",
   "private": true,
-  "_deploy_trigger": "2026-02-18-mobile-session-fix",
   "packageManager": "pnpm@9.15.9",
   "engines": {
     "node": ">=20.x",

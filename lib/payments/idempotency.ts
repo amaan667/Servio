@@ -1,4 +1,4 @@
-import { createClient } from '@supabase/supabase-js';
+import { createClient } from "@supabase/supabase-js";
 
 // ============================================================================
 // IDEMPOTENCY KEY GENERATION & VALIDATION
@@ -28,7 +28,7 @@ const IDEMPOTENCY_TTL_MS = 24 * 60 * 60 * 1000; // 24 hours
 export function generateIdempotencyKey(): string {
   const array = new Uint8Array(32);
   crypto.getRandomValues(array);
-  return Array.from(array, (byte) => byte.toString(16).padStart(2, '0')).join('');
+  return Array.from(array, (byte) => byte.toString(16).padStart(2, "0")).join("");
 }
 
 /**
@@ -39,7 +39,7 @@ export function createNamespacedKey(
   operation: string,
   ...scope: string[]
 ): string {
-  const scopeStr = scope.join(':');
+  const scopeStr = scope.join(":");
   return `idem:${tenantId}:${operation}:${scopeStr}`;
 }
 
@@ -74,7 +74,7 @@ export function storeIdempotencyResult(
     result,
   };
   idempotencyStore.set(key, entry);
-  
+
   // Clean up expired entries periodically
   if (idempotencyStore.size > 10000) {
     cleanupExpiredKeys();
@@ -84,7 +84,9 @@ export function storeIdempotencyResult(
 /**
  * Get a cached result for an idempotency key
  */
-export function getIdempotencyResult(key: string): { success: boolean; data?: unknown; error?: string } | null {
+export function getIdempotencyResult(
+  key: string
+): { success: boolean; data?: unknown; error?: string } | null {
   const entry = idempotencyStore.get(key);
   if (!entry) return null;
   if (new Date() > entry.expiresAt) {
@@ -124,7 +126,7 @@ export interface StripePaymentIntentParams {
  * Create idempotent Stripe payment intent
  */
 export async function createIdempotentPaymentIntent(
-  stripeClient: import('stripe').Stripe,
+  stripeClient: import("stripe").Stripe,
   params: StripePaymentIntentParams
 ): Promise<{
   clientSecret: string;
@@ -133,7 +135,7 @@ export async function createIdempotentPaymentIntent(
 }> {
   const idempotencyKey = createNamespacedKey(
     params.tenantId,
-    'create_payment_intent',
+    "create_payment_intent",
     params.venueId,
     params.orderId
   );
@@ -145,7 +147,7 @@ export async function createIdempotentPaymentIntent(
       const data = cached.data as { clientSecret: string; paymentIntentId: string };
       return { ...data, idempotencyKey };
     }
-    throw new Error(cached.error ?? 'Previous attempt failed');
+    throw new Error(cached.error ?? "Previous attempt failed");
   }
 
   try {
@@ -173,16 +175,16 @@ export async function createIdempotentPaymentIntent(
       paymentIntentId: paymentIntent.id,
     };
 
-    storeIdempotencyResult(idempotencyKey, params.tenantId, 'create_payment_intent', {
+    storeIdempotencyResult(idempotencyKey, params.tenantId, "create_payment_intent", {
       success: true,
       data: result,
     });
 
     return { ...result, idempotencyKey };
   } catch (error) {
-    storeIdempotencyResult(idempotencyKey, params.tenantId, 'create_payment_intent', {
+    storeIdempotencyResult(idempotencyKey, params.tenantId, "create_payment_intent", {
       success: false,
-      error: error instanceof Error ? error.message : 'Unknown error',
+      error: error instanceof Error ? error.message : "Unknown error",
     });
     throw error;
   }
@@ -192,7 +194,7 @@ export async function createIdempotentPaymentIntent(
  * Verify and process idempotent refund
  */
 export async function createIdempotentRefund(
-  stripeClient: import('stripe').Stripe,
+  stripeClient: import("stripe").Stripe,
   paymentIntentId: string,
   amount?: number,
   tenantId?: string
@@ -201,14 +203,14 @@ export async function createIdempotentRefund(
   amount: number;
   status: string;
 }> {
-  const idempotencyKey = `idem:${tenantId ?? 'unknown'}:refund:${paymentIntentId}:${amount ?? 'full'}`;
+  const idempotencyKey = `idem:${tenantId ?? "unknown"}:refund:${paymentIntentId}:${amount ?? "full"}`;
 
   const cached = getIdempotencyResult(idempotencyKey);
   if (cached) {
     if (cached.success && cached.data) {
       return cached.data as { refundId: string; amount: number; status: string };
     }
-    throw new Error(cached.error ?? 'Previous refund attempt failed');
+    throw new Error(cached.error ?? "Previous refund attempt failed");
   }
 
   try {
@@ -223,19 +225,19 @@ export async function createIdempotentRefund(
     const result = {
       refundId: refund.id,
       amount: refund.amount,
-      status: refund.status ?? 'pending',
+      status: refund.status ?? "pending",
     };
 
-    storeIdempotencyResult(idempotencyKey, tenantId ?? 'unknown', 'refund', {
+    storeIdempotencyResult(idempotencyKey, tenantId ?? "unknown", "refund", {
       success: true,
       data: result,
     });
 
     return result;
   } catch (error) {
-    storeIdempotencyResult(idempotencyKey, tenantId ?? 'unknown', 'refund', {
+    storeIdempotencyResult(idempotencyKey, tenantId ?? "unknown", "refund", {
       success: false,
-      error: error instanceof Error ? error.message : 'Unknown error',
+      error: error instanceof Error ? error.message : "Unknown error",
     });
     throw error;
   }
@@ -249,13 +251,13 @@ const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
 const supabase = createClient(supabaseUrl, supabaseKey);
 
-const IDEMPOTENCY_TABLE = 'idempotency_keys';
+const IDEMPOTENCY_TABLE = "idempotency_keys";
 
 /**
  * Initialize idempotency table (run migration)
  */
 export async function initializeIdempotencyTable(): Promise<void> {
-  const { error } = await supabase.rpc('execute_sql', {
+  const { error } = await supabase.rpc("execute_sql", {
     sql: `
       CREATE TABLE IF NOT EXISTS ${IDEMPOTENCY_TABLE} (
         key VARCHAR(255) PRIMARY KEY,
@@ -268,10 +270,10 @@ export async function initializeIdempotencyTable(): Promise<void> {
         result_error TEXT
       );
       
-      CREATE INDEX IF NOT EXISTS idx_${IDEMPOTENCY_TABLE.replace(/[^a-z0-9]/gi, '_')}_tenant_op 
+      CREATE INDEX IF NOT EXISTS idx_${IDEMPOTENCY_TABLE.replace(/[^a-z0-9]/gi, "_")}_tenant_op 
       ON ${IDEMPOTENCY_TABLE}(tenant_id, operation);
       
-      CREATE INDEX IF NOT EXISTS idx_${IDEMPOTENCY_TABLE.replace(/[^a-z0-9]/gi, '_')}_expires 
+      CREATE INDEX IF NOT EXISTS idx_${IDEMPOTENCY_TABLE.replace(/[^a-z0-9]/gi, "_")}_expires 
       ON ${IDEMPOTENCY_TABLE}(expires_at);
     `,
   });
@@ -300,7 +302,7 @@ export async function storeIdempotencyResultDb(
       result_data: result.data,
       result_error: result.error,
     },
-    { onConflict: 'key' }
+    { onConflict: "key" }
   );
 
   if (error) {
@@ -316,8 +318,8 @@ export async function getIdempotencyResultDb(
 ): Promise<{ success: boolean; data?: unknown; error?: string } | null> {
   const { data, error } = await supabase
     .from(IDEMPOTENCY_TABLE)
-    .select('result_success, result_data, result_error, expires_at')
-    .eq('key', key)
+    .select("result_success, result_data, result_error, expires_at")
+    .eq("key", key)
     .single();
 
   if (error || !data) return null;
@@ -340,8 +342,8 @@ export async function cleanupExpiredIdempotencyKeys(): Promise<number> {
   // First get count of keys to be deleted
   const { count, error: countError } = await supabase
     .from(IDEMPOTENCY_TABLE)
-    .select('key', { count: 'exact', head: true })
-    .lt('expires_at', new Date().toISOString());
+    .select("key", { count: "exact", head: true })
+    .lt("expires_at", new Date().toISOString());
 
   if (countError) {
     throw new Error(`Failed to count expired idempotency keys: ${countError.message}`);
@@ -351,7 +353,7 @@ export async function cleanupExpiredIdempotencyKeys(): Promise<number> {
   const { error: deleteError } = await supabase
     .from(IDEMPOTENCY_TABLE)
     .delete()
-    .lt('expires_at', new Date().toISOString());
+    .lt("expires_at", new Date().toISOString());
 
   if (deleteError) {
     throw new Error(`Failed to cleanup expired idempotency keys: ${deleteError.message}`);

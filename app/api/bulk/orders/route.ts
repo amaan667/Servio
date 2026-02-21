@@ -77,11 +77,22 @@ export const PUT = createUnifiedHandler(
         dryRun,
       });
 
-      const result = await bulkOperationsService.bulkUpdate<
-        OrderUpdateData
-      >(
-        { type: "bulk_update", venueId, userId, updates: orderIds.map((id) => ({ id, data: { order_status: status } })), dryRun },
-        { batchSize: 50, batchDelay: 100, maxConcurrency: 5, retryEnabled: true, maxRetries: 3, retryDelay: 1000 }
+      const result = await bulkOperationsService.bulkUpdate<OrderUpdateData>(
+        {
+          type: "bulk_update",
+          venueId,
+          userId,
+          updates: orderIds.map((id) => ({ id, data: { order_status: status } })),
+          dryRun,
+        },
+        {
+          batchSize: 50,
+          batchDelay: 100,
+          maxConcurrency: 5,
+          retryEnabled: true,
+          maxRetries: 3,
+          retryDelay: 1000,
+        }
       );
 
       return {
@@ -144,11 +155,25 @@ export const POST = createUnifiedHandler(
         dryRun,
       });
 
-      const result = await bulkOperationsService.bulkUpdate<
-        OrderUpdateData
-      >(
-        { type: "bulk_update", venueId, userId, updates: orderIds.map((id) => ({ id, data: { order_status: "CANCELLED", cancellation_reason: reason } })), dryRun },
-        { batchSize: 50, batchDelay: 100, maxConcurrency: 5, retryEnabled: true, maxRetries: 3, retryDelay: 1000 }
+      const result = await bulkOperationsService.bulkUpdate<OrderUpdateData>(
+        {
+          type: "bulk_update",
+          venueId,
+          userId,
+          updates: orderIds.map((id) => ({
+            id,
+            data: { order_status: "CANCELLED", cancellation_reason: reason },
+          })),
+          dryRun,
+        },
+        {
+          batchSize: 50,
+          batchDelay: 100,
+          maxConcurrency: 5,
+          retryEnabled: true,
+          maxRetries: 3,
+          retryDelay: 1000,
+        }
       );
 
       return {
@@ -211,11 +236,25 @@ export const DELETE = createUnifiedHandler(
         dryRun,
       });
 
-      const result = await bulkOperationsService.bulkUpdate<
-        OrderUpdateData
-      >(
-        { type: "bulk_update", venueId, userId, updates: orderIds.map((id) => ({ id, data: { order_status: "COMPLETED", payment_status: "PAID", force_complete: force } })), dryRun },
-        { batchSize: 50, batchDelay: 100, maxConcurrency: 5, retryEnabled: true, maxRetries: 3, retryDelay: 1000 }
+      const result = await bulkOperationsService.bulkUpdate<OrderUpdateData>(
+        {
+          type: "bulk_update",
+          venueId,
+          userId,
+          updates: orderIds.map((id) => ({
+            id,
+            data: { order_status: "COMPLETED", payment_status: "PAID", force_complete: force },
+          })),
+          dryRun,
+        },
+        {
+          batchSize: 50,
+          batchDelay: 100,
+          maxConcurrency: 5,
+          retryEnabled: true,
+          maxRetries: 3,
+          retryDelay: 1000,
+        }
       );
 
       return {

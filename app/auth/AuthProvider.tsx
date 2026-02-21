@@ -350,16 +350,13 @@ export default function AuthProvider({
     }
   }, [initialSession]);
 
-  const handleSessionRefreshed = useCallback(
-    (refreshedSession: Session) => {
-      setSession(refreshedSession);
-      setUser(refreshedSession.user);
-      if (typeof window !== "undefined") {
-        safeSetItem(localStorage, "sb-auth-session", JSON.stringify(refreshedSession));
-      }
-    },
-    []
-  );
+  const handleSessionRefreshed = useCallback((refreshedSession: Session) => {
+    setSession(refreshedSession);
+    setUser(refreshedSession.user);
+    if (typeof window !== "undefined") {
+      safeSetItem(localStorage, "sb-auth-session", JSON.stringify(refreshedSession));
+    }
+  }, []);
 
   const handleSessionExpired = useCallback(() => {
     setSession(null);

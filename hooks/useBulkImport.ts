@@ -32,7 +32,10 @@ export interface UseBulkImportReturn {
   result: BulkOperationResult | null;
   error: Error | null;
   parseCSV: (csvContent: string) => Promise<ImportPreview | null>;
-  importData: (columnMapping: Record<string, string>, options?: { previewFirst?: boolean }) => Promise<BulkOperationResult | null>;
+  importData: (
+    columnMapping: Record<string, string>,
+    options?: { previewFirst?: boolean }
+  ) => Promise<BulkOperationResult | null>;
   downloadTemplate: () => void;
   reset: () => void;
 }
@@ -43,7 +46,11 @@ export function useBulkImport(options: UseBulkImportOptions): UseBulkImportRetur
   const [isLoading, setIsLoading] = useState(false);
   const [isPreview, setIsPreview] = useState(true);
   const [preview, setPreview] = useState<ImportPreview | null>(null);
-  const [progress, setProgress] = useState<{ completed: number; total: number; percent: number } | null>(null);
+  const [progress, setProgress] = useState<{
+    completed: number;
+    total: number;
+    percent: number;
+  } | null>(null);
   const [result, setResult] = useState<BulkOperationResult | null>(null);
   const [error, setError] = useState<Error | null>(null);
   const [csvContent, setCsvContent] = useState<string>("");

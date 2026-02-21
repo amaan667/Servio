@@ -19,14 +19,16 @@ async function fetchConversationHistory(venueId: string): Promise<{
 
   const { data: conversations, error: conversationsError } = await supabase
     .from("ai_chat_conversations")
-    .select(`
+    .select(
+      `
       id,
       venue_id,
       user_id,
       title,
       created_at,
       updated_at
-    `)
+    `
+    )
     .eq("venue_id", venueId)
     .order("created_at", { ascending: false });
 
@@ -62,7 +64,9 @@ async function fetchConversationHistory(venueId: string): Promise<{
   return { conversations: conversationsWithMessages, stats };
 }
 
-function calculateStats(conversations: Array<{ created_at: string; updated_at: string }>): ConversationStats {
+function calculateStats(
+  conversations: Array<{ created_at: string; updated_at: string }>
+): ConversationStats {
   const totalConversations = conversations.length;
 
   const dates = conversations.map((c) => new Date(c.created_at).getTime());

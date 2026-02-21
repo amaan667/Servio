@@ -1,8 +1,15 @@
-import { NextRequest, NextResponse } from "next/server";
-import { apiErrors } from "@/lib/api/standard-response";
+import { NextResponse } from "next/server";
+import { createUnifiedHandler } from "@/lib/api/unified-handler";
+import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
+import { z } from "zod";
 
 import OpenAI from "openai";
 import { env } from "@/lib/env";
+
+const scrapeBodySchema = z.object({
+  url: z.string().url(),
+  venueId: z.string().min(1),
+});
 
 // Force Node.js runtime (required for Playwright)
 export const runtime = "nodejs";
@@ -283,18 +290,16 @@ async function scrapeWithPlaywright(
  * Scrape Menu from URL using Playwright
  * Self-hosted browser automation - fast, free, and reliable
  * Optimized for JS-heavy sites like Cafe Nur
+ * Requires auth + venue access. Rate limited.
  */
-export async function POST(req: NextRequest) {
-  const requestId = Math.random().toString(36).substring(7);
-  const startTime = Date.now();
-
-  try {
-    const body = await req.json();
-    const { url } = body;
-
-    if (!url) {
-      return apiErrors.badRequest("URL is required");
+export const POST = createUnifiedHandler(
+  async (req, context) => {
+    const rateResult = await rateLimit(req, { ...RATE_LIMITS.STRICT, identifier: context.venueId });
+    if (!rateResult.success) {
+      return NextResponse.json({ ok: false, error: "Too many requests" }, { status: 429 });
     }
+
+    const { url } = context.body;
 
     // Detect site type for optimal strategy
     const siteType = await detectSiteType(url);
@@ -350,8 +355,6 @@ Return ONLY valid JSON:
   ]
 }`;
 
-    const aiStart = Date.now();
-
     // Initialize OpenAI client inside function to avoid build-time errors
     const openai = new OpenAI({ apiKey: env("OPENAI_API_KEY") });
 
@@ -401,8 +404,6 @@ Return ONLY valid JSON:
       throw new Error("AI returned invalid JSON");
     }
 
-    const totalDuration = Date.now() - startTime;
-
     const successResponse = {
       ok: true,
       items: menuItems,
@@ -410,12 +411,11 @@ Return ONLY valid JSON:
     };
 
     return NextResponse.json(successResponse);
-  } catch (_error) {
-    const errorResponse = {
-      ok: false,
-      error: _error instanceof Error ? _error.message : "Failed to scrape menu",
-    };
-
-    return NextResponse.json(errorResponse, { status: 500 });
+  },
+  {
+    requireAuth: true,
+    requireVenueAccess: true,
+    venueIdSource: "body",
+    schema: scrapeBodySchema,
   }
-}
+);

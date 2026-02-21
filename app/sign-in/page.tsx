@@ -178,11 +178,23 @@ function SignInPageContent() {
         const msg = error?.message || "Sign in failed.";
         // If rate limited, display a friendlier message with longer wait time
         if (/rate limit/i.test(msg)) {
-          toast({ title: "Rate Limited", description: "Too many sign-in attempts. Please wait 1 minute and try again.", variant: "destructive" });
+          toast({
+            title: "Rate Limited",
+            description: "Too many sign-in attempts. Please wait 1 minute and try again.",
+            variant: "destructive",
+          });
         } else if (/network|connection|timeout/i.test(msg)) {
-          toast({ title: "Connection Error", description: "Connection issue. Please check your internet and try again.", variant: "destructive" });
+          toast({
+            title: "Connection Error",
+            description: "Connection issue. Please check your internet and try again.",
+            variant: "destructive",
+          });
         } else if (/invalid.*credentials/i.test(msg)) {
-          toast({ title: "Invalid Credentials", description: "Invalid email or password. Please check and try again.", variant: "destructive" });
+          toast({
+            title: "Invalid Credentials",
+            description: "Invalid email or password. Please check and try again.",
+            variant: "destructive",
+          });
         } else {
           toast({ title: "Error", description: `Sign in failed: ${msg}`, variant: "destructive" });
         }
@@ -197,7 +209,11 @@ function SignInPageContent() {
         window.location.href = data.url;
       }
     } catch {
-      toast({ title: "Error", description: "Sign in failed. Please try again.", variant: "destructive" });
+      toast({
+        title: "Error",
+        description: "Sign in failed. Please try again.",
+        variant: "destructive",
+      });
       setIsSigningIn(false);
     }
   };

@@ -132,7 +132,7 @@ IMAGE REGIONS (for PDFs with photos):
     }
 
     const json = JSON.parse(jsonMatch[0]);
-    
+
     if (!Array.isArray(json)) {
       return { items: [], hasMore: false, page_analyzed: pageIndex };
     }
@@ -145,7 +145,8 @@ IMAGE REGIONS (for PDFs with photos):
       const y = Number(o.y);
       const w = Number(o.w);
       const h = Number(o.h);
-      if (!Number.isFinite(x) || !Number.isFinite(y) || !Number.isFinite(w) || !Number.isFinite(h)) return undefined;
+      if (!Number.isFinite(x) || !Number.isFinite(y) || !Number.isFinite(w) || !Number.isFinite(h))
+        return undefined;
       if (w <= 0 || h <= 0) return undefined;
       return { x, y, w, h };
     };
@@ -167,7 +168,7 @@ IMAGE REGIONS (for PDFs with photos):
       }));
 
     const hasMore = items.length >= maxItems && !isLastPage;
-    
+
     return {
       items,
       hasMore,
@@ -282,7 +283,7 @@ export async function extractMenuFromPDF(
   for (let i = 0; i < pdfImages.length; i++) {
     const imageUrl = pdfImages[i];
     if (!imageUrl) continue;
-    
+
     const result = await extractMenuFromImage(imageUrl, {
       pageIndex: i,
       isLastPage: i === pdfImages.length - 1,

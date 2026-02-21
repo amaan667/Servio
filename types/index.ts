@@ -248,12 +248,7 @@ export interface OrderItemModifier {
   price: number;
 }
 
-export type OrderItemStatus =
-  | "pending"
-  | "preparing"
-  | "ready"
-  | "served"
-  | "cancelled";
+export type OrderItemStatus = "pending" | "preparing" | "ready" | "served" | "cancelled";
 
 export type PaymentStatus =
   | "pending"
@@ -263,12 +258,7 @@ export type PaymentStatus =
   | "refunded"
   | "partially_refunded";
 
-export type PaymentMethod =
-  | "card"
-  | "cash"
-  | "apple_pay"
-  | "google_pay"
-  | "pending";
+export type PaymentMethod = "card" | "cash" | "apple_pay" | "google_pay" | "pending";
 
 // ============================================================================
 // Table Types
@@ -299,10 +289,7 @@ export interface TableSession {
   totalSpent: number;
 }
 
-export type TableSessionStatus =
-  | "open"
-  | "completed"
-  | "cancelled";
+export type TableSessionStatus = "open" | "completed" | "cancelled";
 
 // ============================================================================
 // Reservation Types
@@ -360,11 +347,7 @@ export interface StaffInvitation {
   acceptedAt?: string;
 }
 
-export type InvitationStatus =
-  | "pending"
-  | "accepted"
-  | "expired"
-  | "cancelled";
+export type InvitationStatus = "pending" | "accepted" | "expired" | "cancelled";
 
 // ============================================================================
 // Payment Types
@@ -677,9 +660,7 @@ export type Nullable<T> = T | null;
 export type Optional<T> = T | undefined;
 export type Async<T> = Promise<T>;
 
-export type Result<T, E = AppError> = 
-  | { success: true; data: T }
-  | { success: false; error: E };
+export type Result<T, E = AppError> = { success: true; data: T } | { success: false; error: E };
 
 export type PartialBy<T, K extends keyof T> = Omit<T, K> & Partial<Pick<T, K>>;
 

@@ -246,7 +246,11 @@ export function HomePageClient({ initialAuthState, initialUserPlan = null }: Hom
           if (org?.id) {
             organizationId = org.id;
           } else if (orgError) {
-            toast({ title: "Error", description: `Error fetching organization: ${orgError.message}`, variant: "destructive" });
+            toast({
+              title: "Error",
+              description: `Error fetching organization: ${orgError.message}`,
+              variant: "destructive",
+            });
             setLoadingPlan(false);
             return;
           }
@@ -265,7 +269,11 @@ export function HomePageClient({ initialAuthState, initialUserPlan = null }: Hom
         } = await supabase.auth.getSession();
         if (!session?.access_token) {
           // NO REDIRECTS - User requested ZERO sign-in redirects
-          toast({ title: "Session Expired", description: "Please sign in again.", variant: "destructive" });
+          toast({
+            title: "Session Expired",
+            description: "Please sign in again.",
+            variant: "destructive",
+          });
           setLoadingPlan(false);
           return;
         }
@@ -282,7 +290,11 @@ export function HomePageClient({ initialAuthState, initialUserPlan = null }: Hom
 
           if (!response.ok) {
             const data = await response.json();
-            toast({ title: "Error", description: `Unable to open billing portal: ${data.error || "Please try again."}`, variant: "destructive" });
+            toast({
+              title: "Error",
+              description: `Unable to open billing portal: ${data.error || "Please try again."}`,
+              variant: "destructive",
+            });
             setLoadingPlan(false);
             return;
           }
@@ -290,7 +302,11 @@ export function HomePageClient({ initialAuthState, initialUserPlan = null }: Hom
           const data = await response.json();
 
           if (data.error) {
-            toast({ title: "Error", description: `Unable to open billing portal: ${data.error}`, variant: "destructive" });
+            toast({
+              title: "Error",
+              description: `Unable to open billing portal: ${data.error}`,
+              variant: "destructive",
+            });
             setLoadingPlan(false);
             return;
           }
@@ -299,7 +315,11 @@ export function HomePageClient({ initialAuthState, initialUserPlan = null }: Hom
             // Redirect to Stripe portal where they can change their plan
             window.location.href = data.url;
           } else {
-            toast({ title: "Error", description: "Unable to open billing portal. Please try again.", variant: "destructive" });
+            toast({
+              title: "Error",
+              description: "Unable to open billing portal. Please try again.",
+              variant: "destructive",
+            });
             setLoadingPlan(false);
           }
         }
@@ -315,7 +335,11 @@ export function HomePageClient({ initialAuthState, initialUserPlan = null }: Hom
           const data = await response.json();
 
           if (data.error) {
-            toast({ title: "Error", description: `Failed to upgrade: ${data.error}`, variant: "destructive" });
+            toast({
+              title: "Error",
+              description: `Failed to upgrade: ${data.error}`,
+              variant: "destructive",
+            });
             return;
           }
 
@@ -323,7 +347,11 @@ export function HomePageClient({ initialAuthState, initialUserPlan = null }: Hom
             // Redirect to Stripe Checkout for upgrade
             window.location.href = data.url;
           } else {
-            toast({ title: "Error", description: "Failed to create checkout session", variant: "destructive" });
+            toast({
+              title: "Error",
+              description: "Failed to create checkout session",
+              variant: "destructive",
+            });
           }
         }
         // Handle Start Free Trial for non-logged in or new users
@@ -331,7 +359,11 @@ export function HomePageClient({ initialAuthState, initialUserPlan = null }: Hom
           router.push("/select-plan");
         }
       } catch {
-        toast({ title: "Error", description: "Failed to process plan change. Please try again.", variant: "destructive" });
+        toast({
+          title: "Error",
+          description: "Failed to process plan change. Please try again.",
+          variant: "destructive",
+        });
       } finally {
         setLoadingPlan(false);
       }

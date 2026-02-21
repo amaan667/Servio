@@ -25,9 +25,9 @@ export async function POST(request: NextRequest) {
     let data, signInError;
     try {
       const result = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
+        email,
+        password,
+      });
       data = result.data;
       signInError = result.error;
     } catch (fetchError) {
@@ -75,10 +75,10 @@ export async function POST(request: NextRequest) {
     try {
       const venueQuery = await Promise.race([
         supabase
-      .from("venues")
-      .select("venue_id, created_at")
-      .eq("owner_user_id", data.session.user.id)
-      .order("created_at", { ascending: true })
+          .from("venues")
+          .select("venue_id, created_at")
+          .eq("owner_user_id", data.session.user.id)
+          .order("created_at", { ascending: true })
           .limit(5),
         new Promise((_, reject) =>
           setTimeout(() => reject(new Error("Venue query timeout")), 3000)

@@ -51,7 +51,7 @@ export function useTableManagementState(
           order_updated_at: null,
         })
       );
-      
+
       queryClient.setQueryData(["tables", "grid", venueId, 30], transformedTables);
     }
   }, [initialTables, venueId, queryClient]);

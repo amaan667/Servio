@@ -98,10 +98,7 @@ export default function LiveOrdersClientPage({
           </p>
         </div>
 
-        <LiveOrdersClient
-          venueId={venueId}
-          venueName={venueNameProp}
-        />
+        <LiveOrdersClient venueId={venueId} venueName={venueNameProp} />
       </div>
     </div>
   );

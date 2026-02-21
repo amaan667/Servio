@@ -267,7 +267,7 @@ export class CircuitBreaker {
    * Force the circuit to a specific state
    */
   forceState(state: CircuitState): void {
-    const breaker = (this.state as unknown as { transitionTo: (s: CircuitState) => void });
+    const breaker = this.state as unknown as { transitionTo: (s: CircuitState) => void };
     breaker.transitionTo(state);
   }
 

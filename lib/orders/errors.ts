@@ -170,9 +170,7 @@ export function withErrorHandling<T>(
   errorMap?: (error: unknown) => OrderError
 ): Promise<T> {
   return handler().catch((error) => {
-    const orderError = errorMap
-      ? errorMap(error)
-      : wrapSupabaseError(error, { operation });
+    const orderError = errorMap ? errorMap(error) : wrapSupabaseError(error, { operation });
 
     logOrderError(orderError, operation);
     throw orderError;

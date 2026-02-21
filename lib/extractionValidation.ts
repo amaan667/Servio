@@ -62,17 +62,16 @@ export function isPriceOutlier(price: number, allPrices: number[]): boolean {
   const sorted = [...allPrices].sort((a, b) => a - b);
   const mid = Math.floor(sorted.length / 2);
   const median = sorted.length % 2 ? sorted[mid]! : (sorted[mid - 1]! + sorted[mid]!) / 2;
-  const iqr = (sorted[Math.floor(sorted.length * 0.75)] ?? median) - (sorted[Math.floor(sorted.length * 0.25)] ?? median);
+  const iqr =
+    (sorted[Math.floor(sorted.length * 0.75)] ?? median) -
+    (sorted[Math.floor(sorted.length * 0.25)] ?? median);
   const lower = median - 1.5 * iqr;
   const upper = median + 1.5 * iqr;
   return price < lower || price > upper;
 }
 
 /** Check if price format matches dominant (decimal places). */
-export function isPriceFormatConsistent(
-  price: number,
-  context: PriceFormatContext
-): boolean {
+export function isPriceFormatConsistent(price: number, context: PriceFormatContext): boolean {
   if (context.samplePrices.length === 0) return true;
   const decimals = getDecimalPlaces(price);
   return decimals === context.dominantDecimals;
@@ -82,7 +81,9 @@ export function isPriceFormatConsistent(
 export function validateExtractedItems<T extends { price?: number; category?: string }>(
   items: T[]
 ): ItemWithValidation<T>[] {
-  const prices = items.map((i) => i.price).filter((p): p is number => typeof p === "number" && p > 0);
+  const prices = items
+    .map((i) => i.price)
+    .filter((p): p is number => typeof p === "number" && p > 0);
   const categories = items.map((i) => i.category || "Menu Items").filter(Boolean);
   const formatContext = detectPriceFormat(prices);
   const categoryCounts: Record<string, number> = {};

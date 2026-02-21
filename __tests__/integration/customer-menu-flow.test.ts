@@ -18,8 +18,10 @@ const mockSupabase = {
   from: mockSupabaseFrom,
 };
 
+const createAdminClientMock = vi.fn(() => mockSupabase);
 vi.mock("@/lib/supabase", () => ({
-  createAdminClient: vi.fn(() => mockSupabase),
+  createAdminClient: createAdminClientMock,
+  supabaseAdmin: createAdminClientMock,
   createSupabaseClient: vi.fn(() => Promise.resolve(mockSupabase)),
   supabaseBrowser: vi.fn(() => mockSupabase),
 }));

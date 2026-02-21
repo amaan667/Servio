@@ -6,7 +6,12 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { supabaseBrowser as createClient } from "@/lib/supabase";
 import { subscriptionManager, SubscriptionManager } from "@/lib/realtime/subscription-manager";
-import type { RealtimeReservation, PostgresPayload, ConnectionState, SubscriptionStatus } from "@/lib/realtime/types";
+import type {
+  RealtimeReservation,
+  PostgresPayload,
+  ConnectionState,
+  SubscriptionStatus,
+} from "@/lib/realtime/types";
 
 // ============================================================================
 // Types
@@ -35,20 +40,16 @@ interface UseRealtimeReservationsReturn {
 // Hook Implementation
 // ============================================================================
 
-export function useRealtimeReservations(options: UseRealtimeReservationsOptions): UseRealtimeReservationsReturn {
-  const { 
-    venueId, 
-    date,
-    upcomingOnly = false,
-    onReservationChange, 
-    enabled = true 
-  } = options;
+export function useRealtimeReservations(
+  options: UseRealtimeReservationsOptions
+): UseRealtimeReservationsReturn {
+  const { venueId, date, upcomingOnly = false, onReservationChange, enabled = true } = options;
 
   const [reservations, setReservations] = useState<RealtimeReservation[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isError, setIsError] = useState(false);
   const [error, setError] = useState<Error | null>(null);
-  const [connectionState, setConnectionState] = useState<ConnectionState>('disconnected');
+  const [connectionState, setConnectionState] = useState<ConnectionState>("disconnected");
 
   const channelRef = useRef<string | null>(null);
   const mountedRef = useRef(true);
@@ -88,9 +89,7 @@ export function useRealtimeReservations(options: UseRealtimeReservationsOptions)
       if (date) {
         const startOfDay = `${date}T00:00:00`;
         const endOfDay = `${date}T23:59:59`;
-        query = query
-          .gte("reservation_time", startOfDay)
-          .lte("reservation_time", endOfDay);
+        query = query.gte("reservation_time", startOfDay).lte("reservation_time", endOfDay);
       }
 
       // Filter for upcoming only
@@ -106,7 +105,7 @@ export function useRealtimeReservations(options: UseRealtimeReservationsOptions)
       }
 
       if (mountedRef.current) {
-        setReservations(reservationsData as RealtimeReservation[] || []);
+        setReservations((reservationsData as RealtimeReservation[]) || []);
       }
     } catch (err) {
       const error = err instanceof Error ? err : new Error(String(err));
@@ -130,8 +129,8 @@ export function useRealtimeReservations(options: UseRealtimeReservationsOptions)
       return;
     }
 
-    const channelName = SubscriptionManager.generateChannelName(venueId, 'reservations');
-    
+    const channelName = SubscriptionManager.generateChannelName(venueId, "reservations");
+
     if (channelRef.current === channelName) {
       return;
     }
@@ -144,16 +143,22 @@ export function useRealtimeReservations(options: UseRealtimeReservationsOptions)
         channelName,
         postgres: [
           {
-            schema: 'public',
-            table: 'reservations',
-            event: '*',
-            filters: [{ column: 'venue_id', operator: 'eq', value: venueId }],
+            schema: "public",
+            table: "reservations",
+            event: "*",
+            filters: [{ column: "venue_id", operator: "eq", value: venueId }],
           },
         ],
       },
       onStatusChange: (status: SubscriptionStatus) => {
         if (mountedRef.current) {
-          setConnectionState(status === 'SUBSCRIBED' ? 'connected' : status === 'CHANNEL_ERROR' ? 'error' : 'connecting');
+          setConnectionState(
+            status === "SUBSCRIBED"
+              ? "connected"
+              : status === "CHANNEL_ERROR"
+                ? "error"
+                : "connecting"
+          );
         }
       },
       onEvent: (payload: unknown) => {
@@ -171,15 +176,17 @@ export function useRealtimeReservations(options: UseRealtimeReservationsOptions)
           const newReservations = [...prevReservations];
 
           switch (reservationPayload.eventType) {
-            case 'INSERT':
+            case "INSERT":
               if (reservationPayload.new) {
                 // Filter by date if applicable
                 if (date) {
-                  const resDate = reservationPayload.new.reservation_time.split('T')[0];
+                  const resDate = reservationPayload.new.reservation_time.split("T")[0];
                   if (resDate === date) {
                     newReservations.push(reservationPayload.new);
-                    newReservations.sort((a, b) => 
-                      new Date(a.reservation_time).getTime() - new Date(b.reservation_time).getTime()
+                    newReservations.sort(
+                      (a, b) =>
+                        new Date(a.reservation_time).getTime() -
+                        new Date(b.reservation_time).getTime()
                     );
                   }
                 } else if (upcomingOnly) {
@@ -193,7 +200,7 @@ export function useRealtimeReservations(options: UseRealtimeReservationsOptions)
               }
               break;
 
-            case 'UPDATE':
+            case "UPDATE":
               if (reservationPayload.new) {
                 const index = newReservations.findIndex((r) => r.id === reservationPayload.new!.id);
                 if (index >= 0) {
@@ -202,13 +209,14 @@ export function useRealtimeReservations(options: UseRealtimeReservationsOptions)
                   newReservations.push(reservationPayload.new);
                 }
                 // Re-sort
-                newReservations.sort((a, b) => 
-                  new Date(a.reservation_time).getTime() - new Date(b.reservation_time).getTime()
+                newReservations.sort(
+                  (a, b) =>
+                    new Date(a.reservation_time).getTime() - new Date(b.reservation_time).getTime()
                 );
               }
               break;
 
-            case 'DELETE':
+            case "DELETE":
               if (reservationPayload.old) {
                 const index = newReservations.findIndex((r) => r.id === reservationPayload.old!.id);
                 if (index >= 0) {

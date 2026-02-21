@@ -145,9 +145,7 @@ const SimpleStaffGrid: React.FC<SimpleStaffGridProps> = ({
       setSelectedShift(null);
       setEditMode(false);
     } catch (_err) {
-      setShiftError(
-        _err instanceof Error ? _err.message : "Failed to update shift"
-      );
+      setShiftError(_err instanceof Error ? _err.message : "Failed to update shift");
     } finally {
       setSaving(false);
     }
@@ -165,9 +163,7 @@ const SimpleStaffGrid: React.FC<SimpleStaffGridProps> = ({
       setShiftDetailOpen(false);
       setSelectedShift(null);
     } catch (_err) {
-      setShiftError(
-        _err instanceof Error ? _err.message : "Failed to delete shift"
-      );
+      setShiftError(_err instanceof Error ? _err.message : "Failed to delete shift");
     } finally {
       setDeleting(false);
     }
@@ -538,11 +534,7 @@ const SimpleStaffGrid: React.FC<SimpleStaffGridProps> = ({
               {!editMode && selectedShift && (
                 <div className="flex gap-1">
                   {onUpdateShift && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setEditMode(true)}
-                    >
+                    <Button variant="outline" size="sm" onClick={() => setEditMode(true)}>
                       <Pencil className="h-3.5 w-3.5 mr-1" />
                       Edit
                     </Button>
@@ -566,57 +558,39 @@ const SimpleStaffGrid: React.FC<SimpleStaffGridProps> = ({
           {selectedShift && !editMode && (
             <div className="space-y-3 py-2">
               <div className="flex items-center gap-2">
-                <span className="text-sm font-medium text-gray-500 w-16">
-                  Name
-                </span>
-                <span className="text-sm font-semibold">
-                  {selectedShift.staff_name}
-                </span>
+                <span className="text-sm font-medium text-gray-500 w-16">Name</span>
+                <span className="text-sm font-semibold">{selectedShift.staff_name}</span>
               </div>
               <div className="flex items-center gap-2">
-                <span className="text-sm font-medium text-gray-500 w-16">
-                  Role
-                </span>
+                <span className="text-sm font-medium text-gray-500 w-16">Role</span>
                 <span className="text-sm">{selectedShift.staff_role}</span>
               </div>
               <div className="flex items-center gap-2">
-                <span className="text-sm font-medium text-gray-500 w-16">
-                  Date
-                </span>
+                <span className="text-sm font-medium text-gray-500 w-16">Date</span>
                 <span className="text-sm">
-                  {new Date(selectedShift.start_time).toLocaleDateString(
-                    "en-US",
-                    {
-                      weekday: "long",
-                      month: "long",
-                      day: "numeric",
-                      year: "numeric",
-                    }
-                  )}
+                  {new Date(selectedShift.start_time).toLocaleDateString("en-US", {
+                    weekday: "long",
+                    month: "long",
+                    day: "numeric",
+                    year: "numeric",
+                  })}
                 </span>
               </div>
               <div className="flex items-center gap-2">
-                <span className="text-sm font-medium text-gray-500 w-16">
-                  Time
-                </span>
+                <span className="text-sm font-medium text-gray-500 w-16">Time</span>
                 <span className="text-sm">
-                  {formatTime(selectedShift.start_time)} -{" "}
-                  {formatTime(selectedShift.end_time)}
+                  {formatTime(selectedShift.start_time)} - {formatTime(selectedShift.end_time)}
                 </span>
               </div>
               {selectedShift.area && (
                 <div className="flex items-center gap-2">
-                  <span className="text-sm font-medium text-gray-500 w-16">
-                    Area
-                  </span>
+                  <span className="text-sm font-medium text-gray-500 w-16">Area</span>
                   <span className="text-sm">{selectedShift.area}</span>
                 </div>
               )}
               {isShiftActive(selectedShift) && (
                 <div className="flex items-center gap-2 p-2 bg-green-50 border border-green-200 rounded">
-                  <span className="text-sm text-green-700 font-medium">
-                    Currently Active
-                  </span>
+                  <span className="text-sm text-green-700 font-medium">Currently Active</span>
                 </div>
               )}
             </div>
@@ -653,9 +627,7 @@ const SimpleStaffGrid: React.FC<SimpleStaffGridProps> = ({
                   />
                 </div>
               </div>
-              {shiftError && (
-                <p className="text-sm text-red-600">{shiftError}</p>
-              )}
+              {shiftError && <p className="text-sm text-red-600">{shiftError}</p>}
               <div className="flex justify-end gap-2">
                 <Button
                   variant="outline"
@@ -702,13 +674,11 @@ const SimpleStaffGrid: React.FC<SimpleStaffGridProps> = ({
           <DialogHeader>
             <DialogTitle>Delete Shift</DialogTitle>
             <DialogDescription>
-              Are you sure you want to delete this shift for{" "}
-              {selectedShift?.staff_name}? This action cannot be undone.
+              Are you sure you want to delete this shift for {selectedShift?.staff_name}? This
+              action cannot be undone.
             </DialogDescription>
           </DialogHeader>
-          {shiftError && (
-            <p className="text-sm text-red-600">{shiftError}</p>
-          )}
+          {shiftError && <p className="text-sm text-red-600">{shiftError}</p>}
           <div className="flex justify-end gap-2 mt-4">
             <Button
               variant="outline"

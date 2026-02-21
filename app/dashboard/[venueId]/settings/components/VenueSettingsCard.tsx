@@ -139,7 +139,8 @@ export function VenueSettingsCard({
             Country / Region
           </Label>
           <p className="text-xs text-muted-foreground mt-0.5 mb-1">
-            Currency and timezone are auto-detected from your country. Change country here if needed.
+            Currency and timezone are auto-detected from your country. Change country here if
+            needed.
           </p>
           <Select
             value={country || "auto"}
@@ -176,11 +177,13 @@ export function VenueSettingsCard({
                 <SelectValue placeholder="Currency" />
               </SelectTrigger>
               <SelectContent>
-                {[...new Set([...countryOptions.map((o) => o.currency), currency].filter(Boolean))].sort().map((c) => (
-                  <SelectItem key={c} value={c}>
-                    {c}
-                  </SelectItem>
-                ))}
+                {[...new Set([...countryOptions.map((o) => o.currency), currency].filter(Boolean))]
+                  .sort()
+                  .map((c) => (
+                    <SelectItem key={c} value={c}>
+                      {c}
+                    </SelectItem>
+                  ))}
               </SelectContent>
             </Select>
           </div>

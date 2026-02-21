@@ -34,10 +34,9 @@ export function useShiftManagement(venueId: string, _staff: unknown[]) {
       const normalized = normalizeVenueId(venueId);
       if (!normalized) return;
 
-      const res = await fetch(
-        `/api/staff/shifts/list?venue_id=${encodeURIComponent(normalized)}`,
-        { credentials: "include" }
-      );
+      const res = await fetch(`/api/staff/shifts/list?venue_id=${encodeURIComponent(normalized)}`, {
+        credentials: "include",
+      });
       const json = await res.json();
 
       if (json.success && Array.isArray(json.data?.shifts)) {
@@ -59,12 +58,7 @@ export function useShiftManagement(venueId: string, _staff: unknown[]) {
     await loadShifts();
   }, [loadShifts]);
 
-  const addShift = async (
-    staffId: string,
-    startTime: string,
-    endTime: string,
-    area?: string
-  ) => {
+  const addShift = async (staffId: string, startTime: string, endTime: string, area?: string) => {
     try {
       const normalized = normalizeVenueId(venueId);
       const res = await fetch("/api/staff/shifts/add", {

@@ -1,8 +1,12 @@
 export const dynamic = "force-dynamic";
 export const revalidate = false;
 import { NextRequest, NextResponse } from "next/server";
+import { isDevelopment } from "@/lib/env";
 
 export async function GET(req: NextRequest) {
+  if (!isDevelopment()) {
+    return NextResponse.json({ error: "Not available" }, { status: 404 });
+  }
   const cookies = req.cookies.getAll();
   const authCookies = cookies.filter((c) => c.name.includes("auth") || c.name.startsWith("sb-"));
   return NextResponse.json({

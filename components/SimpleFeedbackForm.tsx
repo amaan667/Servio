@@ -46,7 +46,11 @@ export default function SimpleFeedbackForm({
         onSubmit();
       }
     } catch (_error) {
-      toast({ title: "Error", description: "Failed to submit feedback. Please try again.", variant: "destructive" });
+      toast({
+        title: "Error",
+        description: "Failed to submit feedback. Please try again.",
+        variant: "destructive",
+      });
     } finally {
       setSubmitting(false);
     }

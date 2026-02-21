@@ -3,9 +3,10 @@
  *
  * Ensures operations can be safely retried by storing idempotency keys
  * and returning cached results for duplicate requests.
+ * Uses service role for atomic claim/update (RLS restricts idempotency_keys to service_role).
  */
 
-import { createServerSupabase } from "@/lib/supabase";
+import { createAdminClient } from "@/lib/supabase";
 
 export interface IdempotencyRecord {
   id: string;
@@ -31,37 +32,113 @@ export function generateIdempotencyKey(
 }
 
 /**
- * Check if idempotency key exists and return cached response
+ * Check if idempotency key exists and return cached response.
+ * Atomic: uses single SELECT.
  */
 export async function checkIdempotency(
   idempotencyKey: string
 ): Promise<{ exists: true; response: IdempotencyRecord } | { exists: false }> {
   try {
-    const supabase = await createServerSupabase();
+    const supabase = createAdminClient();
 
     const { data, error } = await supabase
       .from("idempotency_keys")
-      .select("*")
+      .select(
+        "id, idempotency_key, request_hash, response_data, status_code, created_at, expires_at"
+      )
       .eq("idempotency_key", idempotencyKey)
       .gt("expires_at", new Date().toISOString())
-      .single();
+      .maybeSingle();
 
+    if (error) return { exists: false };
+    if (data) return { exists: true, response: data as IdempotencyRecord };
+    return { exists: false };
+  } catch {
+    return { exists: false };
+  }
+}
+
+/**
+ * Atomically claim an idempotency key via RPC. Returns true if we won the race (caller must run
+ * operation and then updateIdempotencyResult). Returns false if key already exists (caller
+ * should return cached response).
+ */
+export async function tryClaimIdempotencyKey(
+  idempotencyKey: string,
+  requestHash: string,
+  ttlSeconds: number = 3600
+): Promise<{ claimed: true } | { claimed: false; response: IdempotencyRecord }> {
+  const supabase = createAdminClient();
+
+  const { data, error } = await supabase.rpc("claim_idempotency_key", {
+    p_key: idempotencyKey,
+    p_request_hash: requestHash,
+    p_ttl_seconds: ttlSeconds,
+  });
+
+  if (error) {
+    // RPC may not exist if migration hasn't run - fall back to insert
+    const { data: insertData, error: insertError } = await supabase
+      .from("idempotency_keys")
+      .insert({
+        idempotency_key: idempotencyKey,
+        request_hash: requestHash,
+        response_data: {},
+        status_code: 0,
+        expires_at: new Date(Date.now() + ttlSeconds * 1000).toISOString(),
+      })
+      .select("id")
+      .maybeSingle();
+
+    if (insertError?.code === "23505") {
+      const existing = await checkIdempotency(idempotencyKey);
+      if (existing.exists) return { claimed: false, response: existing.response };
+      return { claimed: true };
+    }
+    return { claimed: true };
+  }
+
+  const rows = Array.isArray(data) ? data : data ? [data] : [];
+  if (rows.length === 0) {
+    const existing = await checkIdempotency(idempotencyKey);
+    if (existing.exists) return { claimed: false, response: existing.response };
+    return { claimed: true };
+  }
+  return { claimed: true };
+}
+
+/**
+ * Update a claimed idempotency key with the response. Use after tryClaimIdempotencyKey when claimed.
+ */
+export async function updateIdempotencyResult(
+  idempotencyKey: string,
+  responseData: unknown,
+  statusCode: number
+): Promise<void> {
+  try {
+    const supabase = createAdminClient();
+    const { error } = await supabase.rpc("update_idempotency_result", {
+      p_key: idempotencyKey,
+      p_response_data: responseData as object,
+      p_status_code: statusCode,
+    });
     if (error) {
-      if (error.code === "PGRST116") {
-        // Not found - this is expected
-        return { exists: false };
+      const { error: updateError } = await supabase
+        .from("idempotency_keys")
+        .update({ response_data: responseData as object, status_code: statusCode })
+        .eq("idempotency_key", idempotencyKey)
+        .eq("status_code", 0);
+      if (updateError) {
+        const { logger } = await import("@/lib/monitoring/structured-logger");
+        logger.warn("idempotency_update_failed", { idempotencyKey, error: updateError.message });
       }
-
-      return { exists: false };
     }
-
-    if (data) {
-      return { exists: true, response: data as IdempotencyRecord };
-    }
-
-    return { exists: false };
-  } catch (error) {
-    return { exists: false };
+  } catch (err) {
+    const { logger } = await import("@/lib/monitoring/structured-logger");
+    logger.warn("idempotency_update_error", {
+      idempotencyKey,
+      error: err instanceof Error ? err.message : String(err),
+    });
   }
 }
 
@@ -76,7 +153,7 @@ export async function storeIdempotency(
   ttlSeconds: number = 3600 // 1 hour default
 ): Promise<void> {
   try {
-    const supabase = await createServerSupabase();
+    const supabase = createAdminClient();
     const now = new Date();
     const expiresAt = new Date(now.getTime() + ttlSeconds * 1000);
 
@@ -97,7 +174,11 @@ export async function storeIdempotency(
       throw error;
     }
   } catch (error) {
-    // Don't fail the request if idempotency storage fails
+    const { logger } = await import("@/lib/monitoring/structured-logger");
+    logger.warn("idempotency_storage_failed", {
+      idempotencyKey,
+      error: error instanceof Error ? error.message : String(error),
+    });
   }
 }
 

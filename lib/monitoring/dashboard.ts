@@ -119,11 +119,7 @@ export class MonitoringDashboard {
   /**
    * Check alert thresholds
    */
-  private checkAlertThresholds(
-    name: string,
-    value: number,
-    tags: Record<string, string>
-  ): void {
+  private checkAlertThresholds(name: string, value: number, tags: Record<string, string>): void {
     const threshold = this.config.alertThresholds[name];
 
     if (!threshold) {
@@ -131,9 +127,19 @@ export class MonitoringDashboard {
     }
 
     if (value >= threshold.critical) {
-      this.createAlert(name, "critical", `Value ${value} exceeds critical threshold ${threshold.critical}`, tags);
+      this.createAlert(
+        name,
+        "critical",
+        `Value ${value} exceeds critical threshold ${threshold.critical}`,
+        tags
+      );
     } else if (value >= threshold.warning) {
-      this.createAlert(name, "warning", `Value ${value} exceeds warning threshold ${threshold.warning}`, tags);
+      this.createAlert(
+        name,
+        "warning",
+        `Value ${value} exceeds warning threshold ${threshold.warning}`,
+        tags
+      );
     }
   }
 

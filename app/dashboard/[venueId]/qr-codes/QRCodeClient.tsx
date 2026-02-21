@@ -261,7 +261,11 @@ export default function QRCodeClient({
   const handleGenerateBulk = () => {
     const count = parseInt(bulkCount) || 0;
     if (count < 1 || count > 100) {
-      toast({ title: "Invalid Input", description: "Please enter a number between 1 and 100", variant: "destructive" });
+      toast({
+        title: "Invalid Input",
+        description: "Please enter a number between 1 and 100",
+        variant: "destructive",
+      });
       return;
     }
 
@@ -368,7 +372,11 @@ export default function QRCodeClient({
       // Download the PDF
       pdf.save(`qr-codes-${venueName}-${new Date().toISOString().split("T")[0]}.pdf`);
     } catch (error) {
-      toast({ title: "Error", description: "Failed to generate PDF. Please try again.", variant: "destructive" });
+      toast({
+        title: "Error",
+        description: "Failed to generate PDF. Please try again.",
+        variant: "destructive",
+      });
     }
   };
 
@@ -448,9 +456,7 @@ export default function QRCodeClient({
 
   const handleRemoveQR = async (qr: GeneratedQR) => {
     const key = getQRKey(qr.name, qr.type);
-    const isServerQR = serverGeneratedQRs.some(
-      (s) => s.name === qr.name && s.type === qr.type
-    );
+    const isServerQR = serverGeneratedQRs.some((s) => s.name === qr.name && s.type === qr.type);
     if (isServerQR) {
       try {
         const { apiClient } = await import("@/lib/api-client");

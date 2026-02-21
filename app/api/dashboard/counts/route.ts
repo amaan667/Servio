@@ -34,7 +34,12 @@ export const GET = createUnifiedHandler(
       liveWindowMins,
     });
 
-    setCachedDashboardCounts(venueId, tz, liveWindowMins, counts as unknown as Record<string, unknown>);
+    setCachedDashboardCounts(
+      venueId,
+      tz,
+      liveWindowMins,
+      counts as unknown as Record<string, unknown>
+    );
 
     return success(counts);
   },

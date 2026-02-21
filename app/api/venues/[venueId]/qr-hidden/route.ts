@@ -38,8 +38,7 @@ export const POST = createUnifiedHandler(
 
     const { body } = context;
     const parsed = postSchema.safeParse(body);
-    if (!parsed.success)
-      return apiErrors.validation(parsed.error.message, parsed.error.flatten());
+    if (!parsed.success) return apiErrors.validation(parsed.error.message, parsed.error.flatten());
 
     const qrKey = `${parsed.data.name}|${parsed.data.type}`;
     const supabase = await createClient();

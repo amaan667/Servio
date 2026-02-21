@@ -60,7 +60,6 @@ export default async function AnalyticsPage({ params }: { params: { venueId: str
         trends={trends}
         periodComparison={periodComparison}
         currentTier={tier}
-        
       />
     </>
   );
@@ -73,10 +72,10 @@ function calculateTrends(ordersData: OrdersAnalytics, revenueData: RevenueAnalyt
   const revenueByDay = revenueData.revenueByDay || {};
   const dayKeys = Object.keys(revenueByDay).sort();
   const midPoint = Math.floor(dayKeys.length / 2);
-  
+
   let currentPeriodRevenue = 0;
   let previousPeriodRevenue = 0;
-  
+
   dayKeys.forEach((day, index) => {
     const revenue = revenueByDay[day] || 0;
     if (index >= midPoint) {
@@ -87,9 +86,10 @@ function calculateTrends(ordersData: OrdersAnalytics, revenueData: RevenueAnalyt
   });
 
   // Calculate revenue trend percentage from real data
-  const revenueTrend = previousPeriodRevenue > 0 
-    ? ((currentPeriodRevenue - previousPeriodRevenue) / previousPeriodRevenue) * 100 
-    : 0;
+  const revenueTrend =
+    previousPeriodRevenue > 0
+      ? ((currentPeriodRevenue - previousPeriodRevenue) / previousPeriodRevenue) * 100
+      : 0;
 
   // Calculate orders trend from actual data
   const firstHalfOrders = dayKeys.slice(0, midPoint).reduce((sum, day) => {
@@ -98,9 +98,8 @@ function calculateTrends(ordersData: OrdersAnalytics, revenueData: RevenueAnalyt
   const secondHalfOrders = dayKeys.slice(midPoint).reduce((sum, day) => {
     return sum + (revenueByDay[day] || 0) / (ordersData.avgOrderValue || 1);
   }, 0);
-  const ordersTrend = firstHalfOrders > 0 
-    ? ((secondHalfOrders - firstHalfOrders) / firstHalfOrders) * 100 
-    : 0;
+  const ordersTrend =
+    firstHalfOrders > 0 ? ((secondHalfOrders - firstHalfOrders) / firstHalfOrders) * 100 : 0;
 
   return {
     revenue: revenueTrend,
@@ -115,27 +114,26 @@ function calculateTrends(ordersData: OrdersAnalytics, revenueData: RevenueAnalyt
 function calculatePeriodComparison(revenueData: RevenueAnalytics) {
   const revenueByDay = revenueData.revenueByDay || {};
   const dayKeys = Object.keys(revenueByDay).sort();
-  
+
   const today = new Date();
   let thisWeekRevenue = 0;
   let lastWeekRevenue = 0;
-  
+
   dayKeys.forEach((dayStr) => {
     const dayDate = new Date(dayStr);
     const daysDiff = Math.floor((today.getTime() - dayDate.getTime()) / (1000 * 60 * 60 * 24));
     const revenue = revenueByDay[dayStr] || 0;
-    
+
     if (daysDiff <= 7) {
       thisWeekRevenue += revenue;
     } else if (daysDiff <= 14) {
       lastWeekRevenue += revenue;
     }
   });
-  
-  const change = lastWeekRevenue > 0 
-    ? ((thisWeekRevenue - lastWeekRevenue) / lastWeekRevenue) * 100 
-    : 0;
-  
+
+  const change =
+    lastWeekRevenue > 0 ? ((thisWeekRevenue - lastWeekRevenue) / lastWeekRevenue) * 100 : 0;
+
   return {
     thisWeek: thisWeekRevenue,
     lastWeek: lastWeekRevenue,

@@ -49,7 +49,9 @@ export function MenuUploadCard({ venueId, onSuccess, menuItemCount = 0 }: MenuUp
   const [isDragOver, setIsDragOver] = useState(false);
   const [menuUrl, setMenuUrl] = useState("");
   const [stagedFile, setStagedFile] = useState<File | null>(null);
-  const [recentUploads, setRecentUploads] = useState<{ id: string; filename: string | null; created_at: string }[]>([]);
+  const [recentUploads, setRecentUploads] = useState<
+    { id: string; filename: string | null; created_at: string }[]
+  >([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
   const supabase = createClient();
@@ -72,7 +74,13 @@ export function MenuUploadCard({ venueId, onSuccess, menuItemCount = 0 }: MenuUp
         .eq("venue_id", normalizedVenueId)
         .order("created_at", { ascending: false })
         .limit(3);
-      setRecentUploads((data ?? []).map((r) => ({ id: r.id, filename: r.filename ?? null, created_at: r.created_at })));
+      setRecentUploads(
+        (data ?? []).map((r) => ({
+          id: r.id,
+          filename: r.filename ?? null,
+          created_at: r.created_at,
+        }))
+      );
     };
     loadRecent();
   }, [venueId, isProcessing]);
@@ -146,8 +154,7 @@ export function MenuUploadCard({ venueId, onSuccess, menuItemCount = 0 }: MenuUp
       const apiUrl = new URL("/api/catalog/replace", window.location.origin);
       apiUrl.searchParams.set("venueId", venueId);
 
-      const isVisualFile =
-        stagedFile && VISUAL_EXT.includes(getFileExtension(stagedFile.name));
+      const isVisualFile = stagedFile && VISUAL_EXT.includes(getFileExtension(stagedFile.name));
 
       if (isVisualFile || (!stagedFile && hasUrl)) {
         const formData = new FormData();
@@ -156,7 +163,8 @@ export function MenuUploadCard({ venueId, onSuccess, menuItemCount = 0 }: MenuUp
         if (hasUrl) formData.append("menu_url", menuUrl.trim());
         if (stagedFile) formData.append("file", stagedFile);
 
-        const modeLabel = stagedFile && hasUrl ? "Hybrid (PDF + URL)" : stagedFile ? "PDF/Image" : "URL";
+        const modeLabel =
+          stagedFile && hasUrl ? "Hybrid (PDF + URL)" : stagedFile ? "PDF/Image" : "URL";
         toast({
           title: "Processing...",
           description:
@@ -174,9 +182,7 @@ export function MenuUploadCard({ venueId, onSuccess, menuItemCount = 0 }: MenuUp
         if (!response.ok) {
           const errorText = await response.text();
           if (response.status === 401) {
-            throw new Error(
-              "Authentication failed. Please refresh the page and try again."
-            );
+            throw new Error("Authentication failed. Please refresh the page and try again.");
           }
           if (response.status === 403) {
             throw new Error(
@@ -319,8 +325,8 @@ export function MenuUploadCard({ venueId, onSuccess, menuItemCount = 0 }: MenuUp
           Upload Menu
         </CardTitle>
         <CardDescription className="text-gray-900">
-          Add a menu URL and/or a file (PDF, images, text). Then click Process menu. URL + file
-          runs hybrid extraction for better results.
+          Add a menu URL and/or a file (PDF, images, text). Then click Process menu. URL + file runs
+          hybrid extraction for better results.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -405,11 +411,7 @@ export function MenuUploadCard({ venueId, onSuccess, menuItemCount = 0 }: MenuUp
         </div>
 
         {isProcessing && <Progress value={progress} className="h-2" />}
-        <Button
-          onClick={runProcessMenu}
-          disabled={!canProcess || isProcessing}
-          className="w-full"
-        >
+        <Button onClick={runProcessMenu} disabled={!canProcess || isProcessing} className="w-full">
           {isProcessing ? "Processing…" : "Process menu"}
         </Button>
 
@@ -444,8 +446,8 @@ export function MenuUploadCard({ venueId, onSuccess, menuItemCount = 0 }: MenuUp
           <Info className="h-4 w-4" />
           <AlertDescription className="text-gray-900">
             <p>
-              Add a URL and/or a file in any order, then click Process menu. PDF + URL runs
-              hybrid extraction (structure from PDF, images and descriptions from the site).
+              Add a URL and/or a file in any order, then click Process menu. PDF + URL runs hybrid
+              extraction (structure from PDF, images and descriptions from the site).
             </p>
           </AlertDescription>
         </Alert>
