@@ -9,16 +9,33 @@
 -- 4. organizations table is handled safely (may not exist for some setups).
 
 -- ============================================================
--- 0. Ensure venue_membership table exists
+-- 0. Ensure venue_membership table exists and accepts all roles
 -- ============================================================
 CREATE TABLE IF NOT EXISTS public.venue_membership (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   venue_id TEXT NOT NULL,
   user_id UUID NOT NULL,
-  role TEXT NOT NULL CHECK (role IN ('owner', 'manager', 'staff', 'viewer', 'server', 'kitchen', 'cashier')),
+  role TEXT NOT NULL,
   created_at TIMESTAMPTZ DEFAULT now(),
   UNIQUE(venue_id, user_id)
 );
+
+-- Drop the old restrictive CHECK constraint if it exists, then add a wider one
+DO $$
+BEGIN
+  -- Try to drop old constraint (name varies by auto-generation)
+  BEGIN
+    ALTER TABLE public.venue_membership DROP CONSTRAINT IF EXISTS venue_membership_role_check;
+  EXCEPTION WHEN undefined_object THEN NULL;
+  END;
+  -- Add wider constraint that covers all role types
+  BEGIN
+    ALTER TABLE public.venue_membership
+      ADD CONSTRAINT venue_membership_role_check
+      CHECK (role IN ('owner', 'manager', 'staff', 'viewer', 'server', 'kitchen', 'cashier'));
+  EXCEPTION WHEN duplicate_object THEN NULL;
+  END;
+END $$;
 
 CREATE INDEX IF NOT EXISTS idx_venue_membership_venue ON public.venue_membership (venue_id);
 CREATE INDEX IF NOT EXISTS idx_venue_membership_user ON public.venue_membership (user_id);
