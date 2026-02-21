@@ -28,6 +28,7 @@ import { headers } from "next/headers";
 import { resolveVenueAccess } from "@/lib/auth/resolve-access";
 import { normalizeVenueId } from "@/lib/utils/venueId";
 import { TIER_LIMITS } from "@/lib/tier-restrictions";
+import { logger } from "@/lib/monitoring/structured-logger";
 
 // ── Public types ──────────────────────────────────────────────────────
 
@@ -97,40 +98,42 @@ export const getAuthContext = cache(async (venueId: string): Promise<AuthContext
   const normalized = normalizeVenueId(venueId) ?? venueId;
 
   // ── Step 1: Full context from middleware headers ─────────────────
+  let h: Awaited<ReturnType<typeof headers>> | null = null;
   try {
-    const h = await headers();
-    const hUserId = h.get("x-user-id");
-    const hEmail = h.get("x-user-email");
-    const hRole = h.get("x-user-role");
-    const hTier = h.get("x-user-tier");
-    const hVenue = h.get("x-venue-id");
+    h = await headers();
+  } catch {
+    // headers() unavailable (e.g. during static generation)
+  }
 
-    // Fast path: middleware RPC succeeded and all headers are present.
-    if (hUserId && hRole && hTier && VALID_TIERS.has(hTier)) {
-      const tier = hTier as AuthTier;
-      return {
-        userId: hUserId,
-        email: hEmail ?? null,
-        venueId: hVenue ?? normalized,
-        role: hRole as AuthRole,
-        tier,
-        isAuthenticated: true,
-        hasFeatureAccess: buildFeatureChecker(tier),
-      };
-    }
+  const hUserId = h?.get("x-user-id") ?? null;
+  const hEmail = h?.get("x-user-email") ?? null;
+  const hRole = h?.get("x-user-role") ?? null;
+  const hTier = h?.get("x-user-tier") ?? null;
+  const hVenue = h?.get("x-venue-id") ?? null;
 
-    // ── Step 2: Middleware set userId but RPC failed ─────────────────
-    // This is the most common mobile failure mode: cookies were sent,
-    // middleware authenticated the user, but the get_access_context RPC
-    // returned incomplete data.  We resolve from the DB using the admin
-    // client (no user JWT needed).
-    if (hUserId) {
+  // Fast path: middleware resolved everything (headers all present).
+  if (hUserId && hRole && hTier && VALID_TIERS.has(hTier)) {
+    const tier = hTier as AuthTier;
+    return {
+      userId: hUserId,
+      email: hEmail,
+      venueId: hVenue ?? normalized,
+      role: hRole as AuthRole,
+      tier,
+      isAuthenticated: true,
+      hasFeatureAccess: buildFeatureChecker(tier),
+    };
+  }
+
+  // ── Step 2: Middleware set userId but role/tier missing ──────────
+  if (hUserId) {
+    try {
       const resolved = await resolveVenueAccess(hUserId, normalized);
-      if (resolved && resolved.role && resolved.tier) {
+      if (resolved?.role && resolved?.tier) {
         const tier = VALID_TIERS.has(resolved.tier) ? (resolved.tier as AuthTier) : "starter";
         return {
           userId: resolved.userId,
-          email: hEmail ?? null,
+          email: hEmail,
           venueId: resolved.venueId,
           role: resolved.role as AuthRole,
           tier,
@@ -138,11 +141,36 @@ export const getAuthContext = cache(async (venueId: string): Promise<AuthContext
           hasFeatureAccess: buildFeatureChecker(tier),
         };
       }
+      logger.warn("getAuthContext: resolveVenueAccess returned null", {
+        userId: hUserId,
+        venueId: normalized,
+        hadResolved: !!resolved,
+        hadRole: !!resolved?.role,
+      });
+    } catch (err) {
+      logger.error("getAuthContext: resolveVenueAccess threw", {
+        userId: hUserId,
+        venueId: normalized,
+        error: err instanceof Error ? err.message : String(err),
+      });
     }
 
-    // ── Step 3: Cookie-based Supabase server auth ───────────────────
-    // Middleware may not have run (e.g. ISR, or a route not covered by
-    // the matcher).  Try reading cookies directly in the Server Component.
+    // User IS authenticated (middleware set x-user-id) even if we
+    // can't determine their role for this venue — don't downgrade
+    // to "unauthenticated".
+    return {
+      userId: hUserId,
+      email: hEmail,
+      venueId: normalized,
+      role: null,
+      tier: null,
+      isAuthenticated: true,
+      hasFeatureAccess: () => false,
+    };
+  }
+
+  // ── Step 3: Cookie-based Supabase server auth ───────────────────
+  try {
     const { createServerSupabaseReadOnly } = await import("@/lib/supabase");
     const supabase = await createServerSupabaseReadOnly();
     const {
@@ -150,21 +178,28 @@ export const getAuthContext = cache(async (venueId: string): Promise<AuthContext
     } = await supabase.auth.getUser();
 
     if (user) {
-      const resolved = await resolveVenueAccess(user.id, normalized);
-      if (resolved && resolved.role && resolved.tier) {
-        const tier = VALID_TIERS.has(resolved.tier) ? (resolved.tier as AuthTier) : "starter";
-        return {
-          userId: resolved.userId,
-          email: user.email ?? null,
-          venueId: resolved.venueId,
-          role: resolved.role as AuthRole,
-          tier,
-          isAuthenticated: true,
-          hasFeatureAccess: buildFeatureChecker(tier),
-        };
+      try {
+        const resolved = await resolveVenueAccess(user.id, normalized);
+        if (resolved?.role && resolved?.tier) {
+          const tier = VALID_TIERS.has(resolved.tier) ? (resolved.tier as AuthTier) : "starter";
+          return {
+            userId: resolved.userId,
+            email: user.email ?? null,
+            venueId: resolved.venueId,
+            role: resolved.role as AuthRole,
+            tier,
+            isAuthenticated: true,
+            hasFeatureAccess: buildFeatureChecker(tier),
+          };
+        }
+      } catch (err) {
+        logger.error("getAuthContext: cookie-path resolveVenueAccess threw", {
+          userId: user.id,
+          venueId: normalized,
+          error: err instanceof Error ? err.message : String(err),
+        });
       }
 
-      // User is authenticated but has no access to this specific venue.
       return {
         userId: user.id,
         email: user.email ?? null,
@@ -175,8 +210,11 @@ export const getAuthContext = cache(async (venueId: string): Promise<AuthContext
         hasFeatureAccess: () => false,
       };
     }
-  } catch {
-    // Headers or cookie reading failed — fall through to unauthenticated.
+  } catch (err) {
+    logger.warn("getAuthContext: cookie-based auth failed", {
+      venueId: normalized,
+      error: err instanceof Error ? err.message : String(err),
+    });
   }
 
   // ── Step 4: Unauthenticated ─────────────────────────────────────

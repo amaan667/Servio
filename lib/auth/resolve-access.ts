@@ -16,6 +16,7 @@
 
 import { createAdminClient } from "@/lib/supabase";
 import { normalizeVenueId } from "@/lib/utils/venueId";
+import { logger } from "@/lib/monitoring/structured-logger";
 
 export interface ResolvedAccess {
   userId: string;
@@ -39,7 +40,14 @@ export async function resolveVenueAccess(
     .eq("venue_id", normalized)
     .maybeSingle();
 
-  if (venueErr || !venue) return null;
+  if (venueErr || !venue) {
+    logger.warn("resolveVenueAccess: venue not found", {
+      venueId: normalized,
+      userId,
+      error: venueErr?.message,
+    });
+    return null;
+  }
 
   // ── 2. Role — owner check then user_venue_roles ────────────────────
   let role: string | null = null;
@@ -47,7 +55,7 @@ export async function resolveVenueAccess(
   if (venue.owner_user_id === userId) {
     role = "owner";
   } else {
-    const { data: roleRow } = await supabase
+    const { data: roleRow, error: roleErr } = await supabase
       .from("user_venue_roles")
       .select("role")
       .eq("user_id", userId)
@@ -55,9 +63,18 @@ export async function resolveVenueAccess(
       .maybeSingle();
 
     role = roleRow?.role ?? null;
+
+    if (!role) {
+      logger.warn("resolveVenueAccess: no role found", {
+        venueId: normalized,
+        userId,
+        ownerUserId: venue.owner_user_id,
+        roleQueryError: roleErr?.message,
+      });
+    }
   }
 
-  if (!role) return null; // user has no access to this venue
+  if (!role) return null;
 
   // ── 3. Tier — organisation is the authority ────────────────────────
   let tier: string | null = null;

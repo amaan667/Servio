@@ -1,9 +1,70 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { createServerClient, type CookieOptions } from "@supabase/ssr";
+import { createClient } from "@supabase/supabase-js";
 
-// Public API paths: no auth headers needed
 const PUBLIC_API_PATHS = new Set(["/api/health", "/api/ping", "/api/ready"]);
+
+/**
+ * Resolve role + tier for (userId, venueId) using the service-role admin
+ * client.  This bypasses RLS entirely and never depends on user cookies or
+ * JWTs.  It is the LAST-RESORT fallback when the get_access_context RPC
+ * fails (RPC missing, stale JWT, network hiccup, etc.).
+ *
+ * Returns { role, tier } or null when the user genuinely has no access.
+ */
+async function resolveRoleTierAdmin(
+  userId: string,
+  venueId: string
+): Promise<{ role: string; tier: string } | null> {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!url || !serviceKey) return null;
+
+  const admin = createClient(url, serviceKey, {
+    auth: { persistSession: false, autoRefreshToken: false },
+  });
+
+  const { data: venue, error: venueErr } = await admin
+    .from("venues")
+    .select("owner_user_id, organization_id, subscription_tier")
+    .eq("venue_id", venueId)
+    .maybeSingle();
+
+  if (venueErr || !venue) return null;
+
+  let role: string | null = null;
+  if (venue.owner_user_id === userId) {
+    role = "owner";
+  } else {
+    const { data: roleRow } = await admin
+      .from("user_venue_roles")
+      .select("role")
+      .eq("user_id", userId)
+      .eq("venue_id", venueId)
+      .maybeSingle();
+    role = roleRow?.role ?? null;
+  }
+  if (!role) return null;
+
+  let tier: string | null = null;
+  if (venue.organization_id) {
+    const { data: org } = await admin
+      .from("organizations")
+      .select("subscription_tier")
+      .eq("id", venue.organization_id)
+      .maybeSingle();
+    if (org?.subscription_tier) tier = org.subscription_tier.toLowerCase().trim();
+  }
+  if (!tier && venue.subscription_tier) {
+    tier = (venue.subscription_tier as string).toLowerCase().trim();
+  }
+  if (!tier || !["starter", "pro", "enterprise"].includes(tier)) {
+    tier = "starter";
+  }
+
+  return { role, tier };
+}
 
 function shouldRunAuth(pathname: string): boolean {
   if (PUBLIC_API_PATHS.has(pathname)) return false;
@@ -167,15 +228,16 @@ export async function middleware(request: NextRequest) {
       requestHeaders.set("x-user-id", session.user.id);
       requestHeaders.set("x-user-email", session.user.email || "");
 
-      // Try to resolve tier/role from RPC when venueId is in the query string.
-      // If the RPC fails we do NOT fabricate values — downstream handlers
-      // (withUnifiedAuth / createUnifiedHandler) will resolve from the DB.
       const url = new URL(request.url);
       const queryVenueId = url.searchParams.get("venueId") || url.searchParams.get("venue_id");
       if (queryVenueId) {
         const normalizedApiVenueId = queryVenueId.startsWith("venue-")
           ? queryVenueId
           : `venue-${queryVenueId}`;
+
+        let apiResolved = false;
+
+        // Primary: RPC
         try {
           const { data: apiCtx, error: apiRpcErr } = await supabase.rpc("get_access_context", {
             p_venue_id: normalizedApiVenueId,
@@ -186,10 +248,28 @@ export async function middleware(request: NextRequest) {
               requestHeaders.set("x-user-tier", apiRpc.tier.toLowerCase().trim());
               requestHeaders.set("x-user-role", apiRpc.role);
               requestHeaders.set("x-venue-id", normalizedApiVenueId);
+              apiResolved = true;
             }
           }
         } catch {
-          // RPC failed — leave headers unset; downstream will resolve from DB
+          // RPC failed
+        }
+
+        // Fallback: admin-client direct DB queries
+        if (!apiResolved) {
+          try {
+            const adminResult = await resolveRoleTierAdmin(
+              session.user.id,
+              normalizedApiVenueId
+            );
+            if (adminResult) {
+              requestHeaders.set("x-user-tier", adminResult.tier);
+              requestHeaders.set("x-user-role", adminResult.role);
+              requestHeaders.set("x-venue-id", normalizedApiVenueId);
+            }
+          } catch {
+            // Admin resolution failed — downstream handlers will resolve
+          }
         }
       }
 
@@ -228,6 +308,9 @@ export async function middleware(request: NextRequest) {
     requestHeaders.set("x-user-email", session.user.email || "");
     requestHeaders.set("x-venue-id", normalizedVenueId);
 
+    let resolved = false;
+
+    // Primary path: RPC-based resolution (uses user's JWT → auth.uid())
     try {
       const { data, error: rpcErr } = await supabase.rpc("get_access_context", {
         p_venue_id: normalizedVenueId,
@@ -243,22 +326,32 @@ export async function middleware(request: NextRequest) {
 
         if (ctx.user_id && ctx.role && ctx.tier) {
           const tier = ctx.tier.toLowerCase().trim();
-
           if (["starter", "pro", "enterprise"].includes(tier)) {
             requestHeaders.set("x-user-tier", tier);
             requestHeaders.set("x-user-role", ctx.role);
             if (ctx.venue_id) {
               requestHeaders.set("x-venue-id", ctx.venue_id);
             }
+            resolved = true;
           }
-          // If tier value is unrecognised we leave x-user-tier unset
-          // so the page falls through to resolveVenueAccess (DB query).
         }
       }
-      // If RPC failed or returned incomplete data we leave x-user-tier
-      // and x-user-role unset. The page will call resolveVenueAccess.
     } catch {
-      // RPC threw — headers stay without role/tier.
+      // RPC unavailable — fall through to admin resolution
+    }
+
+    // Fallback: admin-client direct DB queries (bypasses RLS, never fails
+    // for users who genuinely have access — no JWT/cookie dependency)
+    if (!resolved) {
+      try {
+        const adminResult = await resolveRoleTierAdmin(session.user.id, normalizedVenueId);
+        if (adminResult) {
+          requestHeaders.set("x-user-tier", adminResult.tier);
+          requestHeaders.set("x-user-role", adminResult.role);
+        }
+      } catch {
+        // Admin resolution failed — page will try resolveVenueAccess again
+      }
     }
 
     return forwardWithHeaders(requestHeaders, response);
