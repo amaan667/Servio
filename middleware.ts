@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { createServerClient, type CookieOptions } from "@supabase/ssr";
 import { createClient } from "@supabase/supabase-js";
+import { resolveTierFromDb } from "@/lib/utils/tier";
 
 const PUBLIC_API_PATHS = new Set(["/api/health", "/api/ping", "/api/ready"]);
 
@@ -56,14 +57,10 @@ async function resolveRoleTierAdmin(
       .maybeSingle();
     if (org?.subscription_tier) tier = org.subscription_tier.toLowerCase().trim();
   }
-  if (!tier && venue.subscription_tier) {
-    tier = (venue.subscription_tier as string).toLowerCase().trim();
-  }
-  if (!tier || !["starter", "pro", "enterprise"].includes(tier)) {
-    tier = "starter";
-  }
+  const rawTier = tier ?? venue.subscription_tier;
+  const resolvedTier = resolveTierFromDb(rawTier);
 
-  return { role, tier };
+  return { role, tier: resolvedTier };
 }
 
 function shouldRunAuth(pathname: string): boolean {
@@ -151,15 +148,21 @@ export async function middleware(request: NextRequest) {
     maxAge: 60 * 60 * 24 * 7,
   };
 
-  // Create middleware-specific Supabase client
+  // Create middleware-specific Supabase client.
+  // Per Supabase docs: do not run code between createServerClient and getClaims().
+  // getClaims() validates JWT, triggers refresh when token is about to expire,
+  // and updates cookies — ensuring cookies/JWT stay in sync.
   const supabase = createServerClient(supabaseUrl, supabaseAnonKey, {
     cookies: {
       getAll() {
         return request.cookies.getAll();
       },
       setAll(cookiesToSet: Array<{ name: string; value: string; options: CookieOptions }>) {
-        cookiesToSet.forEach(({ name, value, options }) => {
+        cookiesToSet.forEach(({ name, value }) => {
           request.cookies.set(name, value);
+        });
+        response = NextResponse.next({ request });
+        cookiesToSet.forEach(({ name, value, options }) => {
           response.cookies.set(name, value, {
             ...options,
             ...cookieSettings,
@@ -169,37 +172,42 @@ export async function middleware(request: NextRequest) {
     },
   });
 
-  // ── Authenticate the user ──────────────────────────────────────────
-  let {
-    data: { user },
-    error: authError,
-  } = await supabase.auth.getUser();
+  // Primary: getClaims() — validates JWT, auto-refreshes when about to expire.
+  let user: { id: string; email?: string } | null = null;
+  try {
+    const { data: claimsData } = await supabase.auth.getClaims();
+    const claims = claimsData?.claims;
+    if (claims?.sub) {
+      user = {
+        id: claims.sub,
+        email: typeof claims.email === "string" ? claims.email : undefined,
+      };
+    }
+  } catch {
+    // getClaims failed — try Bearer token fallback
+  }
 
-  // Check for Authorization header (client may send Bearer token)
-  const authHeader = request.headers.get("Authorization");
-  let userFromAuthHeader: { id: string; email?: string } | null = null;
-
-  if (authHeader?.startsWith("Bearer ")) {
-    const token = authHeader.slice(7);
-    try {
-      const { data: userData, error: tokenError } = await supabase.auth.getUser(token);
-      if (userData?.user && !tokenError) {
-        userFromAuthHeader = userData.user;
+  // Fallback: Bearer token (API clients that don't send cookies)
+  if (!user) {
+    const authHeader = request.headers.get("Authorization");
+    if (authHeader?.startsWith("Bearer ")) {
+      const token = authHeader.slice(7);
+      try {
+        const { data: tokenClaims } = await supabase.auth.getClaims(token);
+        const claims = tokenClaims?.claims;
+        if (claims?.sub) {
+          user = {
+            id: claims.sub,
+            email: typeof claims.email === "string" ? claims.email : undefined,
+          };
+        }
+      } catch {
+        // Token verification failed
       }
-    } catch {
-      // Token verification failed
     }
   }
 
-  if ((!user || authError) && userFromAuthHeader) {
-    user = userFromAuthHeader as typeof user;
-    authError = null;
-  }
-
-  // If getUser() fails (or returned null), try to refresh the session.
-  // This is critical on mobile browsers where the access token expires
-  // while the tab is backgrounded — the refresh token in the cookie may
-  // still be valid even though the access token is stale.
+  // Last resort: refreshSession (legacy path for edge cases)
   if (!user) {
     try {
       const {
@@ -209,10 +217,9 @@ export async function middleware(request: NextRequest) {
 
       if (refreshedSession?.user && !refreshError) {
         user = refreshedSession.user;
-        authError = null;
       }
     } catch {
-      // Refresh failed — user stays null, handled downstream.
+      // Refresh failed — user stays null
     }
   }
 
@@ -258,10 +265,7 @@ export async function middleware(request: NextRequest) {
         // Fallback: admin-client direct DB queries
         if (!apiResolved) {
           try {
-            const adminResult = await resolveRoleTierAdmin(
-              session.user.id,
-              normalizedApiVenueId
-            );
+            const adminResult = await resolveRoleTierAdmin(session.user.id, normalizedApiVenueId);
             if (adminResult) {
               requestHeaders.set("x-user-tier", adminResult.tier);
               requestHeaders.set("x-user-role", adminResult.role);

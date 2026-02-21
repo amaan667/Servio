@@ -16,6 +16,7 @@
 
 import { createAdminClient } from "@/lib/supabase";
 import { normalizeVenueId } from "@/lib/utils/venueId";
+import { resolveTierFromDb } from "@/lib/utils/tier";
 import { logger } from "@/lib/monitoring/structured-logger";
 
 export interface ResolvedAccess {
@@ -30,13 +31,18 @@ export async function resolveVenueAccess(
   userId: string,
   venueId: string
 ): Promise<ResolvedAccess | null> {
+  if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
+    logger.error("resolveVenueAccess: SUPABASE_SERVICE_ROLE_KEY missing");
+    return null;
+  }
   const supabase = createAdminClient();
   const normalized = normalizeVenueId(venueId) ?? venueId;
 
   // ── 1. Venue lookup ────────────────────────────────────────────────
+  // Note: subscription_tier may not exist on venues; tier comes from organizations
   const { data: venue, error: venueErr } = await supabase
     .from("venues")
-    .select("owner_user_id, organization_id, subscription_tier")
+    .select("owner_user_id, organization_id")
     .eq("venue_id", normalized)
     .maybeSingle();
 
@@ -76,39 +82,26 @@ export async function resolveVenueAccess(
 
   if (!role) return null;
 
-  // ── 3. Tier — organisation is the authority ────────────────────────
-  let tier: string | null = null;
+  // ── 3. Tier — organisation is the authority, venue is fallback ───────
+  // Use DB values only. Never overwrite pro/enterprise with starter.
+  const orgTier = venue.organization_id
+    ? (
+        await supabase
+          .from("organizations")
+          .select("subscription_tier")
+          .eq("id", venue.organization_id)
+          .maybeSingle()
+      ).data?.subscription_tier
+    : null;
+  const tier = resolveTierFromDb(orgTier ?? null);
 
-  if (venue.organization_id) {
-    const { data: org } = await supabase
-      .from("organizations")
-      .select("subscription_tier")
-      .eq("id", venue.organization_id)
-      .maybeSingle();
-
-    if (org?.subscription_tier) {
-      tier = org.subscription_tier.toLowerCase().trim();
-    }
-  }
-
-  // If no org tier, fall back to venue tier (venues without an org row)
-  if (!tier) {
-    tier = venue.subscription_tier
-      ? (venue.subscription_tier as string).toLowerCase().trim()
-      : null;
-  }
-
-  // Validate
-  if (!tier || !["starter", "pro", "enterprise"].includes(tier)) {
-    tier = "starter";
-  }
-
-  // ── 4. Self-heal: sync venue tier if it drifted from org ───────────
-  const venueTier = venue.subscription_tier
-    ? (venue.subscription_tier as string).toLowerCase().trim()
+  // ── 4. Self-heal: sync venue tier if column exists and drifted from org ───────────
+  const venueWithTier = venue as { subscription_tier?: string | null };
+  const venueTierNormalized = venueWithTier.subscription_tier
+    ? (venueWithTier.subscription_tier as string).toLowerCase().trim()
     : null;
 
-  if (venue.organization_id && tier !== venueTier) {
+  if (venue.organization_id && venueTierNormalized != null && tier !== venueTierNormalized) {
     // Fire-and-forget — never block the caller
     supabase
       .from("venues")

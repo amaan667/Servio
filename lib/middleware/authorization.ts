@@ -8,6 +8,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createSupabaseClient, createServerSupabaseWithToken } from "@/lib/supabase";
 import { getAuthenticatedUser as getAuthUser } from "@/lib/supabase";
 import { normalizeVenueId } from "@/lib/utils/venueId";
+import { resolveTierFromDb } from "@/lib/utils/tier";
 import { resolveVenueAccess } from "@/lib/auth/resolve-access";
 
 export interface Venue {
@@ -47,8 +48,13 @@ export interface AuthorizedContext {
 
 /**
  * Verify user has access to venue (owner or staff)
- * Single path: get_access_context RPC for role/tier (dashboard and API routes).
- * When request is provided with Bearer token, uses token when cookies are empty.
+ * Resolution order (first success wins):
+ *   1. Admin client (resolveVenueAccess) — most reliable, never depends on cookies/JWT.
+ *   2. Cookie-based Supabase client → get_access_context RPC
+ *   3. Bearer token Supabase client → get_access_context RPC (when request provided)
+ *
+ * Admin path runs first because cookies/JWT may not be available (API clients,
+ * mobile, cross-origin) but the DB always has the source of truth for roles.
  */
 export async function verifyVenueAccess(
   venueId: string,
@@ -81,36 +87,15 @@ export async function verifyVenueAccess(
       venue,
       user: { id: userId },
       role: rpc.role,
-      tier: (rpc.tier?.toLowerCase()?.trim() || "starter") as string,
+      tier: resolveTierFromDb(rpc.tier),
       venue_ids: [],
     };
   };
 
+  // 1. Admin client first — never depends on cookies/JWT, always works if user has DB access
   try {
-    // 1. Try cookie-based Supabase client (primary path)
-    const supabase = await createSupabaseClient();
-    const result = await tryWithSupabase(supabase);
-    if (result) return result;
-
-    // 2. Cookie-based auth failed. Try Bearer token if provided.
-    if (request) {
-      const authHeader = request.headers.get("Authorization");
-      const token = authHeader?.startsWith("Bearer ") ? authHeader.slice(7) : null;
-      if (token) {
-        const tokenSupabase = createServerSupabaseWithToken(token);
-        const tokenResult = await tryWithSupabase(tokenSupabase);
-        if (tokenResult) return tokenResult;
-      }
-    }
-
-    // 3. Both cookie and Bearer token RPC calls failed.
-    //    Use resolveVenueAccess — the single canonical DB-read function
-    //    that queries venues, user_venue_roles and organizations directly.
-    try {
-      const resolved = await resolveVenueAccess(userId, normalizedVenueId);
-      if (!resolved) return null;
-
-      // We also need the full venue row for the VenueAccess return type.
+    const resolved = await resolveVenueAccess(userId, normalizedVenueId);
+    if (resolved) {
       const { createAdminClient } = await import("@/lib/supabase");
       const admin = createAdminClient();
       const { data: venue, error: venueErr } = await admin
@@ -119,21 +104,45 @@ export async function verifyVenueAccess(
         .eq("venue_id", normalizedVenueId)
         .single();
 
-      if (venueErr || !venue) return null;
-
-      return {
-        venue,
-        user: { id: userId },
-        role: resolved.role,
-        tier: resolved.tier,
-        venue_ids: [],
-      };
-    } catch {
-      return null;
+      if (!venueErr && venue) {
+        return {
+          venue,
+          user: { id: userId },
+          role: resolved.role,
+          tier: resolved.tier,
+          venue_ids: [],
+        };
+      }
     }
   } catch {
-    return null;
+    // Admin path failed — continue to cookie/token paths
   }
+
+  // 2. Cookie-based Supabase client
+  try {
+    const supabase = await createSupabaseClient();
+    const result = await tryWithSupabase(supabase);
+    if (result) return result;
+  } catch {
+    // Path 2 failed — continue to path 3
+  }
+
+  // 3. Bearer token if provided (API clients, mobile)
+  if (request) {
+    const authHeader = request.headers.get("Authorization");
+    const token = authHeader?.startsWith("Bearer ") ? authHeader.slice(7) : null;
+    if (token) {
+      try {
+        const tokenSupabase = createServerSupabaseWithToken(token);
+        const tokenResult = await tryWithSupabase(tokenSupabase);
+        if (tokenResult) return tokenResult;
+      } catch {
+        // Path 3 failed
+      }
+    }
+  }
+
+  return null;
 }
 
 /**
@@ -243,8 +252,8 @@ export function withAuthorization(
         );
       }
 
-      // Verify venue access
-      const access = await verifyVenueAccess(venueId, user.id);
+      // Verify venue access (pass req for Bearer token fallback)
+      const access = await verifyVenueAccess(venueId, user.id, req);
 
       if (!access) {
         return NextResponse.json(
@@ -295,8 +304,8 @@ export function withOptionalAuth(
         return await handler(req, null);
       }
 
-      // Verify venue access
-      const access = await verifyVenueAccess(venueId, user.id);
+      // Verify venue access (pass req for Bearer token fallback)
+      const access = await verifyVenueAccess(venueId, user.id, req);
 
       if (!access) {
         return await handler(req, null);

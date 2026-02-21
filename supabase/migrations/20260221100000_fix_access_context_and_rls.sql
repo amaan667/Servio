@@ -96,14 +96,24 @@ BEGIN
     WHERE id = v_org_id;
   END IF;
 
+  -- Use org tier first, then venue tier. Never overwrite pro/enterprise with starter.
   IF v_tier IS NULL OR v_tier = '' THEN
-    v_tier := COALESCE(v_venue_tier, 'starter');
+    v_tier := v_venue_tier;
   END IF;
 
-  v_tier := lower(trim(v_tier));
+  v_tier := lower(trim(COALESCE(v_tier, '')));
 
-  IF v_tier NOT IN ('starter', 'pro', 'enterprise') THEN
-    v_tier := 'starter';
+  -- Only default to starter when we have no tier. Accept pro/enterprise from DB.
+  IF v_tier = '' OR v_tier NOT IN ('starter', 'pro', 'enterprise') THEN
+    IF v_tier LIKE '%enterprise%' THEN
+      v_tier := 'enterprise';
+    ELSIF v_tier LIKE '%pro%' THEN
+      v_tier := 'pro';
+    ELSIF v_tier LIKE '%starter%' THEN
+      v_tier := 'starter';
+    ELSE
+      v_tier := 'starter';  -- Only when DB has no tier (new venue)
+    END IF;
   END IF;
 
   RETURN jsonb_build_object(

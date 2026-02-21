@@ -16,16 +16,17 @@ vi.mock("@/lib/env", () => ({
 
 type SupabaseUser = { id: string; email?: string | null };
 
-const getUserMock =
-  vi.fn<() => Promise<{ data: { user: SupabaseUser | null }; error: unknown | null }>>();
+const getClaimsMock = vi.fn<
+  (jwt?: string) => Promise<{ data: { claims: { sub: string; email?: string } | null } | null }>
+>();
 
 const refreshSessionMock =
-  vi.fn<() => Promise<{ data: { session: null }; error: { message: string } | null }>>();
+  vi.fn<() => Promise<{ data: { session: { user: SupabaseUser } | null }; error: unknown | null }>>();
 
 vi.mock("@supabase/ssr", () => ({
   createServerClient: vi.fn(() => ({
     auth: {
-      getUser: getUserMock,
+      getClaims: getClaimsMock,
       refreshSession: refreshSessionMock,
     },
   })),
@@ -74,7 +75,7 @@ describe("middleware (pilot hardening)", () => {
     process.env.NEXT_PUBLIC_SUPABASE_URL = "https://test.supabase.co";
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY = "test-anon-key";
 
-    getUserMock.mockResolvedValueOnce({ data: { user: null }, error: null });
+    getClaimsMock.mockResolvedValueOnce({ data: { claims: null } });
     refreshSessionMock.mockResolvedValueOnce({
       data: { session: null },
       error: { message: "refresh_token_not_found" },
@@ -91,9 +92,8 @@ describe("middleware (pilot hardening)", () => {
     process.env.NEXT_PUBLIC_SUPABASE_URL = "https://test.supabase.co";
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY = "test-anon-key";
 
-    getUserMock.mockResolvedValueOnce({
-      data: { user: { id: "user-123", email: "u@example.com" } },
-      error: null,
+    getClaimsMock.mockResolvedValueOnce({
+      data: { claims: { sub: "user-123", email: "u@example.com" } },
     });
 
     const req = makeRequest("/api/inventory") as unknown as Parameters<typeof middleware>[0];

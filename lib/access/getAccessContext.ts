@@ -16,6 +16,7 @@ import {
 } from "@/lib/tier-limits";
 import { createServerSupabaseReadOnly, createServerSupabaseWithToken } from "@/lib/supabase";
 import { normalizeVenueId } from "@/lib/utils/venueId";
+import { resolveTierFromDb } from "@/lib/utils/tier";
 
 /**
  * Get unified access context via RPC
@@ -68,15 +69,7 @@ export const getAccessContext = cache(
         return null;
       }
 
-      // Normalize tier
-      const tier = (context.tier?.toLowerCase().trim() || "starter") as Tier;
-
-      if (!["starter", "pro", "enterprise"].includes(tier)) {
-        return {
-          ...context,
-          tier: "starter" as Tier,
-        };
-      }
+      const tier = resolveTierFromDb(context.tier) as Tier;
 
       return {
         ...context,
@@ -121,12 +114,11 @@ export async function getAccessContextWithRequest(
     const context = data as AccessContext;
     if (!context.user_id || !context.role) return null;
 
-    const tier = (context.tier?.toLowerCase().trim() || "starter") as Tier;
-    const validTier = ["starter", "pro", "enterprise"].includes(tier) ? tier : ("starter" as Tier);
+    const tier = resolveTierFromDb(context.tier) as Tier;
 
     return {
       ...context,
-      tier: validTier,
+      tier,
     };
   } catch {
     return null;

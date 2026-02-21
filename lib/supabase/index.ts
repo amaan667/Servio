@@ -301,20 +301,21 @@ export async function createServerSupabase() {
       },
       setAll(cookiesToSet: Array<{ name: string; value: string; options: CookieOptions }>) {
         try {
+          const isSecure = process.env.NODE_ENV === "production";
           cookiesToSet.forEach(
             ({ name, value, options }: { name: string; value: string; options: CookieOptions }) => {
               cookieStore.set(name, value, {
                 ...options,
                 httpOnly: false, // Must be false for Supabase to read from client
                 sameSite: "lax",
-                secure: true,
-                maxAge: options.maxAge || 60 * 60 * 24 * 7,
-                path: "/",
+                secure: options.secure ?? isSecure,
+                maxAge: options.maxAge ?? 60 * 60 * 24 * 7,
+                path: options.path ?? "/",
               });
             }
           );
-        } catch (error) {
-          /* Error handled silently */
+        } catch {
+          /* Cookie context may be read-only (e.g. Server Component) */
         }
       },
     },

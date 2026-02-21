@@ -44,6 +44,7 @@ import { checkFeatureAccess, checkLimit, TIER_LIMITS } from "@/lib/tier-restrict
 
 import { apiErrors } from "@/lib/api/standard-response";
 import { normalizeVenueId } from "@/lib/utils/venueId";
+import { resolveTierFromDb } from "@/lib/utils/tier";
 import type { User } from "@supabase/supabase-js";
 
 // ============================================================================
@@ -195,7 +196,7 @@ export async function requireAuthAndVenueAccess(
     };
   }
 
-  const tier = access.tier || "starter";
+  const tier = resolveTierFromDb(access.tier);
   const role = access.role;
 
   return {
@@ -347,7 +348,7 @@ export async function getPageAuthContext(
     }
 
     // Get tier/role from headers (middleware already called RPC)
-    const tier = requestHeaders?.get("x-user-tier") || access.tier || "starter";
+    const tier = resolveTierFromDb(requestHeaders?.get("x-user-tier") ?? access.tier);
     const role = requestHeaders?.get("x-user-role") || access.role;
 
     // Helper to check feature access (synchronous check using tier)
@@ -635,7 +636,7 @@ export function withUnifiedAuth(
         user: venueData.user,
         role: role || venueData.role,
         venueId: normalizedVenueId,
-        tier: tier || venueData.tier || "starter",
+        tier: resolveTierFromDb(tier ?? venueData.tier),
         venue_ids: venueData.venue_ids || [],
       };
 
