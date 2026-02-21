@@ -4,8 +4,21 @@
 
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
-// Mock all database interactions
+// Guards use createClient (not createAdminClient)
 vi.mock("@/lib/supabase", () => ({
+  createClient: vi.fn(() =>
+    Promise.resolve({
+      rpc: vi.fn(),
+      from: vi.fn(() => ({
+        select: vi.fn(() => ({
+          eq: vi.fn(() => ({
+            single: vi.fn(() => ({ data: null, error: null })),
+            maybeSingle: vi.fn(() => ({ data: null, error: null })),
+          })),
+        })),
+      })),
+    })
+  ),
   createAdminClient: vi.fn(() => ({
     rpc: vi.fn(),
     from: vi.fn(() => ({
@@ -26,7 +39,7 @@ describe("Entitlements Guards", () => {
 
   describe("getVenueEntitlements", () => {
     it("should return entitlements for valid venue", async () => {
-      const { createAdminClient } = await import("@/lib/supabase");
+      const { createClient } = await import("@/lib/supabase");
       const mockSupabase = {
         rpc: vi.fn(() =>
           Promise.resolve({
@@ -45,7 +58,7 @@ describe("Entitlements Guards", () => {
           })
         ),
       };
-      vi.mocked(createAdminClient).mockReturnValue(mockSupabase);
+      vi.mocked(createClient).mockResolvedValue(mockSupabase);
 
       const { getVenueEntitlements } = await import("@/lib/entitlements/guards");
 
@@ -56,7 +69,7 @@ describe("Entitlements Guards", () => {
     });
 
     it("should fail closed on invalid entitlement schema", async () => {
-      const { createAdminClient } = await import("@/lib/supabase");
+      const { createClient } = await import("@/lib/supabase");
       const mockSupabase = {
         rpc: vi.fn(() =>
           Promise.resolve({
@@ -68,7 +81,7 @@ describe("Entitlements Guards", () => {
           })
         ),
       };
-      vi.mocked(createAdminClient).mockReturnValue(mockSupabase);
+      vi.mocked(createClient).mockResolvedValue(mockSupabase);
 
       const { getVenueEntitlements } = await import("@/lib/entitlements/guards");
 
@@ -77,7 +90,7 @@ describe("Entitlements Guards", () => {
     });
 
     it("should normalize null values to unlimited", async () => {
-      const { createAdminClient } = await import("@/lib/supabase");
+      const { createClient } = await import("@/lib/supabase");
       const mockSupabase = {
         rpc: vi.fn(() =>
           Promise.resolve({
@@ -96,7 +109,7 @@ describe("Entitlements Guards", () => {
           })
         ),
       };
-      vi.mocked(createAdminClient).mockReturnValue(mockSupabase);
+      vi.mocked(createClient).mockResolvedValue(mockSupabase);
 
       const { getVenueEntitlements } = await import("@/lib/entitlements/guards");
 
@@ -110,7 +123,7 @@ describe("Entitlements Guards", () => {
 
   describe("requireEntitlement", () => {
     it("should allow access to enabled features", async () => {
-      const { createAdminClient } = await import("@/lib/supabase");
+      const { createClient } = await import("@/lib/supabase");
       const mockSupabase = {
         rpc: vi.fn(() =>
           Promise.resolve({
@@ -129,7 +142,7 @@ describe("Entitlements Guards", () => {
           })
         ),
       };
-      vi.mocked(createAdminClient).mockReturnValue(mockSupabase);
+      vi.mocked(createClient).mockResolvedValue(mockSupabase);
 
       const { requireEntitlement } = await import("@/lib/entitlements/guards");
 
@@ -139,7 +152,7 @@ describe("Entitlements Guards", () => {
     });
 
     it("should deny access to disabled features", async () => {
-      const { createAdminClient } = await import("@/lib/supabase");
+      const { createClient } = await import("@/lib/supabase");
       const mockSupabase = {
         rpc: vi.fn(() =>
           Promise.resolve({
@@ -158,7 +171,7 @@ describe("Entitlements Guards", () => {
           })
         ),
       };
-      vi.mocked(createAdminClient).mockReturnValue(mockSupabase);
+      vi.mocked(createClient).mockResolvedValue(mockSupabase);
 
       const { requireEntitlement } = await import("@/lib/entitlements/guards");
 
@@ -170,7 +183,7 @@ describe("Entitlements Guards", () => {
 
   describe("requireMaxCount", () => {
     it("should allow operations within limits", async () => {
-      const { createAdminClient } = await import("@/lib/supabase");
+      const { createClient } = await import("@/lib/supabase");
       const mockSupabase = {
         rpc: vi.fn(() =>
           Promise.resolve({
@@ -189,7 +202,7 @@ describe("Entitlements Guards", () => {
           })
         ),
       };
-      vi.mocked(createAdminClient).mockReturnValue(mockSupabase);
+      vi.mocked(createClient).mockResolvedValue(mockSupabase);
 
       const { requireMaxCount } = await import("@/lib/entitlements/guards");
 
@@ -205,7 +218,7 @@ describe("Entitlements Guards", () => {
     });
 
     it("should deny operations over limits", async () => {
-      const { createAdminClient } = await import("@/lib/supabase");
+      const { createClient } = await import("@/lib/supabase");
       const mockSupabase = {
         rpc: vi.fn(() =>
           Promise.resolve({
@@ -224,7 +237,7 @@ describe("Entitlements Guards", () => {
           })
         ),
       };
-      vi.mocked(createAdminClient).mockReturnValue(mockSupabase);
+      vi.mocked(createClient).mockResolvedValue(mockSupabase);
 
       const { requireMaxCount } = await import("@/lib/entitlements/guards");
 
@@ -241,8 +254,7 @@ describe("Entitlements Guards", () => {
     });
 
     it("should enforce KDS station limits by mode", async () => {
-      // Test starter with addon (1 station limit)
-      const { createAdminClient } = await import("@/lib/supabase");
+      const { createClient } = await import("@/lib/supabase");
       const mockSupabase = {
         rpc: vi.fn(() =>
           Promise.resolve({
@@ -251,7 +263,7 @@ describe("Entitlements Guards", () => {
               maxStaff: 5,
               maxTables: 25,
               maxLocations: 1,
-              kds: { enabled: true, mode: "single" }, // Starter + addon
+              kds: { enabled: true, mode: "single" },
               analytics: { level: "basic", csvExport: false, financeExport: false },
               branding: { level: "basic", customDomain: false },
               api: { enabled: false, level: null },
@@ -261,7 +273,7 @@ describe("Entitlements Guards", () => {
           })
         ),
       };
-      vi.mocked(createAdminClient).mockReturnValue(mockSupabase);
+      vi.mocked(createClient).mockResolvedValue(mockSupabase);
 
       const { requireMaxCount } = await import("@/lib/entitlements/guards");
 
@@ -280,7 +292,7 @@ describe("Entitlements Guards", () => {
 
   describe("requireTierAtLeast", () => {
     it("should allow access for sufficient tier", async () => {
-      const { createAdminClient } = await import("@/lib/supabase");
+      const { createClient } = await import("@/lib/supabase");
       const mockSupabase = {
         rpc: vi.fn(() =>
           Promise.resolve({
@@ -299,7 +311,7 @@ describe("Entitlements Guards", () => {
           })
         ),
       };
-      vi.mocked(createAdminClient).mockReturnValue(mockSupabase);
+      vi.mocked(createClient).mockResolvedValue(mockSupabase);
 
       const { requireTierAtLeast } = await import("@/lib/entitlements/guards");
 
@@ -309,7 +321,7 @@ describe("Entitlements Guards", () => {
     });
 
     it("should deny access for insufficient tier", async () => {
-      const { createAdminClient } = await import("@/lib/supabase");
+      const { createClient } = await import("@/lib/supabase");
       const mockSupabase = {
         rpc: vi.fn(() =>
           Promise.resolve({
@@ -328,7 +340,7 @@ describe("Entitlements Guards", () => {
           })
         ),
       };
-      vi.mocked(createAdminClient).mockReturnValue(mockSupabase);
+      vi.mocked(createClient).mockResolvedValue(mockSupabase);
 
       const { requireTierAtLeast } = await import("@/lib/entitlements/guards");
 

@@ -40,15 +40,20 @@ describe("BaseService", () => {
 
   describe("withCache", () => {
     it("should return cached value if available", async () => {
+      const orig = process.env.NODE_ENV;
+      process.env.NODE_ENV = "development";
       vi.mocked(cache.get).mockResolvedValue("cached-value" as never);
 
       const result = await service["withCache"]("test-key", async () => "new-value", 300);
 
       expect(result).toBe("cached-value");
       expect(cache.get).toHaveBeenCalledWith("test-key");
+      process.env.NODE_ENV = orig;
     });
 
     it("should execute callback and cache result if not cached", async () => {
+      const orig = process.env.NODE_ENV;
+      process.env.NODE_ENV = "development";
       vi.mocked(cache.get).mockResolvedValue(null);
       vi.mocked(cache.set).mockResolvedValue(true);
 
@@ -59,6 +64,7 @@ describe("BaseService", () => {
       expect(result).toBe("new-value");
       expect(callback).toHaveBeenCalled();
       expect(cache.set).toHaveBeenCalledWith("test-key", "new-value", { ttl: 300 });
+      process.env.NODE_ENV = orig;
     });
 
     it("should skip caching in test mode", async () => {
@@ -79,11 +85,14 @@ describe("BaseService", () => {
 
   describe("invalidateCache", () => {
     it("should delete cache entry", async () => {
+      const orig = process.env.NODE_ENV;
+      process.env.NODE_ENV = "development";
       vi.mocked(cache.delete).mockResolvedValue(true);
 
       await service["invalidateCache"]("test-key");
 
       expect(cache.delete).toHaveBeenCalledWith("test-key");
+      process.env.NODE_ENV = orig;
     });
 
     it("should skip in test mode", async () => {

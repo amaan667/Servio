@@ -10,21 +10,24 @@ import { GET as getGET } from "@/app/api/kds/status/route";
 // Mocks
 // =====================================================================================
 
-// Mock Supabase admin client used by the route
+// Mock Supabase admin client: chain must support .from().select().in().eq() and await
+const kdsChain = {
+  then(onFulfilled: (v: { data: unknown; error: null; count?: number }) => unknown) {
+    return Promise.resolve({ data: [], error: null, count: 0 }).then(onFulfilled);
+  },
+  select: () => kdsChain,
+  eq: () => kdsChain,
+  in: () => kdsChain,
+  order: () => kdsChain,
+  limit: () => kdsChain,
+  gte: () => kdsChain,
+  single: () => Promise.resolve({ data: null, error: null }),
+  maybeSingle: () => Promise.resolve({ data: null, error: null }),
+};
 vi.mock("@/lib/supabase", () => ({
-  createAdminClient: vi.fn(() => ({
-    from: vi.fn(() => ({
-      select: vi.fn(() =>
-        Promise.resolve({
-          data: [],
-          error: null,
-        })
-      ),
-      insert: vi.fn(() => Promise.resolve({ data: [{ id: "test-id" }], error: null })),
-      update: vi.fn(() => Promise.resolve({ data: [], error: null })),
-      delete: vi.fn(() => Promise.resolve({ data: [], error: null })),
-    })),
-  })),
+  createAdminClient: () => ({
+    from: () => kdsChain,
+  }),
 }));
 
 // Unified auth: we only need to ensure that when headers contain x-user-id,
@@ -60,6 +63,10 @@ vi.mock("@/lib/rate-limit", () => ({
     ORDER_CREATE: { limit: 30, window: 60 },
   },
   rateLimit: (...args: unknown[]) => rateLimitMock(...(args as [NextRequest, RateLimitConfig])),
+  getClientIdentifier: (req: NextRequest) =>
+    req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ??
+    req.headers.get("x-real-ip") ??
+    "unknown",
 }));
 
 beforeEach(() => {

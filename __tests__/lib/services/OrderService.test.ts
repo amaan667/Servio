@@ -24,32 +24,26 @@ describe("OrderService", () => {
 
   beforeEach(() => {
     orderService = new OrderService();
+    const chain = {
+      eq: vi.fn().mockReturnThis(),
+      order: vi.fn().mockReturnThis(),
+      limit: vi.fn().mockReturnThis(),
+      in: vi.fn().mockReturnThis(),
+      gte: vi.fn().mockReturnThis(),
+      lte: vi.fn().mockReturnThis(),
+      select: vi.fn().mockReturnThis(),
+      single: vi.fn(),
+      insert: vi.fn().mockReturnThis(),
+      update: vi.fn().mockReturnThis(),
+    };
     mockSupabase = {
       from: vi.fn(() => ({
+        ...chain,
         select: vi.fn(() => ({
-          eq: vi.fn(() => ({
-            order: vi.fn(() => ({
-              limit: vi.fn(() => ({
-                single: vi.fn(),
-              })),
-              single: vi.fn(),
-            })),
-            in: vi.fn(() => ({
-              gte: vi.fn(() => ({
-                lte: vi.fn(() => ({
-                  limit: vi.fn(),
-                })),
-              })),
-            })),
-          })),
-          update: vi.fn(() => ({
-            eq: vi.fn(() => ({
-              select: vi.fn(() => ({
-                single: vi.fn(),
-              })),
-            })),
-          })),
+          ...chain,
+          insert: vi.fn(() => ({ select: vi.fn().mockResolvedValue({ data: [], error: null }) })),
         })),
+        insert: vi.fn(() => ({ select: vi.fn().mockResolvedValue({ data: [], error: null }) })),
       })),
       rpc: vi.fn(),
     };
@@ -88,8 +82,9 @@ describe("OrderService", () => {
       mockSupabase.from.mockReturnValue({
         select: vi.fn().mockReturnValue({
           eq: vi.fn().mockReturnValue({
-            order: vi.fn().mockReturnValue({
-              limit: vi.fn().mockResolvedValue({ data: null, error: new Error("Database error") }),
+            order: vi.fn().mockResolvedValue({
+              data: null,
+              error: new Error("Database error"),
             }),
           }),
         }),
@@ -108,10 +103,13 @@ describe("OrderService", () => {
         total_amount: 25.5,
       };
 
-      mockSupabase.rpc.mockResolvedValue({
-        data: mockOrder,
+      const insertSelect = vi.fn().mockResolvedValue({
+        data: [mockOrder],
         error: null,
       });
+      mockSupabase.from.mockReturnValue({
+        insert: vi.fn().mockReturnValue({ select: insertSelect }),
+      } as unknown);
 
       const result = await orderService.createOrder("venue-1", {
         customer_name: "Test Customer",
@@ -121,40 +119,25 @@ describe("OrderService", () => {
       });
 
       expect(result).toBeDefined();
-      expect(mockSupabase.rpc).toHaveBeenCalledWith(
-        "create_order_with_session_v2",
-        expect.objectContaining({
-          p_venue_id: "venue-1",
-          p_customer_name: "Test Customer",
-        })
-      );
+      expect(mockSupabase.from).toHaveBeenCalledWith("orders");
+      expect(insertSelect).toHaveBeenCalled();
     });
 
-    it("should handle RPC errors with fallback", async () => {
+    it("should handle insert errors with fallback", async () => {
       const mockOrder = { id: "order-1", venue_id: "venue-1" };
 
-      mockSupabase.rpc.mockResolvedValue({
-        data: null,
-        error: new Error("RPC failed"),
+      const insertSelect = vi.fn().mockResolvedValue({
+        data: [mockOrder],
+        error: null,
       });
-
-      const insertBuilder = {
-        insert: vi.fn().mockReturnValue({
-          select: vi.fn().mockReturnValue({
-            single: vi.fn().mockResolvedValue({
-              data: mockOrder,
-              error: null,
-            }),
-          }),
-        }),
-      };
-
-      mockSupabase.from.mockReturnValue(insertBuilder as unknown);
+      mockSupabase.from.mockReturnValue({
+        insert: vi.fn().mockReturnValue({ select: insertSelect }),
+      } as unknown);
 
       const result = await orderService.createOrder("venue-1", {
         customer_name: "Test",
         customer_phone: "+1234567890",
-        items: [],
+        items: [{ item_name: "Item", quantity: 1, price: 10 }],
         total_amount: 10,
       });
 

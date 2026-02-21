@@ -21,11 +21,30 @@ export default async function VenuePage({ params }: { params: { venueId: string 
 
   // Log dashboard page load attempt
 
-  // STEP 1: Server-side auth check (optional - no redirects)
-  // NO REDIRECTS - User requested ZERO sign-in redirects
-  // Auth check is optional - client will handle auth display
-  // Dashboard ALWAYS loads - client handles authentication
+  // STEP 1: Server-side auth check
   const auth = await getAuthContext(venueId);
+
+  // Guard: enforce venue access. DB is source of truth; missing role = no access.
+  // Do not fetch data when user has no role for this venue (cross-tenant protection).
+  if (auth.isAuthenticated && auth.role == null) {
+    if (process.env.NODE_ENV !== "production") {
+       
+      console.debug("[auth-diagnostic] dashboard venue access denied", {
+        user_id: auth.userId,
+        venue_id: venueId,
+        role: auth.role,
+        tier: auth.tier,
+      });
+    }
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <div className="text-center">
+          <h1 className="text-xl font-semibold">Access denied</h1>
+          <p className="mt-2 text-muted-foreground">You do not have access to this venue.</p>
+        </div>
+      </div>
+    );
+  }
 
   // Log all auth information for browser console
   const authInfo = {
@@ -39,18 +58,19 @@ export default async function VenuePage({ params }: { params: { venueId: string 
     page: "Dashboard",
   };
 
-  // STEP 2: Fetch initial dashboard data on server (even without auth)
-  // Always fetch data - don't block on auth
-  // Use admin client only after auth verification
+  // STEP 2: Fetch initial dashboard data on server (only when user has venue access)
+  // Guard above ensures we only reach here when auth.role is set or user is unauthenticated.
+  // For unauthenticated, we still allow load so client can show sign-in; no sensitive data without role.
   let initialCounts: DashboardCounts | undefined = undefined;
   let initialStats: DashboardStats | undefined = undefined;
 
-  try {
-    // Check if service role key is available before creating admin client
-    if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
-      const errorMsg = "SUPABASE_SERVICE_ROLE_KEY environment variable is missing";
+  const mayFetchData = auth.isAuthenticated && auth.role != null;
 
-      // Continue without initial data - client will handle gracefully
+  try {
+    if (!mayFetchData) {
+      // Do not run admin client or fetch venue data when user has no role for this venue
+    } else if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
+      const errorMsg = "SUPABASE_SERVICE_ROLE_KEY environment variable is missing";
     } else {
       const supabase = createAdminClient();
       const venueTz = undefined;

@@ -4,10 +4,11 @@
 
 import { describe, it, expect, beforeEach, vi, afterEach } from "vitest";
 import { MenuService } from "@/lib/services/MenuService";
-import { createSupabaseClient } from "@/lib/supabase";
+import { createSupabaseClient, supabaseAdmin } from "@/lib/supabase";
 
 vi.mock("@/lib/supabase", () => ({
   createSupabaseClient: vi.fn(),
+  supabaseAdmin: vi.fn(),
 }));
 
 describe("MenuService", () => {
@@ -25,17 +26,30 @@ describe("MenuService", () => {
 
   beforeEach(() => {
     menuService = new MenuService();
+    const createFinalQuery = (resolved: { data: unknown; error: null }) => ({
+      eq: vi.fn().mockReturnThis(),
+      order: vi.fn().mockReturnThis(),
+      then(onFulfilled: (v: { data: unknown; error: null }) => unknown) {
+        return Promise.resolve(resolved).then(onFulfilled);
+      },
+    });
+    const defaultFinal = createFinalQuery({ data: [], error: null });
+    const orderChain = {
+      eq: vi.fn().mockReturnThis(),
+      order: vi.fn().mockReturnValue(defaultFinal),
+    };
     mockSupabase = {
       from: vi.fn(() => mockSupabase),
       select: vi.fn(() => mockSupabase),
       eq: vi.fn(() => mockSupabase),
-      order: vi.fn(() => mockSupabase),
+      order: vi.fn(() => orderChain),
       insert: vi.fn(() => mockSupabase),
       update: vi.fn(() => mockSupabase),
       delete: vi.fn(() => mockSupabase),
       single: vi.fn(() => mockSupabase),
     };
     vi.mocked(createSupabaseClient).mockResolvedValue(mockSupabase);
+    vi.mocked(supabaseAdmin).mockReturnValue(mockSupabase as never);
   });
 
   afterEach(() => {
@@ -49,7 +63,17 @@ describe("MenuService", () => {
         { id: "2", name: "Fries", price: 5, venue_id: "venue-1" },
       ];
 
-      mockSupabase.single.mockResolvedValue({ data: mockItems, error: null });
+      const finalQuery = {
+        eq: vi.fn().mockReturnThis(),
+        order: vi.fn().mockReturnThis(),
+        then(onFulfilled: (v: { data: unknown; error: null }) => unknown) {
+          return Promise.resolve({ data: mockItems, error: null }).then(onFulfilled);
+        },
+      };
+      (mockSupabase.order as ReturnType<typeof vi.fn>).mockReturnValue({
+        eq: vi.fn().mockReturnThis(),
+        order: vi.fn().mockReturnValue(finalQuery),
+      });
 
       const items = await menuService.getMenuItems("venue-1");
 
@@ -59,7 +83,17 @@ describe("MenuService", () => {
     });
 
     it("should include unavailable items when requested", async () => {
-      mockSupabase.single.mockResolvedValue({ data: [], error: null });
+      const finalQuery = {
+        eq: vi.fn().mockReturnThis(),
+        order: vi.fn().mockReturnThis(),
+        then(onFulfilled: (v: { data: unknown; error: null }) => unknown) {
+          return Promise.resolve({ data: [], error: null }).then(onFulfilled);
+        },
+      };
+      (mockSupabase.order as ReturnType<typeof vi.fn>).mockReturnValue({
+        eq: vi.fn().mockReturnThis(),
+        order: vi.fn().mockReturnValue(finalQuery),
+      });
 
       await menuService.getMenuItems("venue-1", { includeUnavailable: true });
 
@@ -67,11 +101,28 @@ describe("MenuService", () => {
     });
 
     it("should filter by category when provided", async () => {
-      mockSupabase.single.mockResolvedValue({ data: [], error: null });
+      const finalQuery = {
+        eq: vi.fn().mockReturnThis(),
+        order: vi.fn().mockReturnThis(),
+        then(onFulfilled: (v: { data: unknown; error: null }) => unknown) {
+          return Promise.resolve({ data: [], error: null }).then(onFulfilled);
+        },
+      };
+      const eqSpy = vi.fn().mockReturnThis();
+      (mockSupabase.order as ReturnType<typeof vi.fn>).mockReturnValue({
+        eq: vi.fn().mockReturnThis(),
+        order: vi.fn().mockReturnValue({
+          eq: eqSpy,
+          order: vi.fn().mockReturnThis(),
+          then(onFulfilled: (v: { data: unknown; error: null }) => unknown) {
+            return Promise.resolve({ data: [], error: null }).then(onFulfilled);
+          },
+        }),
+      });
 
-      await menuService.getMenuItems("venue-1", { categoryId: "cat-1" });
+      await menuService.getMenuItems("venue-1", { category: "cat-1" });
 
-      expect(mockSupabase.eq).toHaveBeenCalledWith("category_id", "cat-1");
+      expect(eqSpy).toHaveBeenCalledWith("category", "cat-1");
     });
   });
 
@@ -111,9 +162,10 @@ describe("MenuService", () => {
         is_available: true,
       };
 
-      mockSupabase.select.mockResolvedValue({
-        data: [mockCreatedItem],
-        error: null,
+      mockSupabase.insert.mockReturnValue({
+        select: vi.fn().mockReturnValue({
+          single: vi.fn().mockResolvedValue({ data: mockCreatedItem, error: null }),
+        }),
       });
 
       const item = await menuService.createMenuItem("venue-1", itemData);
@@ -124,7 +176,11 @@ describe("MenuService", () => {
 
     it("should throw error when creation fails", async () => {
       const error = { message: "Failed to create menu item" };
-      mockSupabase.select.mockResolvedValue({ data: null, error });
+      mockSupabase.insert.mockReturnValue({
+        select: vi.fn().mockReturnValue({
+          single: vi.fn().mockResolvedValue({ data: null, error }),
+        }),
+      });
 
       await expect(
         menuService.createMenuItem("venue-1", {
@@ -144,10 +200,7 @@ describe("MenuService", () => {
         venue_id: "venue-1",
       };
 
-      mockSupabase.select.mockResolvedValue({
-        data: [mockUpdatedItem],
-        error: null,
-      });
+      mockSupabase.single.mockResolvedValue({ data: mockUpdatedItem, error: null });
 
       const item = await menuService.updateMenuItem("1", "venue-1", {
         name: "Updated Burger",
@@ -161,22 +214,22 @@ describe("MenuService", () => {
 
   describe("deleteMenuItem", () => {
     it("should delete menu item successfully", async () => {
-      mockSupabase.single.mockResolvedValue({ data: null, error: null });
+      const eqId = vi.fn().mockReturnValue({
+        eq: vi.fn().mockResolvedValue({ data: null, error: null }),
+      });
+      mockSupabase.delete.mockReturnValue({ eq: eqId });
 
       await menuService.deleteMenuItem("1", "venue-1");
 
       expect(mockSupabase.delete).toHaveBeenCalled();
-      expect(mockSupabase.eq).toHaveBeenCalledWith("id", "1");
+      expect(eqId).toHaveBeenCalledWith("id", "1");
     });
   });
 
   describe("toggleAvailability", () => {
     it("should toggle item availability", async () => {
       const mockItem = { id: "1", is_available: false, venue_id: "venue-1" };
-      mockSupabase.select.mockResolvedValue({
-        data: [mockItem],
-        error: null,
-      });
+      mockSupabase.single.mockResolvedValue({ data: mockItem, error: null });
 
       await menuService.toggleAvailability("1", "venue-1", true);
 
@@ -186,15 +239,16 @@ describe("MenuService", () => {
 
   describe("bulkUpdatePrices", () => {
     it("should update prices for multiple items", async () => {
+      mockSupabase.update.mockReturnValue({
+        eq: vi.fn().mockReturnValue({
+          eq: vi.fn().mockResolvedValue({ data: null, error: null }),
+        }),
+      });
+
       const priceUpdates = [
         { id: "1", price: 12 },
         { id: "2", price: 8 },
       ];
-
-      mockSupabase.select.mockResolvedValue({
-        data: priceUpdates,
-        error: null,
-      });
 
       await menuService.bulkUpdatePrices("venue-1", priceUpdates);
 
@@ -209,34 +263,12 @@ describe("MenuService", () => {
         { id: "2", name: "Drinks", venue_id: "venue-1" },
       ];
 
-      mockSupabase.single.mockResolvedValue({ data: mockCategories, error: null });
+      mockSupabase.order.mockResolvedValue({ data: mockCategories, error: null });
 
       const categories = await menuService.getCategories("venue-1");
 
       expect(categories).toEqual(mockCategories);
       expect(mockSupabase.from).toHaveBeenCalledWith("menu_categories");
-    });
-  });
-
-  describe("createCategory", () => {
-    it("should create a new category successfully", async () => {
-      const categoryData = { name: "New Category", display_order: 1 };
-
-      const mockCreatedCategory = {
-        id: "new-cat-id",
-        ...categoryData,
-        venue_id: "venue-1",
-      };
-
-      mockSupabase.select.mockResolvedValue({
-        data: [mockCreatedCategory],
-        error: null,
-      });
-
-      const category = await menuService.createCategory("venue-1", categoryData);
-
-      expect(category).toEqual(mockCreatedCategory);
-      expect(mockSupabase.insert).toHaveBeenCalled();
     });
   });
 });

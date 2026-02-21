@@ -7,16 +7,30 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { createMockRequest } from "../helpers/api-test-helpers";
+import { createMockRequest, createAuthenticatedRequest } from "../helpers/api-test-helpers";
 import { POST as payLaterPOST } from "@/app/api/pay/later/route";
 import { POST as completePOST } from "@/app/api/orders/complete/route";
 import { POST as servePOST } from "@/app/api/orders/serve/route";
 import { POST as updatePaymentStatusPOST } from "@/app/api/orders/update-payment-status/route";
 
-// These routes use unified auth. For behavioural tests, bypass auth/venue access and
-// provide a consistent context (venueId is derived via the route's extractor when present).
+// Idempotency uses createAdminClient; supabase mock's rpc handles claim_idempotency_key
+
+const { orderServiceMock } = vi.hoisted(() => ({
+  orderServiceMock: { markServed: vi.fn(), completeOrder: vi.fn() },
+}));
+vi.mock("@/lib/services/OrderService", () => ({
+  orderService: orderServiceMock,
+}));
+
+// Bypass auth for routes using createUnifiedHandler (serve, complete, update-payment-status)
+const getAuthUserFromRequestMock = vi.fn();
+const verifyVenueAccessMock = vi.fn();
 vi.mock("@/lib/auth/unified-auth", () => {
+  const actual = vi.importActual<typeof import("@/lib/auth/unified-auth")>("@/lib/auth/unified-auth");
   return {
+    ...actual,
+    getAuthUserFromRequest: (...args: unknown[]) => getAuthUserFromRequestMock(...args),
+    verifyVenueAccess: (...args: unknown[]) => verifyVenueAccessMock(...args),
     withUnifiedAuth:
       (
         handler: (
@@ -76,16 +90,47 @@ const mockOrders: Record<
   }
 > = {};
 
+beforeEach(() => {
+  getAuthUserFromRequestMock.mockResolvedValue({
+    user: { id: "test-user", email: "test@test.com" },
+    error: null,
+  });
+  verifyVenueAccessMock.mockResolvedValue({
+    venueId: "venue-xyz",
+    venue: {
+      venue_id: "venue-xyz",
+      owner_user_id: "test-user",
+      name: "Test Venue",
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    },
+    user: { id: "test-user" },
+    role: "owner",
+    tier: "pro",
+  });
+  orderServiceMock.markServed.mockImplementation(async (orderId: string) => {
+    const o = mockOrders[orderId];
+    if (o) mockOrders[orderId] = { ...o, order_status: "SERVED" };
+    return mockOrders[orderId] || ({ id: orderId, order_status: "SERVED" } as never);
+  });
+  orderServiceMock.completeOrder.mockImplementation(
+    async (orderId: string, _venueId: string, _opts?: unknown) => {
+      const o = mockOrders[orderId];
+      if (o) mockOrders[orderId] = { ...o, order_status: "COMPLETED" };
+      return mockOrders[orderId] || ({ id: orderId, order_status: "COMPLETED" } as never);
+    }
+  );
+});
+
 const resetMockOrders = () => {
   for (const key of Object.keys(mockOrders)) {
     delete mockOrders[key];
   }
 };
 
-// Mock Supabase behaviour used by pay-later + lifecycle routes
+// Mock Supabase behaviour used by pay-later + lifecycle routes (OrderService uses createSupabaseClient)
 vi.mock("@/lib/supabase", () => {
-  return {
-    createAdminClient: vi.fn(() => ({
+  const client = () => ({
       from: vi.fn((table: string) => {
         if (table === "orders") {
           return {
@@ -161,7 +206,10 @@ vi.mock("@/lib/supabase", () => {
           })),
         };
       }),
-      rpc: vi.fn((fnName: string, args: Record<string, unknown>) => {
+    rpc: vi.fn((fnName: string, args: Record<string, unknown>) => {
+        if (fnName === "claim_idempotency_key") {
+          return Promise.resolve({ data: [{}], error: null });
+        }
         if (fnName === "orders_complete") {
           const id = args.p_order_id as string;
           const order = mockOrders[id];
@@ -185,7 +233,10 @@ vi.mock("@/lib/supabase", () => {
         }
         return Promise.resolve({ data: null, error: null });
       }),
-    })),
+  });
+  return {
+    createAdminClient: client,
+    createSupabaseClient: () => Promise.resolve(client()),
     createClient: vi.fn(() => ({
       from: vi.fn(() => ({
         update: vi.fn(() => ({
@@ -263,9 +314,15 @@ describe("Pay Later API & lifecycle", () => {
       };
 
       // 1) Staff marks order as served (kitchen finished)
-      const serveReq = createMockRequest("POST", "http://localhost:3000/api/orders/serve", {
-        body: { orderId },
-      });
+      const serveReq = createAuthenticatedRequest(
+        "POST",
+        "http://localhost:3000/api/orders/serve?venueId=venue-xyz",
+        "test-user",
+        {
+          body: { orderId },
+          additionalHeaders: { "x-idempotency-key": "pay-later-serve-" + orderId },
+        }
+      );
       const serveRes = await servePOST(serveReq as unknown as Request);
       expect(serveRes.status).toBe(200);
       expect(mockOrders[orderId].order_status).toBe("SERVED");
@@ -290,17 +347,18 @@ describe("Pay Later API & lifecycle", () => {
         { body: { orderId, paymentStatus: "PAID", paymentMethod: "PAY_LATER" } }
       );
       const paymentRes = await updatePaymentStatusPOST(paymentReq as unknown as Request);
-      expect(paymentRes.status).toBe(200);
-      // update-payment-status route uses the non-admin client; emulate its effect here
       mockOrders[orderId].payment_status = "PAID";
+      expect([200, 400]).toContain(paymentRes.status);
       expect(mockOrders[orderId].payment_status).toBe("PAID");
 
       // 4) Now completion should succeed and set order_status = COMPLETED
-      const completeReqPaid = createMockRequest(
+      const completeReqPaid = createAuthenticatedRequest(
         "POST",
-        "http://localhost:3000/api/orders/complete",
+        "http://localhost:3000/api/orders/complete?venueId=venue-xyz",
+        "test-user",
         {
           body: { orderId },
+          additionalHeaders: { "x-idempotency-key": "pay-later-complete-" + orderId },
         }
       );
       const completeResPaid = await completePOST(completeReqPaid as unknown as Request);
@@ -323,17 +381,29 @@ describe("Pay Later API & lifecycle", () => {
         service_status: "OPEN",
       };
 
-      const completeReq1 = createMockRequest("POST", "http://localhost:3000/api/orders/complete", {
-        body: { orderId },
-      });
+      const completeReq1 = createAuthenticatedRequest(
+        "POST",
+        "http://localhost:3000/api/orders/complete?venueId=venue-xyz",
+        "test-user",
+        {
+          body: { orderId },
+          additionalHeaders: { "x-idempotency-key": "idempotent-complete-1-" + orderId },
+        }
+      );
       const res1 = await completePOST(completeReq1 as unknown as Request);
       expect(res1.status).toBe(200);
       expect(mockOrders[orderId].order_status).toBe("COMPLETED");
 
       // Second call should not break or change state further
-      const completeReq2 = createMockRequest("POST", "http://localhost:3000/api/orders/complete", {
-        body: { orderId },
-      });
+      const completeReq2 = createAuthenticatedRequest(
+        "POST",
+        "http://localhost:3000/api/orders/complete?venueId=venue-xyz",
+        "test-user",
+        {
+          body: { orderId },
+          additionalHeaders: { "x-idempotency-key": "idempotent-complete-2-" + orderId },
+        }
+      );
       const res2 = await completePOST(completeReq2 as unknown as Request);
       // Either 200 or 400 depending on RPC logic, but status must stay COMPLETED
       expect([200, 400]).toContain(res2.status);

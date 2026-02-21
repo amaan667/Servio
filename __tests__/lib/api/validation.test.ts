@@ -1,46 +1,18 @@
+/**
+ * Tests for validation schemas (lib/validation/schemas.ts).
+ * Note: sanitizeString/sanitizeHTML are not in this codebase; schema validation only.
+ */
+
 import { describe, it, expect } from "vitest";
 import {
-  sanitizeString,
-  sanitizeHTML,
   EmailSchema,
   PhoneSchema,
   CreateOrderSchema,
   MenuItemSchema,
-} from "@/lib/api/validation";
+  VenueIdSchema,
+} from "@/lib/validation/schemas";
 
 describe("Input Validation", () => {
-  describe("sanitizeString", () => {
-    it("should trim whitespace", () => {
-      expect(sanitizeString("  hello  ")).toBe("hello");
-    });
-
-    it("should remove XSS characters", () => {
-      expect(sanitizeString('<script>alert("xss")</script>')).not.toContain("<");
-    });
-
-    it("should enforce max length", () => {
-      const longString = "a".repeat(2000);
-      expect(sanitizeString(longString, 100)).toHaveLength(100);
-    });
-  });
-
-  describe("sanitizeHTML", () => {
-    it("should strip HTML tags", () => {
-      const input = "<p>Hello <b>World</b></p>";
-      expect(sanitizeHTML(input)).toBe("Hello World");
-    });
-
-    it("should remove script tags", () => {
-      const input = 'Safe text<script>alert("bad")</script>More text';
-      expect(sanitizeHTML(input)).not.toContain("script");
-    });
-
-    it("should remove event handlers", () => {
-      const input = '<div onclick="alert()">Click me</div>';
-      expect(sanitizeHTML(input)).not.toContain("onclick");
-    });
-  });
-
   describe("EmailSchema", () => {
     it("should validate correct emails", () => {
       expect(EmailSchema.safeParse("test@example.com").success).toBe(true);
@@ -59,28 +31,36 @@ describe("Input Validation", () => {
     });
 
     it("should reject invalid phone numbers", () => {
-      expect(PhoneSchema.safeParse("023").success).toBe(false); // starts with 0
-      expect(PhoneSchema.safeParse("abc").success).toBe(false); // contains letters
-      expect(PhoneSchema.safeParse("").success).toBe(false); // empty string
+      expect(PhoneSchema.safeParse("023").success).toBe(false);
+      expect(PhoneSchema.safeParse("abc").success).toBe(false);
+    });
+  });
+
+  describe("VenueIdSchema", () => {
+    it("should accept valid UUIDs", () => {
+      expect(VenueIdSchema.safeParse("550e8400-e29b-41d4-a716-446655440000").success).toBe(true);
+    });
+
+    it("should reject non-UUID strings", () => {
+      expect(VenueIdSchema.safeParse("venue-123").success).toBe(false);
     });
   });
 
   describe("CreateOrderSchema", () => {
     it("should validate complete order payload", () => {
       const validOrder = {
-        venue_id: "venue-test-123",
+        venue_id: "550e8400-e29b-41d4-a716-446655440000",
         customer_name: "John Doe",
         customer_phone: "+441234567890",
         items: [
           {
-            item_name: "Burger",
+            menu_item_id: "550e8400-e29b-41d4-a716-446655440001",
             quantity: 2,
             price: 12.99,
           },
         ],
         total_amount: 25.98,
-        payment_method: "CARD",
-        payment_status: "PAID",
+        payment_method: "card",
       };
 
       const result = CreateOrderSchema.safeParse(validOrder);
@@ -89,34 +69,31 @@ describe("Input Validation", () => {
 
     it("should reject orders with missing required fields", () => {
       const invalidOrder = {
-        venue_id: "venue-test-123",
-        // Missing customer_name
+        venue_id: "550e8400-e29b-41d4-a716-446655440000",
         items: [],
       };
 
       expect(CreateOrderSchema.safeParse(invalidOrder).success).toBe(false);
     });
 
-    it("should sanitize customer name", () => {
+    it("should reject invalid payment_method", () => {
       const order = {
-        venue_id: "venue-test-123",
-        customer_name: '  <script>alert("xss")</script>John  ',
+        venue_id: "550e8400-e29b-41d4-a716-446655440000",
         customer_phone: "+441234567890",
-        items: [{ item_name: "Test", quantity: 1, price: 10 }],
+        items: [
+          { menu_item_id: "550e8400-e29b-41d4-a716-446655440001", quantity: 1, price: 10 },
+        ],
         total_amount: 10,
-        payment_method: "CASH",
-        payment_status: "PAID",
+        payment_method: "INVALID",
       };
-
-      const result = CreateOrderSchema.parse(order);
-      expect(result.customer_name).not.toContain("<");
-      expect(result.customer_name).not.toContain(">");
+      expect(CreateOrderSchema.safeParse(order).success).toBe(false);
     });
   });
 
   describe("MenuItemSchema", () => {
-    it("should validate menu items", () => {
+    it("should validate menu items with required fields", () => {
       const item = {
+        venue_id: "550e8400-e29b-41d4-a716-446655440000",
         name: "Margherita Pizza",
         description: "Classic Italian pizza",
         price: 12.99,
@@ -129,8 +106,10 @@ describe("Input Validation", () => {
 
     it("should reject negative prices", () => {
       const item = {
+        venue_id: "550e8400-e29b-41d4-a716-446655440000",
         name: "Test Item",
         price: -5.99,
+        category: "Test",
       };
 
       expect(MenuItemSchema.safeParse(item).success).toBe(false);

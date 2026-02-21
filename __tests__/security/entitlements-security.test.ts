@@ -5,8 +5,21 @@
 
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
-// Mock all database interactions
+// Mock createClient (guards use createClient, not createAdminClient)
 vi.mock("@/lib/supabase", () => ({
+  createClient: vi.fn(() =>
+    Promise.resolve({
+      rpc: vi.fn(),
+      from: vi.fn(() => ({
+        select: vi.fn(() => ({
+          eq: vi.fn(() => ({
+            single: vi.fn(() => ({ data: null, error: null })),
+            maybeSingle: vi.fn(() => ({ data: null, error: null })),
+          })),
+        })),
+      })),
+    })
+  ),
   createAdminClient: vi.fn(() => ({
     rpc: vi.fn(),
     from: vi.fn(() => ({
@@ -27,11 +40,11 @@ describe("Entitlements Security Hardening", () => {
 
   describe("RPC Access Control", () => {
     it("should reject unauthenticated access to get_venue_entitlements", async () => {
-      const { createAdminClient } = await import("@/lib/supabase");
+      const { createClient } = await import("@/lib/supabase");
       const mockSupabase = {
         rpc: vi.fn(() => Promise.reject(new Error("forbidden: authentication required"))),
       };
-      vi.mocked(createAdminClient).mockReturnValue(mockSupabase);
+      vi.mocked(createClient).mockResolvedValue(mockSupabase);
 
       const { getVenueEntitlements } = await import("@/lib/entitlements/guards");
 
@@ -40,11 +53,11 @@ describe("Entitlements Security Hardening", () => {
     });
 
     it("should reject access to non-existent venue", async () => {
-      const { createAdminClient } = await import("@/lib/supabase");
+      const { createClient } = await import("@/lib/supabase");
       const mockSupabase = {
         rpc: vi.fn(() => Promise.reject(new Error("forbidden: venue not found"))),
       };
-      vi.mocked(createAdminClient).mockReturnValue(mockSupabase);
+      vi.mocked(createClient).mockResolvedValue(mockSupabase);
 
       const { getVenueEntitlements } = await import("@/lib/entitlements/guards");
 
@@ -53,11 +66,11 @@ describe("Entitlements Security Hardening", () => {
     });
 
     it("should reject access to venue user does not own or have staff role for", async () => {
-      const { createAdminClient } = await import("@/lib/supabase");
+      const { createClient } = await import("@/lib/supabase");
       const mockSupabase = {
         rpc: vi.fn(() => Promise.reject(new Error("forbidden: access denied to venue"))),
       };
-      vi.mocked(createAdminClient).mockReturnValue(mockSupabase);
+      vi.mocked(createClient).mockResolvedValue(mockSupabase);
 
       const { getVenueEntitlements } = await import("@/lib/entitlements/guards");
 
@@ -68,7 +81,7 @@ describe("Entitlements Security Hardening", () => {
 
   describe("Contract Validation", () => {
     it("should fail closed on malformed entitlement response", async () => {
-      const { createAdminClient } = await import("@/lib/supabase");
+      const { createClient } = await import("@/lib/supabase");
       const mockSupabase = {
         rpc: vi.fn(() =>
           Promise.resolve({
@@ -81,7 +94,7 @@ describe("Entitlements Security Hardening", () => {
           })
         ),
       };
-      vi.mocked(createAdminClient).mockReturnValue(mockSupabase);
+      vi.mocked(createClient).mockResolvedValue(mockSupabase);
 
       const { getVenueEntitlements } = await import("@/lib/entitlements/guards");
 
@@ -90,7 +103,7 @@ describe("Entitlements Security Hardening", () => {
     });
 
     it("should fail closed on extra properties in response", async () => {
-      const { createAdminClient } = await import("@/lib/supabase");
+      const { createClient } = await import("@/lib/supabase");
       const mockSupabase = {
         rpc: vi.fn(() =>
           Promise.resolve({
@@ -111,7 +124,7 @@ describe("Entitlements Security Hardening", () => {
           })
         ),
       };
-      vi.mocked(createAdminClient).mockReturnValue(mockSupabase);
+      vi.mocked(createClient).mockResolvedValue(mockSupabase);
 
       const { getVenueEntitlements } = await import("@/lib/entitlements/guards");
 
@@ -120,7 +133,7 @@ describe("Entitlements Security Hardening", () => {
     });
 
     it("should normalize null values to unlimited", async () => {
-      const { createAdminClient } = await import("@/lib/supabase");
+      const { createClient } = await import("@/lib/supabase");
       const mockSupabase = {
         rpc: vi.fn(() =>
           Promise.resolve({
@@ -139,7 +152,7 @@ describe("Entitlements Security Hardening", () => {
           })
         ),
       };
-      vi.mocked(createAdminClient).mockReturnValue(mockSupabase);
+      vi.mocked(createClient).mockResolvedValue(mockSupabase);
 
       const { getVenueEntitlements } = await import("@/lib/entitlements/guards");
 
@@ -167,8 +180,7 @@ describe("Entitlements Security Hardening", () => {
     it("should enforce single station limit for starter + addon", async () => {
       const { requireMaxCount } = await import("@/lib/entitlements/guards");
 
-      // Mock entitlements for starter + kds addon
-      const { createAdminClient } = await import("@/lib/supabase");
+      const { createClient } = await import("@/lib/supabase");
       const mockSupabase = {
         rpc: vi.fn(() =>
           Promise.resolve({
@@ -187,7 +199,7 @@ describe("Entitlements Security Hardening", () => {
           })
         ),
       };
-      vi.mocked(createAdminClient).mockReturnValue(mockSupabase);
+      vi.mocked(createClient).mockResolvedValue(mockSupabase);
 
       const result = await requireMaxCount(
         { venueId: "venue-test", user: { id: "user-test" } },
@@ -203,7 +215,7 @@ describe("Entitlements Security Hardening", () => {
     it("should allow unlimited stations for Pro tier", async () => {
       const { requireMaxCount } = await import("@/lib/entitlements/guards");
 
-      const { createAdminClient } = await import("@/lib/supabase");
+      const { createClient } = await import("@/lib/supabase");
       const mockSupabase = {
         rpc: vi.fn(() =>
           Promise.resolve({
@@ -222,7 +234,7 @@ describe("Entitlements Security Hardening", () => {
           })
         ),
       };
-      vi.mocked(createAdminClient).mockReturnValue(mockSupabase);
+      vi.mocked(createClient).mockResolvedValue(mockSupabase);
 
       const result = await requireMaxCount(
         { venueId: "venue-test", user: { id: "user-test" } },

@@ -7,7 +7,8 @@ dockerfilePath = "Dockerfile"
 
 [deploy]
 startCommand = "pnpm start"
-healthcheckPath = "/"
+# Use /api/health for fast liveness (no DB/Redis); use /api/ready for full readiness if needed
+healthcheckPath = "/api/health"
 healthcheckTimeout = 300
 restartPolicyType = "ON_FAILURE"
 restartPolicyMaxRetries = 10

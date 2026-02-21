@@ -55,7 +55,7 @@ describe("InventoryService", () => {
         { id: "2", name: "Sugar", venue_id: "venue-1", on_hand: 8, min_stock: 3, unit: "kg" },
       ];
 
-      mockSupabase.single.mockResolvedValue({ data: mockInventory, error: null });
+      mockSupabase.order.mockResolvedValue({ data: mockInventory, error: null });
 
       const inventory = await inventoryService.getInventory("venue-1");
 
@@ -66,7 +66,7 @@ describe("InventoryService", () => {
 
     it("should throw error when query fails", async () => {
       const error = new Error("Database error");
-      mockSupabase.single.mockResolvedValue({ data: null, error });
+      mockSupabase.order.mockResolvedValue({ data: null, error });
 
       await expect(inventoryService.getInventory("venue-1")).rejects.toThrow("Database error");
     });
@@ -79,7 +79,7 @@ describe("InventoryService", () => {
         { id: "2", name: "Sugar", on_hand: 1, min_stock: 3, venue_id: "venue-1" },
       ];
 
-      mockSupabase.single.mockResolvedValue({ data: mockLowStockItems, error: null });
+      mockSupabase.lt.mockResolvedValue({ data: mockLowStockItems, error: null });
 
       const items = await inventoryService.getLowStock("venue-1");
 

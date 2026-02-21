@@ -200,12 +200,12 @@ describe("CircuitBreaker", () => {
       await new Promise((resolve) => setTimeout(resolve, 100));
 
       // Success in HALF_OPEN should close circuit
-      await breaker.execute(async () => "recovery");
+      const result = await breaker.execute(async () => "recovery");
 
       expect(breaker.getState()).toBe("CLOSED");
-
-      const metrics = breaker.getMetrics();
-      expect(metrics.successCount).toBeGreaterThan(0);
+      expect(result.success).toBe(true);
+      expect(result.data).toBe("recovery");
+      // Implementation clears success/failure arrays on transition to CLOSED, so we only assert state
     });
 
     it("should re-open circuit on failure in HALF_OPEN", async () => {

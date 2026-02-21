@@ -25,6 +25,7 @@ vi.mock("@/lib/rate-limit", () => ({
     limit: 100,
   })),
   RATE_LIMITS: { GENERAL: {} },
+  getClientIdentifier: () => "test-client",
 }));
 
 const verifyVenueAccessMock = vi.fn();
@@ -43,8 +44,10 @@ vi.mock("@/lib/tier-restrictions", async () => {
 });
 
 const createAdminClientMock = vi.fn();
+const createSupabaseClientMock = vi.fn();
 vi.mock("@/lib/supabase", () => ({
   createAdminClient: (...args: unknown[]) => createAdminClientMock(...args),
+  createSupabaseClient: (...args: unknown[]) => createSupabaseClientMock(...args),
 }));
 
 function makeStockLevelsBuilder(result: { data: unknown; error: unknown }) {
@@ -76,8 +79,12 @@ describe("Inventory Ingredients API", () => {
       });
       getUserTierMock.mockResolvedValue("pro");
 
+      const chain = makeStockLevelsBuilder({ data: [], error: null });
       createAdminClientMock.mockReturnValue({
-        from: vi.fn(() => makeStockLevelsBuilder({ data: [], error: null })),
+        from: vi.fn(() => chain),
+      });
+      createSupabaseClientMock.mockResolvedValue({
+        from: vi.fn(() => chain),
       });
 
       const request = createAuthenticatedRequest(

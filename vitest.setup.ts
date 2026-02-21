@@ -19,61 +19,117 @@ vi.mock("next/navigation", () => ({
   useSearchParams: () => new URLSearchParams(),
 }));
 
+// Ref for createSupabaseClient mock chain (tests can set (globalThis as any).__supabaseQueryResult)
+(globalThis as unknown as { __supabaseQueryResult?: { data: unknown; error: unknown } }).__supabaseQueryResult = {
+  data: [],
+  error: null,
+};
+
 // Mock Supabase
-vi.mock("@/lib/supabase", () => ({
-  createClient: vi.fn(() => ({
+vi.mock("@/lib/supabase", () => {
+  const getResult = () => (globalThis as unknown as { __supabaseQueryResult: { data: unknown; error: unknown } }).__supabaseQueryResult ?? { data: [], error: null };
+  const chain: Record<string, unknown> = {
+    then(onFulfilled: (v: { data: unknown; error: unknown }) => unknown) {
+      return Promise.resolve(getResult()).then(onFulfilled);
+    },
+    from() {
+      return chain;
+    },
+    select() {
+      return chain;
+    },
+    eq() {
+      return chain;
+    },
+    order() {
+      return chain;
+    },
+    limit() {
+      return chain;
+    },
+    gte() {
+      return chain;
+    },
+    lte() {
+      return chain;
+    },
+    in() {
+      return chain;
+    },
+    single() {
+      return Promise.resolve(getResult());
+    },
+    maybeSingle() {
+      return Promise.resolve(getResult());
+    },
+    update() {
+      return {
+        eq: () => ({
+          eq: () => ({
+            select: () => ({ single: () => Promise.resolve(getResult()) }),
+          }),
+        }),
+      };
+    },
+    insert() {
+      return { select: () => chain };
+    },
+    rpc() {
+      return Promise.resolve(getResult());
+    },
+  };
+  const supabaseClient = {
+    from: () => chain,
+    select: () => chain,
+    eq: () => chain,
+    order: () => chain,
+    limit: () => chain,
+    gte: () => chain,
+    lte: () => chain,
+    in: () => chain,
+    single: () => Promise.resolve(getResult()),
+    maybeSingle: () => Promise.resolve(getResult()),
+    update: () => ({
+      eq: () => ({
+        eq: () => ({
+          select: () => ({ single: () => Promise.resolve(getResult()) }),
+        }),
+      }),
+    }),
+    insert: () => ({
+      select: () => ({ single: () => Promise.resolve(getResult()) }),
+    }),
+    rpc: () => Promise.resolve(getResult()),
+  };
+  // Shared admin/browser client shape: .from() returns chain so .from().select().in().eq() etc. work
+  const adminClient = {
     auth: {
       getSession: vi.fn(() => Promise.resolve({ data: { session: null }, error: null })),
       getUser: vi.fn(() => Promise.resolve({ data: { user: null }, error: null })),
+    },
+    from: () => chain,
+  };
+  const browserClient = {
+    ...adminClient,
+    auth: {
+      ...adminClient.auth,
       signOut: vi.fn(() => Promise.resolve({ error: null })),
     },
-    from: vi.fn(() => ({
-      select: vi.fn(() => ({ data: [], error: null })),
-      insert: vi.fn(() => ({ data: null, error: null })),
-      update: vi.fn(() => ({ data: null, error: null })),
-      delete: vi.fn(() => ({ data: null, error: null })),
-    })),
-  })),
-  createAdminClient: vi.fn(() => ({
-    auth: {
-      getSession: vi.fn(() => Promise.resolve({ data: { session: null }, error: null })),
-      getUser: vi.fn(() => Promise.resolve({ data: { user: null }, error: null })),
-    },
-    from: vi.fn(() => ({
-      select: vi.fn(() => ({ data: [], error: null })),
-      insert: vi.fn(() => ({ data: null, error: null })),
-      update: vi.fn(() => ({ data: null, error: null })),
-      delete: vi.fn(() => ({ data: null, error: null })),
-    })),
-  })),
-  supabaseBrowser: vi.fn(() => ({
-    auth: {
-      getSession: vi.fn(() => Promise.resolve({ data: { session: null }, error: null })),
-      getUser: vi.fn(() => Promise.resolve({ data: { user: null }, error: null })),
-      signOut: vi.fn(() => Promise.resolve({ error: null })),
-    },
-    from: vi.fn(() => ({
-      select: vi.fn(() => ({ data: [], error: null })),
-      insert: vi.fn(() => ({ data: null, error: null })),
-      update: vi.fn(() => ({ data: null, error: null })),
-      delete: vi.fn(() => ({ data: null, error: null })),
-    })),
-  })),
-  supabaseServer: vi.fn(() => ({
-    auth: {
-      getSession: vi.fn(() => Promise.resolve({ data: { session: null }, error: null })),
-      getUser: vi.fn(() => Promise.resolve({ data: { user: null }, error: null })),
-    },
-    from: vi.fn(() => ({
-      select: vi.fn(() => ({ data: [], error: null })),
-      insert: vi.fn(() => ({ data: null, error: null })),
-      update: vi.fn(() => ({ data: null, error: null })),
-      delete: vi.fn(() => ({ data: null, error: null })),
-    })),
-  })),
-  getSupabaseUrl: vi.fn(() => "https://test.supabase.co"),
-  getSupabaseAnonKey: vi.fn(() => "test-anon-key"),
-}));
+  };
+
+  // Use plain functions for createClient/createAdminClient/supabaseAdmin so mockReset doesn't clear them (routes get 500 otherwise)
+  return {
+    createSupabaseClient: vi.fn(() => Promise.resolve(supabaseClient)),
+    __getSupabaseChainForTests: () => supabaseClient,
+    createClient: () => adminClient,
+    createAdminClient: () => adminClient,
+    supabaseAdmin: () => adminClient,
+    supabaseBrowser: () => browserClient,
+    supabaseServer: () => adminClient,
+    getSupabaseUrl: () => "https://test.supabase.co",
+    getSupabaseAnonKey: () => "test-anon-key",
+  };
+});
 
 // Suppress console errors in tests
 global.console = {

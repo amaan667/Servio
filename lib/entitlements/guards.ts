@@ -180,7 +180,8 @@ export async function requireMaxCount(
         break;
     }
 
-    const allowed = limit === null || currentCount <= limit;
+    const allowed =
+      limit === null || limit === -1 || currentCount <= limit; // -1 = unlimited (normalized from null)
 
     if (!allowed) {
       /* Condition handled */

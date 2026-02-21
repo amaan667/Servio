@@ -68,7 +68,7 @@ export const createOrderInputSchema = z.object({
   payment_mode: z.nativeEnum(PaymentMode).optional(),
   source: z.nativeEnum(OrderSource).optional(),
   fulfillment_type: z.nativeEnum(FulfillmentType).optional(),
-  counter_label: z.string().max(50).optional(),
+  counter_label: z.string().max(50).optional().nullable(),
   qr_type: z.string().optional(),
   requires_collection: z.boolean().optional(),
 });

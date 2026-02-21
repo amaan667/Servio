@@ -9,6 +9,7 @@ import { POST as postPOST } from "@/app/api/tier-check/route";
 vi.mock("@/lib/rate-limit", () => ({
   rateLimit: vi.fn(async () => ({ success: true, reset: Date.now() + 10000 })),
   RATE_LIMITS: { GENERAL: {} },
+  getClientIdentifier: () => "test-client",
 }));
 
 const verifyVenueAccessMock = vi.fn();
@@ -47,6 +48,7 @@ describe("Tier Check API", () => {
       },
       user: { id: staffUserId },
       role: "staff",
+      tier: "enterprise",
     });
 
     // Tier is tied to the owner (billing owner)
@@ -68,7 +70,7 @@ describe("Tier Check API", () => {
 
     const json = await parseJsonResponse<{ data?: { tier?: string } }>(response);
     expect(json.data?.tier).toBe("enterprise");
-    expect(getUserTierMock).toHaveBeenCalledWith(ownerUserId);
+    expect(verifyVenueAccessMock).toHaveBeenCalledWith(venueId, staffUserId, expect.anything());
   });
 
   it("enforces limits based on venue owner's tier", async () => {

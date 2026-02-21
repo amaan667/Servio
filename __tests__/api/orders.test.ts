@@ -24,10 +24,7 @@ const resetResponseQueues = () => {
         error: null,
       },
     ],
-    orders: [
-      { data: null, error: null }, // duplicate check
-      { data: [defaultOrder], error: null }, // insert result
-    ],
+    orders: [{ data: [defaultOrder], error: null }], // insert result for createOrder
     tables: [
       { data: { id: "table-123", label: "1" }, error: null }, // existing table lookup
     ],
@@ -83,6 +80,7 @@ vi.mock("@/lib/supabase", () => ({
 vi.mock("@/lib/rate-limit", () => ({
   RATE_LIMITS: { GENERAL: { window: 1, limit: 1 } },
   rateLimit: vi.fn(async () => ({ success: true, reset: Date.now() + 1000 })),
+  getClientIdentifier: () => "test-client",
 }));
 
 vi.mock("@/lib/middleware/authorization", () => ({
@@ -120,6 +118,12 @@ vi.mock("@/lib/logger", () => ({
 
 vi.mock("@/lib/orders/kds-tickets-unified", () => ({
   createKDSTicketsWithAI: vi.fn(async () => ({})),
+}));
+
+vi.mock("@/lib/queue", () => ({
+  jobHelpers: {
+    addKDSTicketJob: vi.fn(() => Promise.resolve()),
+  },
 }));
 
 vi.mock("@/lib/env", () => ({
@@ -174,9 +178,8 @@ describe("Orders API", () => {
 
       const response = await POST(request);
       const data = await response.json();
-
       expect([200, 201]).toContain(response.status);
-      expect(data.order).toBeDefined();
+      expect(data.data?.order ?? data.order).toBeDefined();
     });
 
     it("should return 400 for invalid order data", async () => {

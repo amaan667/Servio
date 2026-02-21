@@ -138,7 +138,7 @@ class SecurityService {
       errors.push("Password must contain at least one number");
     }
 
-    if (!/[!@#$%^&*(),.?":{ /* Empty */ }|<>]/.test(password)) {
+    if (!/[!@#$%^&*(),.?":{}|<>]/.test(password)) {
       errors.push("Password must contain at least one special character");
     }
 

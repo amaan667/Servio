@@ -82,6 +82,16 @@ export async function resolveVenueAccess(
 
   if (!role) return null;
 
+  if (process.env.NODE_ENV !== "production") {
+    // eslint-disable-next-line no-console -- dev-only auth diagnostic
+    console.debug("[auth-diagnostic] resolveVenueAccess", {
+      user_id: userId,
+      venue_id: normalized,
+      role,
+      db_query: "venues(owner_user_id,organization_id) + user_venue_roles(role) + organizations(subscription_tier)",
+    });
+  }
+
   // ── 3. Tier — organisation is the authority, venue is fallback ───────
   // Use DB values only. Never overwrite pro/enterprise with starter.
   const orgTier = venue.organization_id
@@ -110,6 +120,16 @@ export async function resolveVenueAccess(
       .then(() => {
         /* intentionally empty */
       });
+  }
+
+  if (process.env.NODE_ENV !== "production") {
+    // eslint-disable-next-line no-console -- dev-only auth diagnostic
+    console.debug("[auth-diagnostic] resolveVenueAccess", {
+      user_id: userId,
+      venue_id: normalized,
+      role,
+      tier,
+    });
   }
 
   return {

@@ -26,9 +26,10 @@ async function resolveRoleTierAdmin(
     auth: { persistSession: false, autoRefreshToken: false },
   });
 
+  // Do not select venues.subscription_tier — column may not exist; tier from organizations only
   const { data: venue, error: venueErr } = await admin
     .from("venues")
-    .select("owner_user_id, organization_id, subscription_tier")
+    .select("owner_user_id, organization_id")
     .eq("venue_id", venueId)
     .maybeSingle();
 
@@ -57,8 +58,7 @@ async function resolveRoleTierAdmin(
       .maybeSingle();
     if (org?.subscription_tier) tier = org.subscription_tier.toLowerCase().trim();
   }
-  const rawTier = tier ?? venue.subscription_tier;
-  const resolvedTier = resolveTierFromDb(rawTier);
+  const resolvedTier = resolveTierFromDb(tier);
 
   return { role, tier: resolvedTier };
 }
@@ -225,6 +225,15 @@ export async function middleware(request: NextRequest) {
 
   const session = user ? { user } : null;
 
+  if (process.env.NODE_ENV !== "production" && pathname.startsWith("/dashboard")) {
+    // eslint-disable-next-line no-console -- dev-only auth diagnostic
+    console.debug("[auth-diagnostic] middleware", {
+      has_session: !!session,
+      user_id: session?.user?.id ?? null,
+      pathname,
+    });
+  }
+
   // ── API routes ─────────────────────────────────────────────────────
   if (pathname.startsWith("/api/")) {
     const requestHeaders = new Headers(request.headers);
@@ -266,6 +275,15 @@ export async function middleware(request: NextRequest) {
         if (!apiResolved) {
           try {
             const adminResult = await resolveRoleTierAdmin(session.user.id, normalizedApiVenueId);
+            if (process.env.NODE_ENV !== "production" && adminResult) {
+              // eslint-disable-next-line no-console -- dev-only auth diagnostic
+              console.debug("[auth-diagnostic] middleware API admin fallback", {
+                user_id: session.user.id,
+                venue_id: normalizedApiVenueId,
+                role: adminResult.role,
+                tier: adminResult.tier,
+              });
+            }
             if (adminResult) {
               requestHeaders.set("x-user-tier", adminResult.tier);
               requestHeaders.set("x-user-role", adminResult.role);
@@ -349,6 +367,16 @@ export async function middleware(request: NextRequest) {
     if (!resolved) {
       try {
         const adminResult = await resolveRoleTierAdmin(session.user.id, normalizedVenueId);
+        if (process.env.NODE_ENV !== "production") {
+          // eslint-disable-next-line no-console -- dev-only auth diagnostic
+          console.debug("[auth-diagnostic] middleware dashboard admin fallback", {
+            user_id: session.user.id,
+            venue_id: normalizedVenueId,
+            resolved: !!adminResult,
+            role: adminResult?.role ?? null,
+            tier: adminResult?.tier ?? null,
+          });
+        }
         if (adminResult) {
           requestHeaders.set("x-user-tier", adminResult.tier);
           requestHeaders.set("x-user-role", adminResult.role);

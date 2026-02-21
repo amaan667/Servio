@@ -1,13 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase";
+import { createUnifiedHandler } from "@/lib/api/unified-handler";
 import { apiErrors } from "@/lib/api/standard-response";
+import { RATE_LIMITS } from "@/lib/rate-limit";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-export async function GET(_request: NextRequest, context: { params: { venueId: string } }) {
-  try {
-    const venueId = context.params?.venueId;
+export const GET = createUnifiedHandler(
+  async (_req: NextRequest, context) => {
+    const venueId = context.venueId;
     if (!venueId) {
       return apiErrors.badRequest("venueId is required");
     }
@@ -27,7 +29,11 @@ export async function GET(_request: NextRequest, context: { params: { venueId: s
       ok: true,
       allow_pay_at_till_for_table_collection: data?.allow_pay_at_till_for_table_collection === true,
     });
-  } catch {
-    return apiErrors.internal("Internal server error");
+  },
+  {
+    requireAuth: true,
+    requireVenueAccess: true,
+    venueIdSource: "params",
+    rateLimit: RATE_LIMITS.GENERAL,
   }
-}
+);

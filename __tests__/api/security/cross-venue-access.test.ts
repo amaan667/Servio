@@ -9,9 +9,27 @@
  * 2. Create data (orders, tables) in venue A
  * 3. Attempt to access venue A's data using venue B's credentials
  * 4. Assert that access is denied (403/401 or empty results)
+ *
+ * Response shape: withUnifiedAuth returns { error: "Forbidden", message }; createUnifiedHandler
+ * returns { success: false, error: { code: "FORBIDDEN", message } }. We assert both.
  */
 
 import { describe, it, expect, vi, beforeEach } from "vitest";
+
+/** Assert 403 body: accepts both flat (error string) and standard (error.code) shapes */
+function expectForbiddenBody(responseData: Record<string, unknown>) {
+  const message =
+    typeof responseData.error === "object" && responseData.error && "message" in responseData.error
+      ? String((responseData.error as { message?: string }).message)
+      : String(responseData.message ?? "");
+  expect(
+    responseData.error === "Forbidden" ||
+      (typeof responseData.error === "object" &&
+        responseData.error !== null &&
+        (responseData.error as { code?: string }).code === "FORBIDDEN")
+  ).toBe(true);
+  expect(message).toMatch(/Access denied|Order does not belong|venue/i);
+}
 import { createAuthenticatedRequest } from "../../helpers/api-test-helpers";
 import { PATCH as orderPATCH } from "@/app/api/dashboard/orders/[id]/route";
 import { GET as staffGET } from "@/app/api/staff/list/route";
@@ -64,6 +82,13 @@ vi.mock("@/lib/auth/unified-auth", async () => {
     })),
   };
 });
+
+// Mock getAccessContext so withUnifiedAuth doesn't call real RPC (would throw in test)
+vi.mock("@/lib/access/getAccessContext", () => ({
+  getAccessContext: vi.fn(() => Promise.resolve(null)),
+  getAccessContextWithRequest: vi.fn(() => Promise.resolve(null)),
+  getAccessContextWithFeatures: vi.fn(() => Promise.resolve(null)),
+}));
 
 describe("Cross-Venue Access Denial", () => {
   beforeEach(() => {
@@ -119,14 +144,12 @@ describe("Cross-Venue Access Denial", () => {
       // This should result in a 403 Forbidden response
       const response = await orderPATCH(request, { params: Promise.resolve({ id: ORDER_A_ID }) });
 
-      // Assert: Access should be denied
-      // withUnifiedAuth should return 403 Forbidden when venue access is denied
+      // Assert: Access should be denied (403 or 401; 500 = mock/env issue)
       expect([403, 401]).toContain(response.status);
 
       if (response.status === 403) {
-        const responseData = await response.json();
-        expect(responseData.error).toBe("Forbidden");
-        expect(responseData.message).toContain("Access denied");
+        const responseData = (await response.json()) as Record<string, unknown>;
+        expectForbiddenBody(responseData);
       }
     });
   });
@@ -162,14 +185,12 @@ describe("Cross-Venue Access Denial", () => {
 
       const response = await staffGET(request);
 
-      // Assert: Access should be denied (403 Forbidden)
-      // verifyVenueAccess returns null for user B accessing venue A
+      // Assert: Access should be denied (403 or 401)
       expect([403, 401]).toContain(response.status);
 
       if (response.status === 403) {
-        const responseData = await response.json();
-        expect(responseData.error).toBe("Forbidden");
-        expect(responseData.message).toContain("Access denied");
+        const responseData = (await response.json()) as Record<string, unknown>;
+        expectForbiddenBody(responseData);
       }
     });
 
@@ -205,14 +226,12 @@ describe("Cross-Venue Access Denial", () => {
 
       const response = await staffPOST(request);
 
-      // Assert: Access should be denied (403 Forbidden)
-      // verifyVenueAccess returns null for user B accessing venue A
+      // Assert: Access should be denied (403 or 401)
       expect([403, 401]).toContain(response.status);
 
       if (response.status === 403) {
-        const responseData = await response.json();
-        expect(responseData.error).toBe("Forbidden");
-        expect(responseData.message).toContain("Access denied");
+        const responseData = (await response.json()) as Record<string, unknown>;
+        expectForbiddenBody(responseData);
       }
     });
   });
@@ -253,14 +272,12 @@ describe("Cross-Venue Access Denial", () => {
 
       const response = await staffDeletePOST(request);
 
-      // Assert: Access should be denied (403 Forbidden)
-      // verifyVenueAccess returns null for user B accessing venue A
+      // Assert: Access should be denied (403 or 401)
       expect([403, 401]).toContain(response.status);
 
       if (response.status === 403) {
-        const responseData = await response.json();
-        expect(responseData.error).toBe("Forbidden");
-        expect(responseData.message).toContain("Access denied");
+        const responseData = (await response.json()) as Record<string, unknown>;
+        expectForbiddenBody(responseData);
       }
     });
   });
@@ -295,16 +312,12 @@ describe("Cross-Venue Access Denial", () => {
 
       const response = await stockDeductPOST(request);
 
-      // Assert: Access should be denied (403 Forbidden)
-      // verifyVenueAccess returns null for user B accessing venue A
-      // OR venue mismatch check should catch it
+      // Assert: Access should be denied (403 or 401)
       expect([403, 401]).toContain(response.status);
 
       if (response.status === 403) {
-        const responseData = await response.json();
-        expect(responseData.error).toBe("Forbidden");
-        // Error message can be either from withUnifiedAuth or venue mismatch check
-        expect(responseData.message).toMatch(/Access denied|Order does not belong|venue/i);
+        const responseData = (await response.json()) as Record<string, unknown>;
+        expectForbiddenBody(responseData);
       }
     });
   });

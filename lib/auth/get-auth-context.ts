@@ -113,6 +113,16 @@ export const getAuthContext = cache(async (venueId: string): Promise<AuthContext
 
   // Fast path: middleware resolved everything (headers all present).
   if (hUserId && hRole && hTier && VALID_TIERS.has(hTier)) {
+    if (process.env.NODE_ENV !== "production") {
+      // eslint-disable-next-line no-console -- dev-only auth diagnostic
+      console.debug("[auth-diagnostic] getAuthContext", {
+        source: "headers",
+        user_id: hUserId,
+        venue_id: normalized,
+        role: hRole,
+        tier: hTier,
+      });
+    }
     const tier = hTier as AuthTier;
     return {
       userId: hUserId,
@@ -129,6 +139,16 @@ export const getAuthContext = cache(async (venueId: string): Promise<AuthContext
   if (hUserId) {
     try {
       const resolved = await resolveVenueAccess(hUserId, normalized);
+      if (process.env.NODE_ENV !== "production") {
+        // eslint-disable-next-line no-console -- dev-only auth diagnostic
+        console.debug("[auth-diagnostic] getAuthContext", {
+          source: "resolveVenueAccess(headers)",
+          user_id: hUserId,
+          venue_id: normalized,
+          resolved_role: resolved?.role ?? null,
+          resolved_tier: resolved?.tier ?? null,
+        });
+      }
       if (resolved?.role && resolved?.tier) {
         const tier = resolved.tier as AuthTier;
         return {
@@ -180,6 +200,16 @@ export const getAuthContext = cache(async (venueId: string): Promise<AuthContext
     if (user) {
       try {
         const resolved = await resolveVenueAccess(user.id, normalized);
+        if (process.env.NODE_ENV !== "production") {
+          // eslint-disable-next-line no-console -- dev-only auth diagnostic
+          console.debug("[auth-diagnostic] getAuthContext", {
+            source: "resolveVenueAccess(cookies)",
+            user_id: user.id,
+            venue_id: normalized,
+            resolved_role: resolved?.role ?? null,
+            resolved_tier: resolved?.tier ?? null,
+          });
+        }
         if (resolved?.role && resolved?.tier) {
           const tier = resolved.tier as AuthTier;
           return {
@@ -218,5 +248,12 @@ export const getAuthContext = cache(async (venueId: string): Promise<AuthContext
   }
 
   // ── Step 4: Unauthenticated ─────────────────────────────────────
+  if (process.env.NODE_ENV !== "production") {
+    // eslint-disable-next-line no-console -- dev-only auth diagnostic
+    console.debug("[auth-diagnostic] getAuthContext", {
+      source: "unauthenticated",
+      venue_id: normalized,
+    });
+  }
   return { ...UNAUTHENTICATED };
 });

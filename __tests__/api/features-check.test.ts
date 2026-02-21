@@ -1,13 +1,17 @@
 /**
- * Auto-generated test for features/check
- * Generated: 2025-11-23T00:14:32.209Z
+ * Tests for features/check API (createUnifiedHandler + checkFeatureAccess).
  */
 
 import { describe, it, expect, vi } from "vitest";
 import { createMockRequest } from "../helpers/api-test-helpers";
 import { GET as getGET } from "@/app/api/features/check/route";
 
-// Mock dependencies
+vi.mock("@/lib/access/getAccessContext", () => ({
+  getAccessContext: vi.fn(() => Promise.resolve(null)),
+  getAccessContextWithRequest: vi.fn(() => Promise.resolve(null)),
+  getAccessContextWithFeatures: vi.fn(() => Promise.resolve(null)),
+}));
+
 vi.mock("@/lib/supabase", () => ({
   createAdminClient: vi.fn(() => ({
     from: vi.fn(() => ({
@@ -17,35 +21,42 @@ vi.mock("@/lib/supabase", () => ({
       delete: vi.fn(() => Promise.resolve({ data: [], error: null })),
     })),
   })),
-  createServerSupabase: vi.fn(() =>
+  createClient: vi.fn(() =>
     Promise.resolve({
       from: vi.fn(() => ({
         select: vi.fn(() => Promise.resolve({ data: [], error: null })),
       })),
-      auth: {
-        getUser: vi.fn(() => Promise.resolve({ data: { user: { id: "user-123" } }, error: null })),
-      },
+      auth: { getUser: vi.fn(() => Promise.resolve({ data: { user: { id: "user-123" } }, error: null })) },
     })
   ),
 }));
 
-vi.mock("@/lib/api-auth", () => ({
-  authenticateRequest: vi.fn(async () => ({
-    success: true,
+vi.mock("@/lib/auth/unified-auth", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/lib/auth/unified-auth")>();
+  return {
+    ...actual,
+    getAuthUserFromRequest: vi.fn(async () => ({
+      user: { id: "user-123", email: "test@example.com" },
+      error: null,
+    })),
+  };
+});
+
+vi.mock("@/lib/middleware/authorization", () => ({
+  verifyVenueAccess: vi.fn(async () => ({
+    venue: { venue_id: "v-1", owner_user_id: "user-123" },
     user: { id: "user-123" },
-    supabase: {
-      from: vi.fn(() => ({
-        select: vi.fn(() => Promise.resolve({ data: [], error: null })),
-      })),
-    },
+    role: "owner",
+    tier: "starter",
   })),
-  verifyVenueAccess: vi.fn(() => Promise.resolve(true)),
 }));
 
 describe("Features Check API", () => {
   describe("GET features/check", () => {
     it("should handle get request", async () => {
-      const request = createMockRequest("GET", "http://localhost:3000/api//features/check");
+      const request = createMockRequest("GET", "http://localhost:3000/api/features/check", {
+        headers: { "x-user-id": "user-123", "x-user-email": "test@example.com" },
+      });
 
       const response = await getGET(request);
       expect([200, 400, 401, 403, 404, 500]).toContain(response.status);
