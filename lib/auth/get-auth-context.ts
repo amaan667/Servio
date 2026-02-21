@@ -127,6 +127,36 @@ export const getAuthContext = cache(async (venueId: string): Promise<AuthContext
 
   // ── Step 2: Middleware set userId but role/tier missing ──────────
   if (hUserId) {
+    // 2a. Try RPC via cookie-based client (SECURITY DEFINER bypasses RLS)
+    try {
+      const { createServerSupabaseReadOnly } = await import("@/lib/supabase");
+      const supabase = await createServerSupabaseReadOnly();
+      const { data: ctx, error: rpcErr } = await supabase.rpc("get_access_context", {
+        p_venue_id: normalized,
+      });
+
+      if (!rpcErr && ctx) {
+        const rpc = ctx as { user_id?: string; role?: string; tier?: string };
+        if (rpc.user_id === hUserId && rpc.role && rpc.tier) {
+          const tier = VALID_TIERS.has(rpc.tier.toLowerCase().trim())
+            ? (rpc.tier.toLowerCase().trim() as AuthTier)
+            : "starter";
+          return {
+            userId: hUserId,
+            email: hEmail,
+            venueId: normalized,
+            role: rpc.role as AuthRole,
+            tier,
+            isAuthenticated: true,
+            hasFeatureAccess: buildFeatureChecker(tier),
+          };
+        }
+      }
+    } catch {
+      // RPC unavailable — continue to admin fallback
+    }
+
+    // 2b. Admin fallback via resolveVenueAccess (service-role, no RLS)
     try {
       const resolved = await resolveVenueAccess(hUserId, normalized);
       if (resolved?.role && resolved?.tier) {

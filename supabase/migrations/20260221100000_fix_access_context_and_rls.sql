@@ -1,13 +1,47 @@
 -- Migration: Fix venue access RLS and create get_access_context RPC
 --
 -- Problems fixed:
--- 1. user_has_venue_access() only checked venue_membership (owners only).
---    Staff in user_venue_roles were blocked by RLS.
--- 2. get_access_context RPC did not exist — every call returned an error.
--- 3. venue_membership was not synced from user_venue_roles.
+-- 1. user_has_venue_access() could error if venue_membership was out of sync.
+--    Now checks venues.owner_user_id and user_venue_roles FIRST (most reliable).
+-- 2. get_access_context RPC is created/replaced to return role + tier for
+--    the calling user.  It is SECURITY DEFINER so it bypasses all RLS.
+-- 3. venue_membership is synced from venues + user_venue_roles.
+-- 4. organizations table is handled safely (may not exist for some setups).
 
 -- ============================================================
--- 1. Update user_has_venue_access to also check user_venue_roles
+-- 0. Ensure venue_membership table exists and accepts all roles
+-- ============================================================
+CREATE TABLE IF NOT EXISTS public.venue_membership (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  venue_id TEXT NOT NULL,
+  user_id UUID NOT NULL,
+  role TEXT NOT NULL,
+  created_at TIMESTAMPTZ DEFAULT now(),
+  UNIQUE(venue_id, user_id)
+);
+
+-- Drop the old restrictive CHECK constraint if it exists, then add a wider one
+DO $$
+BEGIN
+  -- Try to drop old constraint (name varies by auto-generation)
+  BEGIN
+    ALTER TABLE public.venue_membership DROP CONSTRAINT IF EXISTS venue_membership_role_check;
+  EXCEPTION WHEN undefined_object THEN NULL;
+  END;
+  -- Add wider constraint that covers all role types
+  BEGIN
+    ALTER TABLE public.venue_membership
+      ADD CONSTRAINT venue_membership_role_check
+      CHECK (role IN ('owner', 'manager', 'staff', 'viewer', 'server', 'kitchen', 'cashier'));
+  EXCEPTION WHEN duplicate_object THEN NULL;
+  END;
+END $$;
+
+CREATE INDEX IF NOT EXISTS idx_venue_membership_venue ON public.venue_membership (venue_id);
+CREATE INDEX IF NOT EXISTS idx_venue_membership_user ON public.venue_membership (user_id);
+
+-- ============================================================
+-- 1. Update user_has_venue_access — check ALL access sources
 -- ============================================================
 CREATE OR REPLACE FUNCTION public.user_has_venue_access(p_venue_id TEXT)
 RETURNS BOOLEAN
@@ -16,16 +50,31 @@ SECURITY DEFINER
 STABLE
 AS $$
 BEGIN
-  RETURN EXISTS (
+  -- Check venue ownership (fastest, most reliable)
+  IF EXISTS (
     SELECT 1 FROM public.venues
     WHERE venue_id = p_venue_id AND owner_user_id = auth.uid()
-  ) OR EXISTS (
+  ) THEN
+    RETURN TRUE;
+  END IF;
+
+  -- Check user_venue_roles (staff/manager assignments)
+  IF EXISTS (
     SELECT 1 FROM public.user_venue_roles
     WHERE venue_id = p_venue_id AND user_id = auth.uid()
-  ) OR EXISTS (
+  ) THEN
+    RETURN TRUE;
+  END IF;
+
+  -- Check venue_membership (legacy/synced table)
+  IF EXISTS (
     SELECT 1 FROM public.venue_membership
     WHERE venue_id = p_venue_id AND user_id = auth.uid()
-  );
+  ) THEN
+    RETURN TRUE;
+  END IF;
+
+  RETURN FALSE;
 END;
 $$;
 
@@ -33,8 +82,14 @@ GRANT EXECUTE ON FUNCTION public.user_has_venue_access(TEXT) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.user_has_venue_access(TEXT) TO service_role;
 
 -- ============================================================
--- 2. Sync venue_membership from user_venue_roles (backfill staff)
+-- 2. Sync venue_membership from venues (owners) + user_venue_roles (staff)
 -- ============================================================
+INSERT INTO public.venue_membership (venue_id, user_id, role)
+SELECT venue_id, owner_user_id, 'owner'
+FROM public.venues
+WHERE owner_user_id IS NOT NULL
+ON CONFLICT (venue_id, user_id) DO UPDATE SET role = EXCLUDED.role;
+
 INSERT INTO public.venue_membership (venue_id, user_id, role)
 SELECT venue_id, user_id, role
 FROM public.user_venue_roles
@@ -44,7 +99,7 @@ ON CONFLICT (venue_id, user_id) DO NOTHING;
 -- ============================================================
 -- 3. Create get_access_context RPC
 --    Returns { user_id, venue_id, role, tier, venue_ids, permissions }
---    Used by middleware, unified handler, and access context helpers.
+--    SECURITY DEFINER — bypasses RLS, only needs auth.uid() from JWT.
 -- ============================================================
 DROP FUNCTION IF EXISTS public.get_access_context(TEXT);
 
@@ -85,16 +140,27 @@ BEGIN
     WHERE user_id = v_user_id AND venue_id = p_venue_id;
 
     IF v_role IS NULL THEN
+      -- Also check venue_membership as fallback
+      SELECT role INTO v_role
+      FROM public.venue_membership
+      WHERE user_id = v_user_id AND venue_id = p_venue_id;
+    END IF;
+
+    IF v_role IS NULL THEN
       RETURN NULL;
     END IF;
   END IF;
 
   -- Determine tier: organization first, then venue
-  IF v_org_id IS NOT NULL THEN
-    SELECT subscription_tier INTO v_tier
-    FROM public.organizations
-    WHERE id = v_org_id;
-  END IF;
+  BEGIN
+    IF v_org_id IS NOT NULL THEN
+      SELECT subscription_tier INTO v_tier
+      FROM public.organizations
+      WHERE id = v_org_id;
+    END IF;
+  EXCEPTION WHEN undefined_table THEN
+    v_tier := NULL;
+  END;
 
   IF v_tier IS NULL OR v_tier = '' THEN
     v_tier := COALESCE(v_venue_tier, 'starter');
@@ -123,3 +189,24 @@ GRANT EXECUTE ON FUNCTION public.get_access_context(TEXT) TO service_role;
 COMMENT ON FUNCTION public.get_access_context IS
   'Returns auth context (role, tier, venue_ids) for the current user and given venue. '
   'Used by middleware, API handlers, and access context helpers.';
+
+-- ============================================================
+-- 4. Ensure RLS policies on venue_membership allow service_role
+-- ============================================================
+ALTER TABLE public.venue_membership ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "venue_membership_service_role" ON public.venue_membership;
+CREATE POLICY "venue_membership_service_role"
+  ON public.venue_membership FOR ALL TO service_role USING (true) WITH CHECK (true);
+
+-- ============================================================
+-- 5. Ensure venues RLS policy uses the updated function
+-- ============================================================
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'venues') THEN
+    DROP POLICY IF EXISTS "venue_select_own" ON public.venues;
+    CREATE POLICY "venue_select_own" ON public.venues FOR SELECT TO authenticated
+      USING (owner_user_id = auth.uid() OR public.user_has_venue_access(venue_id::text));
+  END IF;
+END $$;
