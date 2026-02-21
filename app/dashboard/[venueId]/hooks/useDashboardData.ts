@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { supabaseBrowser as createClient } from "@/lib/supabase";
 import { todayWindowForTZ } from "@/lib/time";
 import { fetchMenuItemCount } from "@/lib/counts/unified-counts";
@@ -82,6 +82,11 @@ export function useDashboardData(
     }
   }, [initialStats]);
 
+  // Track whether the component is still mounted to avoid setting state after unmount
+  const mountedRef = useRef(true);
+  // AbortController ref to cancel in-flight requests on cleanup/re-render
+  const abortControllerRef = useRef<AbortController | null>(null);
+
   // Fetch all counts directly from database
   const fetchCounts = useCallback(
     async (force = false) => {
@@ -91,26 +96,36 @@ export function useDashboardData(
         return;
       }
 
+      // Cancel any previous in-flight request
+      abortControllerRef.current?.abort();
+      const controller = new AbortController();
+      abortControllerRef.current = controller;
+
       try {
-        setError(null);
         const supabase = createClient();
         const normalizedVenueId = normalizeVenueId(venueId) ?? venueId;
 
         // Fetch dashboard counts from API (no RPC dependency)
-        const params = new URLSearchParams({
-          venueId: normalizedVenueId,
-          tz: venueTz,
-          live_window_mins: "30",
-        });
         const { apiClient } = await import("@/lib/api-client");
         const res = await apiClient.get(`/api/dashboard/counts`, {
           params: { venueId: normalizedVenueId, tz: venueTz, live_window_mins: "30" },
+          signal: controller.signal,
         });
+
+        // Bail out if unmounted or aborted during await
+        if (!mountedRef.current || controller.signal.aborted) return;
+
         if (!res.ok) {
-          setError("Failed to fetch dashboard counts");
+          // Only surface the error if we have NO existing data at all
+          // (i.e., the initial server-provided counts were empty/missing)
+          if (!initialCounts) {
+            setError("Failed to fetch dashboard counts");
+          }
           return;
         }
         const countsData = await res.json().then((b) => b?.data ?? b);
+
+        if (!mountedRef.current || controller.signal.aborted) return;
 
         // Batch fetch table-related data in parallel for better performance
         const now = new Date();
@@ -131,6 +146,8 @@ export function useDashboardData(
             .gte("end_at", now.toISOString()),
         ]);
 
+        if (!mountedRef.current || controller.signal.aborted) return;
+
         const allTables = tablesResult.data;
         const activeSessions = sessionsResult.data;
         const currentReservations = reservationsResult.data;
@@ -149,9 +166,19 @@ export function useDashboardData(
             tables_reserved_now: currentReservations?.length || 0,
           };
           setCounts(finalCounts);
+          // Clear any previous error on success
+          setError(null);
         }
       } catch (err) {
-        setError("Failed to fetch dashboard counts");
+        // Ignore AbortError – this is expected when the component unmounts or
+        // a newer request supersedes this one.
+        if (err instanceof DOMException && err.name === "AbortError") return;
+        if (!mountedRef.current) return;
+
+        // Only surface the error if we have NO existing data at all
+        if (!initialCounts) {
+          setError("Failed to fetch dashboard counts");
+        }
       }
     },
     [venueId, venueTz, initialCounts]
@@ -167,13 +194,14 @@ export function useDashboardData(
       }
 
       try {
-        setError(null);
         const supabase = createClient();
         const normalizedVenueId = normalizeVenueId(venueId) ?? venueId;
         const window = todayWindowForTZ(venueTz);
 
         // Fetch menu items count
         const menuItems = await fetchMenuItemCount(venueId);
+
+        if (!mountedRef.current) return;
 
         // Fetch orders for revenue and unpaid
         const { data: orders } = await supabase
@@ -185,6 +213,8 @@ export function useDashboardData(
           .neq("order_status", "CANCELLED")
           .neq("order_status", "REFUNDED");
 
+        if (!mountedRef.current) return;
+
         const revenue = orders?.reduce((sum, order) => sum + (order.total_amount || 0), 0) || 0;
         const unpaid =
           orders?.filter((o) => o.payment_status === "UNPAID" || o.payment_status === "PAY_LATER")
@@ -192,12 +222,29 @@ export function useDashboardData(
 
         const freshStats = { revenue, menuItems, unpaid };
         setStats(freshStats);
+        // Clear any previous error on success
+        setError(null);
       } catch (err) {
-        setError("Failed to fetch dashboard stats");
+        if (!mountedRef.current) return;
+
+        // Only surface the error if we have NO existing data at all
+        if (!initialStats) {
+          setError("Failed to fetch dashboard stats");
+        }
       }
     },
     [venueId, venueTz, initialStats]
   );
+
+  // Reset mounted ref on mount/unmount
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+      // Cancel any in-flight fetch when unmounting
+      abortControllerRef.current?.abort();
+    };
+  }, []);
 
   // Initial data fetch on mount
   useEffect(() => {
@@ -217,12 +264,16 @@ export function useDashboardData(
       setStats(initialStats);
     }
     setLoading(false);
+    // Clear any stale error from a previous mount cycle
+    setError(null);
 
     // Always refetch counts and stats shortly after mount so navigation from other
     // pages (e.g. after deleting a table) shows up-to-date numbers
     const t = setTimeout(() => {
-      void fetchCounts(true);
-      void fetchStats(true);
+      if (mountedRef.current) {
+        void fetchCounts(true);
+        void fetchStats(true);
+      }
     }, 150);
     return () => clearTimeout(t);
   }, [venueId, venueTz, initialCounts, initialStats, fetchCounts, fetchStats]);
