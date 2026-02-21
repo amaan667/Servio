@@ -47,8 +47,14 @@ export interface AuthorizedContext {
 
 /**
  * Verify user has access to venue (owner or staff)
- * Single path: get_access_context RPC for role/tier (dashboard and API routes).
- * When request is provided with Bearer token, uses token when cookies are empty.
+ *
+ * Resolution order:
+ *   1. RPC get_access_context via cookie-based client (SECURITY DEFINER — bypasses RLS)
+ *   2. RPC get_access_context via Bearer token client
+ *   3. resolveVenueAccess (admin/service-role direct DB queries — bypasses RLS)
+ *
+ * Venue row data is always fetched via the admin client so RLS on the
+ * venues table can never block the lookup.
  */
 export async function verifyVenueAccess(
   venueId: string,
@@ -57,80 +63,85 @@ export async function verifyVenueAccess(
 ): Promise<VenueAccess | null> {
   const normalizedVenueId = normalizeVenueId(venueId) ?? venueId;
 
-  const tryWithSupabase = async (
+  const tryRpc = async (
     supabase: Awaited<ReturnType<typeof createSupabaseClient>>
-  ): Promise<VenueAccess | null> => {
-    const { data: venue, error: venueError } = await supabase
+  ): Promise<{ role: string; tier: string } | null> => {
+    try {
+      const { data: ctx, error: rpcError } = await supabase.rpc("get_access_context", {
+        p_venue_id: normalizedVenueId,
+      });
+
+      if (rpcError || !ctx) return null;
+
+      const rpc = ctx as { user_id?: string; role?: string; tier?: string };
+      if (!rpc.user_id || !rpc.role || rpc.user_id !== userId) return null;
+
+      return {
+        role: rpc.role,
+        tier: (rpc.tier?.toLowerCase()?.trim() || "starter") as string,
+      };
+    } catch {
+      return null;
+    }
+  };
+
+  let roleTier: { role: string; tier: string } | null = null;
+
+  // 1. Try RPC with cookie-based client (SECURITY DEFINER bypasses RLS)
+  try {
+    const supabase = await createSupabaseClient();
+    roleTier = await tryRpc(supabase);
+  } catch {
+    // Cookie-based client unavailable
+  }
+
+  // 2. Try RPC with Bearer token if cookie path failed
+  if (!roleTier && request) {
+    const authHeader = request.headers.get("Authorization");
+    const token = authHeader?.startsWith("Bearer ") ? authHeader.slice(7) : null;
+    if (token) {
+      try {
+        const tokenSupabase = createServerSupabaseWithToken(token);
+        roleTier = await tryRpc(tokenSupabase);
+      } catch {
+        // Token-based client failed
+      }
+    }
+  }
+
+  // 3. Admin fallback — resolveVenueAccess uses service-role key, never RLS
+  if (!roleTier) {
+    try {
+      const resolved = await resolveVenueAccess(userId, normalizedVenueId);
+      if (resolved) {
+        roleTier = { role: resolved.role, tier: resolved.tier };
+      }
+    } catch {
+      // Admin resolution failed
+    }
+  }
+
+  if (!roleTier) return null;
+
+  // Fetch full venue row via admin client (always bypasses RLS)
+  try {
+    const { createAdminClient } = await import("@/lib/supabase");
+    const admin = createAdminClient();
+    const { data: venue, error: venueErr } = await admin
       .from("venues")
       .select("*")
       .eq("venue_id", normalizedVenueId)
       .single();
 
-    if (venueError || !venue) return null;
-
-    const { data: ctx, error: rpcError } = await supabase.rpc("get_access_context", {
-      p_venue_id: normalizedVenueId,
-    });
-
-    if (rpcError || !ctx) return null;
-
-    const rpc = ctx as { user_id?: string; role?: string; tier?: string };
-    if (!rpc.user_id || !rpc.role || rpc.user_id !== userId) return null;
+    if (venueErr || !venue) return null;
 
     return {
       venue,
       user: { id: userId },
-      role: rpc.role,
-      tier: (rpc.tier?.toLowerCase()?.trim() || "starter") as string,
+      role: roleTier.role,
+      tier: roleTier.tier,
       venue_ids: [],
     };
-  };
-
-  try {
-    // 1. Try cookie-based Supabase client (primary path)
-    const supabase = await createSupabaseClient();
-    const result = await tryWithSupabase(supabase);
-    if (result) return result;
-
-    // 2. Cookie-based auth failed. Try Bearer token if provided.
-    if (request) {
-      const authHeader = request.headers.get("Authorization");
-      const token = authHeader?.startsWith("Bearer ") ? authHeader.slice(7) : null;
-      if (token) {
-        const tokenSupabase = createServerSupabaseWithToken(token);
-        const tokenResult = await tryWithSupabase(tokenSupabase);
-        if (tokenResult) return tokenResult;
-      }
-    }
-
-    // 3. Both cookie and Bearer token RPC calls failed.
-    //    Use resolveVenueAccess — the single canonical DB-read function
-    //    that queries venues, user_venue_roles and organizations directly.
-    try {
-      const resolved = await resolveVenueAccess(userId, normalizedVenueId);
-      if (!resolved) return null;
-
-      // We also need the full venue row for the VenueAccess return type.
-      const { createAdminClient } = await import("@/lib/supabase");
-      const admin = createAdminClient();
-      const { data: venue, error: venueErr } = await admin
-        .from("venues")
-        .select("*")
-        .eq("venue_id", normalizedVenueId)
-        .single();
-
-      if (venueErr || !venue) return null;
-
-      return {
-        venue,
-        user: { id: userId },
-        role: resolved.role,
-        tier: resolved.tier,
-        venue_ids: [],
-      };
-    } catch {
-      return null;
-    }
   } catch {
     return null;
   }
@@ -138,19 +149,17 @@ export async function verifyVenueAccess(
 
 /**
  * Verify venue exists and is valid (for public routes)
- * This is a lightweight check that doesn't require user authentication
- * but ensures the venue exists and is accessible
+ * Uses admin client to bypass RLS — this is a simple existence check.
  */
 export async function verifyVenueExists(
   venueId: string
 ): Promise<{ valid: boolean; venue?: Venue; error?: string }> {
   try {
     const normalizedVenueId = normalizeVenueId(venueId) ?? venueId;
-    const supabase = await createSupabaseClient();
+    const { createAdminClient } = await import("@/lib/supabase");
+    const admin = createAdminClient();
 
-    // Use authenticated client which respects RLS
-    // For public routes, this will still work if RLS allows public read access
-    const { data: venue, error: venueError } = await supabase
+    const { data: venue, error: venueError } = await admin
       .from("venues")
       .select("venue_id, owner_user_id, name, created_at, updated_at")
       .eq("venue_id", normalizedVenueId)
@@ -172,7 +181,7 @@ export async function verifyVenueExists(
 
 /**
  * Verify order belongs to venue (for public routes)
- * Ensures cross-venue access is prevented
+ * Uses admin client to bypass RLS — cross-venue check only.
  */
 export async function verifyOrderVenueAccess(
   orderId: string,
@@ -180,9 +189,10 @@ export async function verifyOrderVenueAccess(
 ): Promise<{ valid: boolean; error?: string }> {
   try {
     const normalizedVenueId = normalizeVenueId(venueId) ?? venueId;
-    const supabase = await createSupabaseClient();
+    const { createAdminClient } = await import("@/lib/supabase");
+    const admin = createAdminClient();
 
-    const { data: order, error: orderError } = await supabase
+    const { data: order, error: orderError } = await admin
       .from("orders")
       .select("id, venue_id")
       .eq("id", orderId)

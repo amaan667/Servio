@@ -38,34 +38,58 @@ export function useAccessContext(venueId?: string | null): UseAccessContextRetur
       setLoading(true);
       setError(null);
 
-      const supabase = supabaseBrowser();
       const normalizedVenueId = normalizeVenueId(venueId);
+      let accessContext: AccessContext | null = null;
 
-      const { data, error: rpcError } = await supabase.rpc("get_access_context", {
-        p_venue_id: normalizedVenueId,
-      });
+      // 1. Try RPC directly (fast path)
+      try {
+        const supabase = supabaseBrowser();
+        const { data, error: rpcError } = await supabase.rpc("get_access_context", {
+          p_venue_id: normalizedVenueId,
+        });
 
-      if (rpcError) {
-        setError(rpcError.message);
-        setContext(null);
-        return;
+        if (!rpcError && data) {
+          const rpc = data as AccessContext;
+          if (rpc.user_id && rpc.role && rpc.tier) {
+            accessContext = rpc;
+          }
+        }
+      } catch {
+        // RPC unavailable — fall through to API fallback
       }
 
-      if (!data) {
-        setContext(null);
-        return;
+      // 2. Fallback: call /api/auth/access-context (uses admin client server-side)
+      if (!accessContext && normalizedVenueId) {
+        try {
+          const { fetchWithAuth } = await import("@/lib/api-client");
+          const res = await fetchWithAuth(
+            `/api/auth/access-context?venueId=${encodeURIComponent(normalizedVenueId)}`
+          );
+          if (res.ok) {
+            const apiData = await res.json();
+            if (apiData.role && apiData.tier && apiData.userId) {
+              accessContext = {
+                user_id: apiData.userId,
+                venue_id: apiData.venueId ?? normalizedVenueId,
+                role: apiData.role,
+                tier: apiData.tier,
+                venue_ids: [apiData.venueId ?? normalizedVenueId],
+                permissions: {},
+              } as AccessContext;
+            }
+          }
+        } catch {
+          // API fallback also failed
+        }
       }
 
-      const accessContext = data as AccessContext;
-
-      if (!accessContext.user_id || !accessContext.role || !accessContext.tier) {
+      if (!accessContext) {
         setContext(null);
         return;
       }
 
       const tier = accessContext.tier.toLowerCase().trim() as Tier;
       if (!["starter", "pro", "enterprise"].includes(tier)) {
-        // Unrecognised tier from DB — surface it as an error, don't guess.
         setError(`Unrecognised tier "${accessContext.tier}" in database`);
         setContext(null);
         return;
